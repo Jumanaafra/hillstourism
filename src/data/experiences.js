@@ -1,0 +1,51 @@
+// Travel experiences data
+export const experiences = [
+  {
+    id: 'campfire',
+    title: 'Starlit Campfire',
+    subtitle: 'Nights Under the Sky',
+    description: 'Gather around a crackling fire as stars paint the mountain sky above you.',
+    image: 'https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=500&q=80&auto=format',
+    icon: '🔥',
+  },
+  {
+    id: 'trekking',
+    title: 'Mountain Trekking',
+    subtitle: 'Trail by Trail',
+    description: 'Guided treks through ancient forests, ridge-top pathways, and dramatic valley vistas.',
+    image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=500&q=80&auto=format',
+    icon: '🥾',
+  },
+  {
+    id: 'sunrise',
+    title: 'Sunrise Viewpoints',
+    subtitle: 'First Light Moments',
+    description: 'Rise before dawn and witness the Himalayas painted in shades of amber and rose.',
+    image: 'https://images.unsplash.com/photo-1504608524841-42584120d693?w=500&q=80&auto=format',
+    icon: '🌅',
+  },
+  {
+    id: 'safari',
+    title: 'Jeep Safari',
+    subtitle: 'Into the Wild',
+    description: 'Venture deep into forest corridors in search of wildlife and the thrill of the untamed.',
+    image: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=500&q=80&auto=format',
+    icon: '🚙',
+  },
+  {
+    id: 'music',
+    title: 'Music Nights',
+    subtitle: 'Soulful Evenings',
+    description: 'Live folk music, warm drinks, and the hum of the mountains create evenings you\'ll never forget.',
+    image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&q=80&auto=format',
+    icon: '🎵',
+  },
+  {
+    id: 'stays',
+    title: 'Premium Stays',
+    subtitle: 'Rest Elevated',
+    description: 'Curated boutique lodges and mountain resorts where luxury meets the poetry of the hills.',
+    image: 'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=500&q=80&auto=format',
+    icon: '🏡',
+  },
+]
