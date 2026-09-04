@@ -99,16 +99,16 @@ export default function TripCategoryCarousel({ id }) {
   }
 
   return (
-    <section id={id} className="section-dark section-wrap" aria-label="Trip categories"
+    <section id={id} className="section-deep section-wrap" aria-label="Trip categories"
       style={{ paddingTop: 'clamp(2.5rem, 4vw, 3.5rem)' }}>
       <div className="section-inner">
         {/* Header */}
         <div className="section-header" style={{ textAlign: 'center' }}>
-          <p className="eyebrow" style={{ marginBottom: '0.85rem' }}>Our Journeys</p>
-          <h2 className="heading-xl" style={{ color: '#f5f0e8', marginBottom: '0.75rem' }}>
+          <p className="eyebrow-light" style={{ marginBottom: '0.85rem' }}>Our Journeys</p>
+          <h2 className="heading-xl" style={{ color: '#ffffff', marginBottom: '0.75rem' }}>
             Travel for Every Chapter
           </h2>
-          <p className="body-lg" style={{ color: 'var(--clr-text-muted)', maxWidth: '520px', margin: '0 auto' }}>
+          <p className="body-lg" style={{ color: 'rgba(255,255,255,0.5)', maxWidth: '520px', margin: '0 auto' }}>
             From romantic escapes to corporate retreats — explore packages tailored to your story.
           </p>
         </div>
@@ -179,46 +179,43 @@ export default function TripCategoryCarousel({ id }) {
                     {pos === 0 && (
                       <span style={{
                         display:    'inline-block',
-                        background: 'rgba(201,168,76,0.15)',
-                        border:     '1px solid rgba(201,168,76,0.4)',
-                        color:      '#c9a84c',
+                        background: 'rgba(8,120,255,0.2)',
+                        border:     '1px solid rgba(8,120,255,0.4)',
+                        color:      '#4AA8FF',
                         fontSize:   '0.62rem',
                         letterSpacing: '0.15em',
                         padding:    '3px 10px',
                         borderRadius: '20px',
                         marginBottom: '0.6rem',
-                        fontFamily: 'Inter, sans-serif',
+                        fontFamily: 'var(--font-body)',
                         fontWeight: 600,
                       }}>
                         {cat.badge}
                       </span>
                     )}
                     <h3 style={{
-                      fontFamily:  'Playfair Display, serif',
+                      fontFamily:  'var(--font-display)',
                       fontSize:    pos === 0 ? '1.45rem' : '1.1rem',
-                      fontWeight:  500,
-                      color:       '#f5f0e8',
+                      fontWeight:  700,
+                      color:       '#ffffff',
                       marginBottom: pos === 0 ? '0.4rem' : 0,
                       lineHeight:  1.2,
+                      letterSpacing: '-0.02em',
                     }}>
                       {cat.title}
                     </h3>
                     {pos === 0 && (
                       <>
-                        <p style={{ fontSize:'0.8rem', color:'rgba(245,240,232,0.6)', fontFamily:'Inter,sans-serif', marginBottom:'0.9rem', lineHeight:1.5 }}>
+                        <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.6)', fontFamily:'var(--font-body)', marginBottom:'0.9rem', lineHeight:1.55 }}>
                           {cat.description}
                         </p>
-                        <a
-                          href="#journeys"
+                        <button
                           className="btn-primary"
                           style={{ padding:'0.6rem 1.3rem', fontSize:'0.7rem' }}
-                          onClick={(e) => {
-                            e.preventDefault()
-                            document.querySelector('#journeys')?.scrollIntoView({ behavior: 'smooth' })
-                          }}
+                          onClick={() => document.querySelector('#packages')?.scrollIntoView({ behavior: 'smooth' })}
                         >
                           Explore →
-                        </a>
+                        </button>
                       </>
                     )}
                   </div>
@@ -231,7 +228,7 @@ export default function TripCategoryCarousel({ id }) {
         {/* Arrow controls */}
         <div style={{ display:'flex', justifyContent:'center', gap:'1rem', alignItems:'center' }}>
           <button
-            className="btn-outline"
+            className="btn-outline-white"
             onClick={() => go(-1)}
             aria-label="Previous category"
             style={{ padding:'0.7rem 1.2rem', fontSize:'1rem' }}
@@ -252,7 +249,7 @@ export default function TripCategoryCarousel({ id }) {
                   width:      i === active ? '28px' : '8px',
                   height:     '8px',
                   borderRadius: '4px',
-                  background: i === active ? '#c9a84c' : 'rgba(245,240,232,0.2)',
+                  background: i === active ? 'var(--hill-blue-bright)' : 'rgba(255,255,255,0.2)',
                   border:     'none',
                   cursor:     'pointer',
                   transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)',
@@ -263,7 +260,7 @@ export default function TripCategoryCarousel({ id }) {
           </div>
 
           <button
-            className="btn-outline"
+            className="btn-outline-white"
             onClick={() => go(1)}
             aria-label="Next category"
             style={{ padding:'0.7rem 1.2rem', fontSize:'1rem' }}
@@ -276,10 +273,11 @@ export default function TripCategoryCarousel({ id }) {
         <p style={{
           textAlign:  'center',
           marginTop:  '1.5rem',
-          fontFamily: 'Playfair Display, serif',
+          fontFamily: 'var(--font-display)',
           fontStyle:  'italic',
           fontSize:   '1.05rem',
-          color:      'rgba(245,240,232,0.45)',
+          color:      'rgba(255,255,255,0.4)',
+          letterSpacing: '-0.01em',
         }}>
           {categories[active].subtitle}
         </p>

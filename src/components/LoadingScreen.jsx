@@ -58,13 +58,13 @@ export default function LoadingScreen({ onComplete }) {
 
   return (
     <div
-      aria-label="Loading HillsTourism"
+      aria-label="Loading Hillstourism"
       aria-live="polite"
       style={{
         position:   'fixed',
         inset:      0,
         zIndex:     9999,
-        background: '#040d04',
+        background: 'var(--hill-navy-deep)',
         display:    'flex',
         flexDirection: 'column',
         alignItems:  'center',
@@ -83,7 +83,7 @@ export default function LoadingScreen({ onComplete }) {
         transform: 'translate(-50%,-50%)',
         width: '600px', height: '600px',
         borderRadius: '50%',
-        background: 'radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse, rgba(8,120,255,0.08) 0%, transparent 70%)',
         pointerEvents: 'none',
         opacity: logoVisible ? 1 : 0,
         transition: 'opacity 2s ease',
@@ -119,8 +119,8 @@ export default function LoadingScreen({ onComplete }) {
             const fb = document.createElement('div')
             fb.innerHTML = `
               <div style="text-align:center">
-                <div style="font-family:'Playfair Display',serif;font-size:clamp(1.8rem,5vw,3rem);color:#c9a84c;letter-spacing:0.05em;font-weight:500;">HILLS</div>
-                <div style="font-family:'Playfair Display',serif;font-size:clamp(1.8rem,5vw,3rem);color:#f5f0e8;letter-spacing:0.08em;font-weight:400;">TOURISM</div>
+                <div style="font-family:'Sora',sans-serif;font-size:clamp(1.8rem,5vw,3rem);color:#0878FF;letter-spacing:-0.02em;font-weight:800;">HILLS</div>
+                <div style="font-family:'Sora',sans-serif;font-size:clamp(1.8rem,5vw,3rem);color:#ffffff;letter-spacing:-0.01em;font-weight:400;">TOURISM</div>
               </div>`
             e.target.parentNode.appendChild(fb)
           }}
@@ -129,18 +129,18 @@ export default function LoadingScreen({ onComplete }) {
 
       {/* Tagline */}
       <p style={{
-        fontFamily:   'Inter, sans-serif',
+        fontFamily:   'var(--font-body)',
         fontSize:     '0.65rem',
         fontWeight:   600,
         letterSpacing: '0.32em',
         textTransform: 'uppercase',
-        color:        'rgba(201,168,76,0.65)',
+        color:        'rgba(8,120,255,0.65)',
         marginBottom: '2.75rem',
         opacity:      tagVisible ? 1 : 0,
         transform:    tagVisible ? 'translateY(0)' : 'translateY(10px)',
         transition:   'opacity 1s ease, transform 1s cubic-bezier(0.16,1,0.3,1)',
       }}>
-        EXPLORE · EXPERIENCE · REMEMBER
+        DISCOVER · EXPERIENCE · REMEMBER
       </p>
 
       {/* Progress */}
@@ -159,10 +159,10 @@ export default function LoadingScreen({ onComplete }) {
           <div style={{
             height:     '100%',
             width:      `${progress}%`,
-            background: 'linear-gradient(90deg, #c9a84c, #e8c96e)',
+            background: 'linear-gradient(90deg, #0050C0, #0878FF)',
             borderRadius: '1px',
             transition: 'width 0.4s var(--ease-premium)',
-            boxShadow:  '0 0 8px rgba(201,168,76,0.5)',
+            boxShadow:  '0 0 8px rgba(8,120,255,0.5)',
           }} />
         </div>
         <p style={{

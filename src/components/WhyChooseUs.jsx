@@ -1,155 +1,184 @@
-import React, { useRef } from 'react'
-import { useScrollReveal } from '../hooks/useScrollReveal'
+import React, { useRef, useEffect } from 'react'
 
-const TRUST_ITEMS = [
+const PILLARS = [
   {
-    icon:  '🗺️',
-    title: 'Curated Journeys',
-    desc:  'Every itinerary is thoughtfully designed by local experts who know the hills intimately — no generic packages.',
-  },
-  {
-    icon:  '🏔️',
+    num:   '01',
     title: 'Local Expertise',
-    desc:  'Deep roots in the hill regions mean insider access to trails, stays, and experiences you won\'t find elsewhere.',
+    body:  'We know every road, every season, every hidden viewpoint. Our team has been guiding travelers through these hills for years. This isn\'t knowledge from a guidebook — it\'s lived experience.',
+    icon:  '🗺️',
   },
   {
-    icon:  '💰',
-    title: 'Transparent Pricing',
-    desc:  'No hidden charges, no surprises. What you see is what you pay — with clear breakdowns for every package.',
+    num:   '02',
+    title: 'Nature First',
+    body:  'Every journey is designed around the landscape. We don\'t bring the mountains to you — we take you to the mountains. No crowds, no rush, no compromise on the natural experience.',
+    icon:  '🌿',
   },
   {
-    icon:  '🛡️',
-    title: 'Safe Travel',
-    desc:  'Safety-first protocols, vetted accommodations, and local emergency support ensure worry-free journeys.',
+    num:   '03',
+    title: 'Local Partners',
+    body:  'We work exclusively with trusted local homestays, guides, and experience hosts. Every rupee stays in the community. Every meal is cooked by a local family.',
+    icon:  '🤝',
   },
   {
-    icon:  '✨',
-    title: 'Personalized Experiences',
-    desc:  'Tell us your story and we\'ll design a trip around it — your preferences, pace, and perfect moments.',
-  },
-  {
+    num:   '04',
+    title: 'Human Support',
+    body:  'A real person is reachable before, during, and after your trip. Not a chatbot, not a call center. Someone who knows your itinerary, your preferences, and how to help.',
     icon:  '📞',
-    title: '24/7 Support',
-    desc:  'From planning to your final day back home, our team is always reachable — day, night, or mountain peak.',
   },
 ]
 
 export default function WhyChooseUs({ id }) {
   const sectionRef = useRef(null)
-  useScrollReveal(sectionRef)
+
+  useEffect(() => {
+    const reveals = sectionRef.current?.querySelectorAll('.reveal, .reveal-left') || []
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) }
+      }),
+      { threshold: 0.1 }
+    )
+    reveals.forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <section
       id={id}
       ref={sectionRef}
-      className="section-light section-wrap"
-      aria-label="Why choose HillsTourism"
+      aria-label="Why Hillstourism"
+      style={{
+        background: 'var(--hill-navy)',
+        padding:    'clamp(4rem,8vw,7rem) clamp(1.25rem,5vw,5rem)',
+        position:   'relative',
+        overflow:   'hidden',
+      }}
     >
-      <div className="section-inner">
+      {/* Decorative background glow */}
+      <div style={{
+        position:     'absolute',
+        top:          '-100px',
+        right:        '-100px',
+        width:        '500px',
+        height:       '500px',
+        borderRadius: '50%',
+        background:   'radial-gradient(ellipse, rgba(8,120,255,0.08), transparent 70%)',
+        pointerEvents: 'none',
+      }} aria-hidden="true" />
+      <div style={{
+        position:     'absolute',
+        bottom:       '-80px',
+        left:         '-80px',
+        width:        '400px',
+        height:       '400px',
+        borderRadius: '50%',
+        background:   'radial-gradient(ellipse, rgba(95,158,47,0.06), transparent 70%)',
+        pointerEvents: 'none',
+      }} aria-hidden="true" />
+
+      <div style={{ maxWidth: 'var(--container-w)', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+
         {/* Header */}
-        <div className="section-header" style={{ textAlign:'center' }}>
-          <p className="reveal eyebrow" style={{ color:'var(--clr-accent)', marginBottom:'0.85rem' }}>Our Promise</p>
-          <h2 className="reveal heading-xl" style={{ color:'var(--clr-text-dark)', marginBottom:'0.75rem' }}>
-            Why Travel with{' '}
-            <span style={{ color:'var(--clr-accent)' }}>HillsTourism</span>
+        <div className="reveal" style={{ marginBottom: 'clamp(3rem,6vw,5rem)', maxWidth: '640px' }}>
+          <p className="eyebrow-light" style={{ marginBottom: '1rem' }}>Our Promise</p>
+          <h2 className="heading-xl" style={{ color: '#ffffff', marginBottom: '1rem' }}>
+            Travel the hills<br />like a local.
           </h2>
-          <p className="reveal body-lg" style={{ color:'#5a5a5a', maxWidth:'520px', margin:'0 auto' }}>
-            Six reasons our travellers come back — and bring their favourite people along.
+          <div className="divider-blue" />
+          <p className="body-lg" style={{ color: 'rgba(255,255,255,0.55)', marginTop: '1rem', maxWidth: '480px' }}>
+            Four principles that define every journey we create.
           </p>
         </div>
 
-        {/* Grid */}
+        {/* Pillars grid */}
         <div style={{
           display:             'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
-          gap:                 'clamp(1rem,2vw,1.5rem)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
+          gap:                 'clamp(1.5rem,3vw,2.5rem)',
         }}>
-          {TRUST_ITEMS.map((item, i) => (
+          {PILLARS.map((pillar, i) => (
             <div
-              key={item.title}
+              key={pillar.num}
               className="reveal"
-              style={{
-                transitionDelay: `${i * 0.08}s`,
-                padding:         '2rem',
-                borderRadius:    '12px',
-                border:          '1px solid rgba(201,168,76,0.2)',
-                background:      'rgba(255,255,255,0.7)',
-                backdropFilter:  'blur(8px)',
-                transition:      'border-color 0.3s ease, transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(201,168,76,0.5)'
-                e.currentTarget.style.transform   = 'translateY(-5px)'
-                e.currentTarget.style.boxShadow   = '0 16px 48px rgba(0,0,0,0.1)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(201,168,76,0.2)'
-                e.currentTarget.style.transform   = 'translateY(0)'
-                e.currentTarget.style.boxShadow   = 'none'
-              }}
+              style={{ transitionDelay: `${i * 0.1}s` }}
             >
               <div style={{
-                width:          '52px',
-                height:         '52px',
-                borderRadius:   '10px',
-                background:     'rgba(201,168,76,0.12)',
-                display:        'flex',
-                alignItems:     'center',
-                justifyContent: 'center',
-                fontSize:       '1.5rem',
-                marginBottom:   '1.25rem',
-                border:         '1px solid rgba(201,168,76,0.25)',
-              }}>
-                {item.icon}
+                padding:      '2.5rem',
+                borderRadius: '12px',
+                border:       '1px solid rgba(255,255,255,0.07)',
+                background:   'rgba(255,255,255,0.03)',
+                height:       '100%',
+                display:      'flex',
+                flexDirection: 'column',
+                gap:          '1.25rem',
+                transition:   'border-color 0.3s ease, background 0.3s ease',
+                cursor:       'default',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'rgba(8,120,255,0.25)'
+                e.currentTarget.style.background  = 'rgba(8,120,255,0.04)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
+                e.currentTarget.style.background  = 'rgba(255,255,255,0.03)'
+              }}
+              >
+                {/* Number + icon row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between' }}>
+                  <span className="why-number">{pillar.num}</span>
+                  <span style={{ fontSize: '1.75rem' }} aria-hidden="true">{pillar.icon}</span>
+                </div>
+
+                {/* Divider */}
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+
+                {/* Title */}
+                <h3 style={{
+                  fontFamily:   'var(--font-display)',
+                  fontSize:     '1.15rem',
+                  fontWeight:   700,
+                  color:        '#ffffff',
+                  letterSpacing: '-0.015em',
+                }}>
+                  {pillar.title}
+                </h3>
+
+                {/* Body */}
+                <p style={{
+                  fontSize:   '0.875rem',
+                  color:      'rgba(255,255,255,0.5)',
+                  lineHeight: 1.75,
+                  flex:       1,
+                }}>
+                  {pillar.body}
+                </p>
               </div>
-              <h3 style={{
-                fontFamily:   'Playfair Display,serif',
-                fontSize:     '1.15rem',
-                fontWeight:   500,
-                color:        '#0d0d0d',
-                marginBottom: '0.6rem',
-                lineHeight:   1.25,
-              }}>
-                {item.title}
-              </h3>
-              <p style={{
-                fontSize:   '0.875rem',
-                color:      '#5a5a5a',
-                fontFamily: 'Inter,sans-serif',
-                lineHeight: 1.65,
-              }}>
-                {item.desc}
-              </p>
             </div>
           ))}
         </div>
 
-        {/* Stats row */}
+        {/* CTA row */}
         <div className="reveal" style={{
-          marginTop:   'clamp(3rem,6vw,5rem)',
-          display:     'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-          gap:         '1rem',
-          padding:     'clamp(1.5rem,3vw,2.5rem)',
-          background:  'linear-gradient(135deg, #080f08 0%, #0c1a0c 100%)',
-          borderRadius:'16px',
-          border:      '1px solid rgba(201,168,76,0.2)',
+          marginTop:      'clamp(3rem,5vw,4rem)',
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'center',
+          gap:            '1rem',
+          flexWrap:       'wrap',
+          transitionDelay: '0.4s',
         }}>
-          {[
-            { number:'2,400+',  label:'Happy Travellers' },
-            { number:'48+',     label:'Curated Routes' },
-            { number:'12+',     label:'Hill Destinations' },
-            { number:'4.9★',    label:'Average Rating' },
-          ].map(stat => (
-            <div key={stat.label} style={{ textAlign:'center', padding:'1rem 0' }}>
-              <p style={{ fontFamily:'Playfair Display,serif', fontSize:'clamp(2rem,4vw,2.8rem)', fontWeight:600, color:'#c9a84c', lineHeight:1 }}>
-                {stat.number}
-              </p>
-              <p style={{ fontSize:'0.75rem', color:'rgba(245,240,232,0.5)', fontFamily:'Inter,sans-serif', letterSpacing:'0.1em', textTransform:'uppercase', marginTop:'0.4rem' }}>
-                {stat.label}
-              </p>
-            </div>
-          ))}
+          <button
+            className="btn-primary"
+            onClick={() => document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            Start Your Journey
+          </button>
+          <button
+            className="btn-outline-white"
+            onClick={() => document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            Chat with HillGuide
+          </button>
         </div>
       </div>
     </section>
