@@ -1295,3 +1295,145 @@ button {
 
 /* Horizontal scroll hide bar */
 html, body { overflow-x: hidden; }
+
+/* =============================================
+   RESPONSIVE — ADDITIONAL BREAKPOINTS
+   ============================================= */
+
+/* ── Very small phones (≤ 375px) ── */
+@media (max-width: 375px) {
+  /* Hero buttons: allow vertical stack on tiny screens */
+  .btn-hero-primary,
+  .btn-hero-secondary {
+    font-size: 0.76rem;
+    padding: 0 1rem;
+    height: 40px;
+  }
+
+  /* Hero heading: a tiny bit smaller on the smallest phones */
+  .hero-heading {
+    font-size: clamp(22px, 7vw, 30px);
+  }
+
+  /* Hero description: tighter */
+  .hero-description {
+    font-size: 0.82rem;
+    margin-bottom: 1.1rem;
+  }
+}
+
+/* ── Hide frame counter on narrow mobile — it clutters small screens ── */
+@media (max-width: 480px) {
+  .hero-frame-counter {
+    display: none !important;
+  }
+
+  /* Scroll indicator: move slightly higher so it doesn't crowd buttons */
+  .hero-scroll-indicator {
+    bottom: 1.25rem;
+  }
+
+  /* Hero content: tighten internal spacing on small screens */
+  .hero-content {
+    gap: 0;
+    width: calc(100% - 1.5rem);
+  }
+}
+
+/* ── Landscape mobile — very short viewport height ── */
+@media (max-height: 520px) and (orientation: landscape) {
+  /* Compress hero heading */
+  .hero-heading {
+    font-size: clamp(20px, 4vw, 32px) !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Compress hero eyebrow spacing */
+  .hero-content > div:first-child {
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Compress hero description */
+  .hero-description {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.9rem !important;
+    max-width: 380px;
+  }
+
+  /* Shrink buttons */
+  .btn-hero-primary,
+  .btn-hero-secondary {
+    height: 38px !important;
+    padding: 0 1rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Hide scroll indicator on landscape mobile — there's no room */
+  .hero-scroll-indicator {
+    display: none;
+  }
+
+  /* Also hide frame counter */
+  .hero-frame-counter {
+    display: none !important;
+  }
+}
+
+/* ── Tablet portrait range (601px – 900px) ── */
+@media (min-width: 601px) and (max-width: 900px) {
+  /* Hero content: give a bit more horizontal room */
+  .hero-content {
+    max-width: 540px;
+  }
+
+  /* Hero heading: intermediate size */
+  .hero-heading {
+    font-size: clamp(28px, 5.5vw, 42px);
+  }
+
+  /* Chatbot on tablet: keep right-positioned but slightly inset */
+  .chatbot-launcher {
+    bottom: 1.75rem;
+    right: 1.75rem;
+  }
+}
+
+/* ── Tablet landscape / small desktop (901px – 1100px) ── */
+@media (min-width: 901px) and (max-width: 1100px) {
+  /* Ensure hero content doesn't stretch too wide */
+  .hero-content {
+    max-width: 580px;
+  }
+}
+
+/* ── Large desktop (≥ 1600px) ── */
+@media (min-width: 1600px) {
+  /* Hero content: don't let it feel too small on ultrawide */
+  .hero-content {
+    max-width: 700px;
+  }
+
+  .hero-heading {
+    font-size: clamp(48px, 3.5vw, 64px);
+  }
+
+  .hero-description {
+    font-size: clamp(15px, 1vw, 18px);
+    max-width: 560px;
+  }
+}
+
+/* ── iOS safe area support for fixed/bottom-anchored elements ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .chatbot-launcher {
+    bottom: max(1.5rem, calc(1rem + env(safe-area-inset-bottom)));
+  }
+
+  .hero-scroll-indicator {
+    bottom: max(1.25rem, calc(0.75rem + env(safe-area-inset-bottom)));
+  }
+
+  .hero-frame-counter {
+    bottom: max(1.5rem, calc(1rem + env(safe-area-inset-bottom)));
+  }
+}

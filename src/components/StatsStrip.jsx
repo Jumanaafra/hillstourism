@@ -44,7 +44,7 @@ function StatItem({ stat, isVisible }) {
       padding:        'clamp(1.5rem,3vw,2.5rem)',
       borderRight:    '1px solid rgba(255,255,255,0.08)',
       flex:           '1',
-      minWidth:       '180px',
+      minWidth:       'min(40vw, 180px)',
     }}>
       <span style={{ fontSize: '2rem', marginBottom: '0.75rem' }} aria-hidden="true">{stat.icon}</span>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>

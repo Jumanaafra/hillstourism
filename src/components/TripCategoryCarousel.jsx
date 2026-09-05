@@ -14,8 +14,8 @@ const HIDDEN_CFG = { rotateY: -70, translateZ: -450, translateX: 700, scale: 0.5
 /* ─── Mobile Config ──────────────────────────────── */
 const MOB_CONFIG = {
   0:   { translateX:   0, scale: 1,    opacity: 1,    zIndex: 10 },
-  1:   { translateX: 240, scale: 0.85, opacity: 0.6,  zIndex:  7 },
-  '-1':{ translateX:-240, scale: 0.85, opacity: 0.6,  zIndex:  7 },
+  1:   { translateX: 200, scale: 0.85, opacity: 0.6,  zIndex:  7 },
+  '-1':{ translateX:-200, scale: 0.85, opacity: 0.6,  zIndex:  7 },
 }
 
 const total = categories.length

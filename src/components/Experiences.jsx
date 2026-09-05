@@ -51,7 +51,7 @@ export default function Experiences({ id }) {
         {/* Editorial layout: large image + list */}
         <div style={{
           display:             'grid',
-          gridTemplateColumns: '1fr 420px',
+          gridTemplateColumns: '1fr clamp(280px, 30vw, 420px)',
           gap:                 'clamp(2rem,5vw,5rem)',
           alignItems:          'stretch',
         }}>
