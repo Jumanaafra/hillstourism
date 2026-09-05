@@ -4,11 +4,10 @@ node_modules/
 # Production build output
 dist/
 
-# Frame sequence GIFs (large binary assets — store separately / via LFS or CDN)
-public/frames/
-frames/
-*.gif
-*.zip
+# Frame sequence GIFs (committed directly — ~20MB)
+# public/frames/
+# frames/
+# *.gif
 
 # Logs
 npm-debug.log*
