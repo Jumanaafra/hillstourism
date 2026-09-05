@@ -52,11 +52,11 @@ export async function loadImageBatch(srcs, onProgress) {
 
 /**
  * Generate the path for a hero frame given its index.
- * Frames are named: frame_000_delay-0.05s.gif … frame_290_delay-0.05s.gif
- * @param {number} index  0-based index
+ * Frames are named: frame_000_delay-0.1s.gif … frame_099_delay-0.1s.gif
+ * @param {number} index  0-based index (0–99)
  * @returns {string}
  */
 export function getFramePath(index) {
   const num = String(index).padStart(3, '0')
-  return `/frames/frame_${num}_delay-0.05s.gif`
+  return `/frames/frame_${num}_delay-0.1s.gif`
 }

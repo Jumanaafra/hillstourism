@@ -22,11 +22,11 @@ export default function Hero({ id }) {
   }, [])
 
   // High-performance progress callback without triggering React re-renders
-  // Note: Hero content remains 100% visible and centered from Frame 001 through Frame 290
+  // Note: Hero content remains 100% visible and centered from Frame 001 through Frame 099
   const handleProgress = useCallback((frameIndex, progress) => {
-    // 1. Update frame counter number (strictly clamped 001 to 290)
+    // 1. Update frame counter number (strictly clamped 001 to 099)
     if (frameNumberRef.current) {
-      const frameNum = Math.min(290, Math.max(1, Math.round(progress * 289) + 1))
+      const frameNum = Math.min(99, Math.max(1, Math.round(progress * 98) + 1))
       const display = String(frameNum).padStart(3, '0')
       if (frameNumberRef.current.textContent !== display) {
         frameNumberRef.current.textContent = display
@@ -86,7 +86,7 @@ export default function Hero({ id }) {
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: 'url(/frames/frame_145_delay-0.05s.gif)',
+              backgroundImage: 'url(/frames/frame_050_delay-0.1s.gif)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
@@ -246,7 +246,7 @@ export default function Hero({ id }) {
                   color: 'rgba(255, 255, 255, 0.38)',
                 }}
               >
-                290
+                099
               </span>
             </div>
 

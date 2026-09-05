@@ -698,13 +698,14 @@ button {
   cursor: pointer;
   transition: border-color 0.25s ease, background 0.25s ease;
   border-radius: 0 8px 8px 0;
+  background: transparent;
 }
 .experience-list-item:hover {
-  background: var(--hill-surface);
+  background: rgba(255, 255, 255, 0.06);
 }
 .experience-list-item.active {
   border-left-color: var(--hill-blue-bright);
-  background: var(--hill-blue-glow);
+  background: rgba(8, 120, 255, 0.15);
 }
 
 /* =============================================

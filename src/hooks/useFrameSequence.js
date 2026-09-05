@@ -5,18 +5,18 @@ import { loadImage, getFramePath } from '../utils/imageLoader'
 
 gsap.registerPlugin(ScrollTrigger)
 
-export const TOTAL_FRAMES = 291 // frame_000 … frame_290
+export const TOTAL_FRAMES = 100 // frame_000 … frame_099
 
 /**
  * useScrollFrameSequence
- * Scroll-controlled 290-frame cinematic hero with GSAP pinning.
+ * Scroll-controlled 99-frame cinematic hero with GSAP pinning.
  *
  * Architecture:
  * - containerRef: The outer scroll track (height: 100vh + scrollDistance)
  * - pinRef: The inner viewport element (height: 100vh) pinned by GSAP
  * - As the user scrolls through the container track, progress maps from [0, 1]
- *   which translates exactly to frames [0, 290].
- * - Frame 290 is reached at progress = 1.0. ONLY then does ScrollTrigger unpin,
+ *   which translates exactly to frames [0, 99].
+ * - Frame 99 is reached at progress = 1.0. ONLY then does ScrollTrigger unpin,
  *   allowing the Journey section to immediately enter the viewport.
  */
 export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgress, enabled = true) {

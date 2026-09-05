@@ -47,7 +47,7 @@ export default function App() {
       <Navbar />
 
       <main id="home" tabIndex={-1}>
-        {/* ── 1. Hero — 290-frame cinematic scroll sequence ── */}
+        {/* ── 1. Hero — 99-frame cinematic scroll sequence ── */}
         <Hero id="home" />
 
         {/* ── 2. Journey — parallax destination intro ── */}
