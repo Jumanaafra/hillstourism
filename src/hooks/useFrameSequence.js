@@ -92,8 +92,8 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
     const canvas = canvasRef.current
     if (!canvas) return
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const w = window.innerWidth
-    const h = window.innerHeight
+    const w = canvas.parentElement ? canvas.parentElement.clientWidth : window.innerWidth
+    const h = canvas.parentElement ? canvas.parentElement.clientHeight : window.innerHeight
     canvas.width = Math.round(w * dpr)
     canvas.height = Math.round(h * dpr)
     canvas.style.width = `${w}px`
@@ -259,8 +259,8 @@ export function useFrameSequence(canvasRef, sectionRef, enabled) {
     const canvas = canvasRef.current
     if (!canvas) return
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const w = window.innerWidth
-    const h = window.innerHeight
+    const w = canvas.parentElement ? canvas.parentElement.clientWidth : window.innerWidth
+    const h = canvas.parentElement ? canvas.parentElement.clientHeight : window.innerHeight
     canvas.width = Math.round(w * dpr)
     canvas.height = Math.round(h * dpr)
     canvas.style.width = `${w}px`

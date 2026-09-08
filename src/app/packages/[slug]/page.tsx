@@ -1,10 +1,15 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getPackageBySlug, getPackages } from '@/lib/repositories/packages.repo'
+import { getHotels } from '@/lib/repositories/hotels.repo'
+import { getVehicles } from '@/lib/repositories/vehicles.repo'
+import type { Hotel, Vehicle } from '@/types/domain'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import HillGuide from '@/components/HillGuide'
-import Enquiry from '@/components/Enquiry'
+import PackageItineraryView from '@/components/PackageItineraryView'
+
+export const revalidate = 3600 // ISR: Revalidate at most once per hour or on-demand via admin actions
 
 interface Props {
   params: { slug: string }
@@ -19,45 +24,107 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const pkg = await getPackageBySlug(params.slug)
-  if (!pkg) return { title: 'Package Not Found — Hills Tourism' }
+  if (!pkg || pkg.active === false) {
+    return {
+      title: 'Package Not Found — Hills Tourism',
+      description: 'The requested travel package could not be found.',
+    }
+  }
+
+  const title = pkg.seo?.title || `${pkg.name} (${pkg.duration || 'Curated Journey'}) | Hills Tourism`
+  const description =
+    pkg.seo?.description ||
+    pkg.shortDescription ||
+    pkg.description ||
+    `Experience ${pkg.name} in ${pkg.destination}. Handcrafted day-by-day mountain journey with Hills Tourism.`
+  const ogImage = pkg.coverImage || pkg.image || pkg.seo?.ogImage
 
   return {
-    title: `${pkg.name} — Hills Tourism`,
-    description: pkg.description || `Discover ${pkg.name} in ${pkg.destination}. Handcrafted mountain journey by Hills Tourism.`,
+    title,
+    description,
     alternates: {
       canonical: `/packages/${params.slug}`,
     },
     openGraph: {
-      title: `${pkg.name} (${pkg.destination}) — Hills Tourism`,
-      description: pkg.description,
-      images: pkg.image ? [{ url: pkg.image }] : undefined,
+      title,
+      description,
+      url: `https://hillstourism.com/packages/${params.slug}`,
+      siteName: 'Hills Tourism',
+      images: ogImage ? [{ url: ogImage, width: 1200, height: 630, alt: pkg.name }] : undefined,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ogImage ? [ogImage] : undefined,
     },
   }
 }
 
 export default async function PackageDetailPage({ params }: Props) {
   const pkg = await getPackageBySlug(params.slug)
-  if (!pkg) {
+  if (!pkg || pkg.active === false) {
     notFound()
   }
 
-  const jsonLd = {
+  // Fetch active stays and vehicles for package connection
+  const [allHotels, allVehicles] = await Promise.all([
+    getHotels(true),
+    getVehicles(true),
+  ])
+
+  // Resolve connected hotels (by explicit IDs or destination match)
+  let connectedHotels: Hotel[] = []
+  if (pkg.hotelIds && pkg.hotelIds.length > 0) {
+    connectedHotels = allHotels.filter(h => pkg.hotelIds!.includes(h.id))
+  }
+  if (connectedHotels.length === 0) {
+    const destWord = pkg.destination.split(',')[0].trim().toLowerCase()
+    connectedHotels = allHotels.filter(h => (h.location || '').toLowerCase().includes(destWord)).slice(0, 3)
+  }
+  if (connectedHotels.length === 0) {
+    connectedHotels = allHotels.slice(0, 2)
+  }
+
+  // Resolve connected vehicles (by explicit IDs or fleet highlights)
+  let connectedVehicles: Vehicle[] = []
+  if (pkg.vehicleIds && pkg.vehicleIds.length > 0) {
+    connectedVehicles = allVehicles.filter(v => pkg.vehicleIds!.includes(v.id))
+  }
+  if (connectedVehicles.length === 0) {
+    connectedVehicles = allVehicles.slice(0, 2)
+  }
+
+  // Generate Schema.org TouristTrip structured data grounded only in real data
+  const jsonLd: Record<string, any> = {
     '@context': 'https://schema.org',
     '@type': 'TouristTrip',
     name: pkg.name,
-    description: pkg.description,
-    touristType: pkg.category,
+    description: pkg.shortDescription || pkg.description,
+    touristType: pkg.category || 'Mountain Tourism',
     provider: {
       '@type': 'TravelAgency',
       name: 'Hills Tourism',
       url: 'https://hillstourism.com',
     },
-    offers: {
+  }
+
+  if (pkg.price) {
+    jsonLd.offers = {
       '@type': 'Offer',
-      price: pkg.price?.replace(/[^0-9]/g, '') || '9999',
+      price: pkg.price.replace(/[^0-9]/g, '') || undefined,
       priceCurrency: 'INR',
       availability: 'https://schema.org/InStock',
-    },
+    }
+  }
+
+  if (pkg.itinerary && pkg.itinerary.length > 0) {
+    jsonLd.itinerary = pkg.itinerary.map(d => ({
+      '@type': 'TouristTrip',
+      name: `Day ${d.day}: ${d.title}`,
+      description: d.description,
+    }))
   }
 
   return (
@@ -67,76 +134,13 @@ export default async function PackageDetailPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Navbar />
-
-      <main style={{ background: 'var(--hill-white)', minHeight: '100vh', paddingTop: '100px' }}>
-        {/* Package Header Hero */}
-        <section style={{
-          position: 'relative',
-          background: 'var(--hill-navy)',
-          color: '#ffffff',
-          padding: 'clamp(4rem, 8vw, 6rem) clamp(1.25rem, 5vw, 5rem)',
-          overflow: 'hidden',
-        }}>
-          {pkg.image && (
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: `url(${pkg.image})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              opacity: 0.25,
-              filter: 'brightness(0.7)',
-            }} />
-          )}
-
-          <div style={{ maxWidth: 'var(--container-w)', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-            <span className="badge badge-blue" style={{ marginBottom: '1rem' }}>
-              {pkg.category} · {pkg.duration}
-            </span>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.4rem, 5vw, 4rem)', fontWeight: 700, lineHeight: 1.1, marginBottom: '1rem' }}>
-              {pkg.name}
-            </h1>
-            <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.7)', maxWidth: '640px', lineHeight: 1.6, marginBottom: '2rem' }}>
-              {pkg.description}
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'baseline', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Starting from</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700, color: '#ffffff' }}>
-                {pkg.price}
-              </span>
-              <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{pkg.priceNote}</span>
-            </div>
-          </div>
-        </section>
-
-        {/* Highlights */}
-        {pkg.highlights && pkg.highlights.length > 0 && (
-          <section style={{ maxWidth: 'var(--container-w)', margin: '3rem auto', padding: '0 clamp(1.25rem, 5vw, 5rem)' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: 'var(--hill-navy)', marginBottom: '1.25rem' }}>
-              Journey Highlights
-            </h2>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              {pkg.highlights.map(h => (
-                <div key={h} style={{
-                  padding: '10px 18px',
-                  borderRadius: '8px',
-                  background: '#ffffff',
-                  border: '1px solid var(--hill-border)',
-                  color: 'var(--hill-navy)',
-                  fontWeight: 500,
-                  fontSize: '0.9rem',
-                }}>
-                  ✨ {h}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Enquiry Section */}
-        <Enquiry id="contact" />
+      <main>
+        <PackageItineraryView
+          pkg={pkg}
+          connectedHotels={connectedHotels}
+          connectedVehicles={connectedVehicles}
+        />
       </main>
-
       <Footer id="footer" />
       <HillGuide />
     </>

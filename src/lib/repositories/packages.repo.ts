@@ -1,8 +1,18 @@
 import { getFirestoreDB } from '../firebase/admin'
 import { seedPackages } from './seed'
 import type { Package } from '../../types/domain'
+import { sortItineraryDays } from '../validation/itinerary'
 
-let memoryPackages: Package[] = [...seedPackages]
+export { sortItineraryDays }
+
+function normalizePackage(pkg: Package): Package {
+  return {
+    ...pkg,
+    itinerary: pkg.itinerary ? sortItineraryDays(pkg.itinerary) : undefined,
+  }
+}
+
+let memoryPackages: Package[] = seedPackages.map(normalizePackage)
 
 export async function getPackages(onlyActive = true): Promise<Package[]> {
   const db = getFirestoreDB()
@@ -14,13 +24,15 @@ export async function getPackages(onlyActive = true): Promise<Package[]> {
       }
       const snapshot = await query.get()
       if (!snapshot.empty) {
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package))
+        return snapshot.docs.map(doc => normalizePackage({ id: doc.id, ...doc.data() } as Package))
       }
     } catch (err) {
       console.warn('[Packages Repo] Firestore fetch failed, falling back to memory store:', err)
     }
   }
-  return onlyActive ? memoryPackages.filter(p => p.active) : [...memoryPackages]
+  return onlyActive
+    ? memoryPackages.filter(p => p.active).map(normalizePackage)
+    : memoryPackages.map(normalizePackage)
 }
 
 export async function getPackageById(id: string): Promise<Package | null> {
@@ -29,13 +41,19 @@ export async function getPackageById(id: string): Promise<Package | null> {
     try {
       const doc = await db.collection('packages').doc(id).get()
       if (doc.exists) {
-        return { id: doc.id, ...doc.data() } as Package
+        return normalizePackage({ id: doc.id, ...doc.data() } as Package)
+      }
+      const snapshot = await db.collection('packages').where('slug', '==', id).limit(1).get()
+      if (!snapshot.empty) {
+        const d = snapshot.docs[0]
+        return normalizePackage({ id: d.id, ...d.data() } as Package)
       }
     } catch (err) {
       console.warn(`[Packages Repo] Firestore getById failed for ${id}:`, err)
     }
   }
-  return memoryPackages.find(p => p.id === id) || null
+  const found = memoryPackages.find(p => p.id === id || p.slug === id)
+  return found ? normalizePackage(found) : null
 }
 
 export async function getPackageBySlug(slug: string): Promise<Package | null> {
@@ -48,13 +66,14 @@ export async function getPackageBySlug(slug: string): Promise<Package | null> {
         .get()
       if (!snapshot.empty) {
         const doc = snapshot.docs[0]
-        return { id: doc.id, ...doc.data() } as Package
+        return normalizePackage({ id: doc.id, ...doc.data() } as Package)
       }
     } catch (err) {
       console.warn(`[Packages Repo] Firestore getBySlug failed for ${slug}:`, err)
     }
   }
-  return memoryPackages.find(p => p.slug === slug || p.id === slug) || null
+  const found = memoryPackages.find(p => p.slug === slug || p.id === slug)
+  return found ? normalizePackage(found) : null
 }
 
 export async function createPackage(data: Omit<Package, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<Package> {
@@ -101,12 +120,13 @@ export async function updatePackage(id: string, data: Partial<Package>): Promise
     }
   }
 
+  const normalized = normalizePackage(updated)
   const idx = memoryPackages.findIndex(p => p.id === id)
   if (idx !== -1) {
-    memoryPackages[idx] = updated
+    memoryPackages[idx] = normalized
   }
 
-  return updated
+  return normalized
 }
 
 export async function deletePackage(id: string): Promise<boolean> {
@@ -124,5 +144,5 @@ export async function deletePackage(id: string): Promise<boolean> {
 }
 
 export function _resetMemoryPackages(seed = seedPackages) {
-  memoryPackages = [...seed]
+  memoryPackages = seed.map(normalizePackage)
 }

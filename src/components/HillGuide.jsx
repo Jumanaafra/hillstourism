@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { trackChatOpen, trackChatMessage } from '../lib/analytics/events'
 
 const QUICK_ACTIONS = ['Couple', 'Family', 'Friends', 'Adventure']
 
@@ -44,6 +45,7 @@ export default function HillGuide() {
   useEffect(() => {
     if (open) {
       setMounted(true)
+      trackChatOpen()
       setTimeout(() => inputRef.current?.focus(), 100)
     } else {
       const t = setTimeout(() => setMounted(false), 400)
@@ -66,6 +68,7 @@ export default function HillGuide() {
     setMessages(prev => [...prev, userMsg])
     setInput('')
     setTyping(true)
+    trackChatMessage(trimmed.length)
 
     // Build history for grounding context
     const chatHistory = messages.map(m => ({

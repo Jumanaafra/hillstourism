@@ -62,7 +62,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const history = Array.isArray(body?.history) ? body.history : []
+    const history = Array.isArray(body?.history) ? body.history.slice(-10) : []
+
+    // Conversation length limit (spec §39)
+    if (Array.isArray(body?.history) && body.history.length > 50) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'CONVERSATION_LIMIT',
+            message: 'Conversation is too long. Please start a new chat.',
+          },
+        },
+        { status: 400 }
+      )
+    }
 
     const response = await generateChatbotReply(message.trim(), history)
 

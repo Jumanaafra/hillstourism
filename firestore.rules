@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── PUBLIC READABLE COLLECTIONS ───
+    // These collections are read-only for anonymous users.
+    // Writes are performed exclusively via Firebase Admin SDK (server-side).
+
+    match /packages/{docId} {
+      allow read: if resource.data.active == true;
+      allow write: if false; // Admin SDK only
+    }
+
+    match /categories/{docId} {
+      allow read: if resource.data.active == true;
+      allow write: if false;
+    }
+
+    match /hotels/{docId} {
+      allow read: if resource.data.active == true;
+      allow write: if false;
+    }
+
+    match /vehicles/{docId} {
+      allow read: if resource.data.active == true;
+      allow write: if false;
+    }
+
+    match /testimonials/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /experiences/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /gallery/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /siteSettings/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /chatKnowledge/{docId} {
+      allow read: if resource.data.active == true;
+      allow write: if false;
+    }
+
+    // ─── PRIVATE COLLECTIONS ───
+    // No public access. All operations via Admin SDK.
+
+    match /enquiries/{docId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    match /adminUsers/{docId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // ─── DEFAULT: deny all ───
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

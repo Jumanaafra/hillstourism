@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EnquiryInputSchema } from '@/lib/validation/enquiry.schema'
 import { checkRateLimit } from '@/lib/security/rateLimit'
+import { verifyAdminAuth } from '@/lib/auth/adminAuth'
 import {
   createEnquiry,
   isRecentDuplicateEnquiry,
   updateEnquiryIntegrations,
+  updateEnquiry,
   getEnquiries,
+  getEnquiryById,
 } from '@/lib/repositories/enquiries.repo'
 import { getPackageById } from '@/lib/repositories/packages.repo'
 import { getHotelById } from '@/lib/repositories/hotels.repo'
@@ -68,18 +71,18 @@ export async function POST(req: NextRequest) {
     const data = parseResult.data
 
     // 3. Anti-Spam Honeypot Verification
+    // Return mock success to fool bots (spec §18)
     if (data._hp && data._hp.length > 0) {
       console.warn(`[Anti-Spam] Bot submission blocked from IP: ${ip}`)
-      // Silently accept spam or reject with generic message
       return NextResponse.json(
         {
-          success: false,
-          error: {
-            code: 'SPAM_DETECTED',
-            message: 'Invalid submission.',
+          success: true,
+          data: {
+            enquiryId: `HT-${Date.now()}`,
+            message: 'Thank you! Your trip enquiry has been received.',
           },
         },
-        { status: 400 }
+        { status: 200 }
       )
     }
 
@@ -102,25 +105,55 @@ export async function POST(req: NextRequest) {
     let packageSnapshot: { id: string; nameSnapshot?: string } | undefined
     if (data.packageId) {
       const pkg = await getPackageById(data.packageId)
-      if (pkg) {
-        packageSnapshot = { id: pkg.id, nameSnapshot: pkg.name }
+      if (!pkg) {
+        return NextResponse.json(
+          { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected package not found.' } },
+          { status: 400 }
+        )
       }
+      if (!pkg.active) {
+        return NextResponse.json(
+          { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected package is no longer available.' } },
+          { status: 400 }
+        )
+      }
+      packageSnapshot = { id: pkg.id, nameSnapshot: pkg.name }
     }
 
     let hotelSnapshot: { id: string; nameSnapshot?: string } | undefined
     if (data.hotelId) {
       const hotel = await getHotelById(data.hotelId)
-      if (hotel) {
-        hotelSnapshot = { id: hotel.id, nameSnapshot: hotel.name }
+      if (!hotel) {
+        return NextResponse.json(
+          { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected hotel not found.' } },
+          { status: 400 }
+        )
       }
+      if (!hotel.active) {
+        return NextResponse.json(
+          { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected hotel is no longer available.' } },
+          { status: 400 }
+        )
+      }
+      hotelSnapshot = { id: hotel.id, nameSnapshot: hotel.name }
     }
 
     let vehicleSnapshot: { id: string; numberPlateSnapshot?: string } | undefined
     if (data.vehicleId) {
       const vehicle = await getVehicleById(data.vehicleId)
-      if (vehicle) {
-        vehicleSnapshot = { id: vehicle.id, numberPlateSnapshot: vehicle.numberPlate }
+      if (!vehicle) {
+        return NextResponse.json(
+          { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected vehicle not found.' } },
+          { status: 400 }
+        )
       }
+      if (!vehicle.active) {
+        return NextResponse.json(
+          { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected vehicle is no longer available.' } },
+          { status: 400 }
+        )
+      }
+      vehicleSnapshot = { id: vehicle.id, numberPlateSnapshot: vehicle.numberPlate }
     }
 
     // 6. Create Firestore Enquiry Record (Primary Source of Truth)
@@ -208,7 +241,19 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/**
+ * GET /api/enquiries — Admin only. Returns enquiry list with optional filters.
+ */
 export async function GET(req: NextRequest) {
+  // Require admin auth to read enquiries (spec §27 — every protected API independently verifies)
+  const auth = await verifyAdminAuth(req)
+  if (!auth.authenticated) {
+    return NextResponse.json(
+      { success: false, error: { code: 'UNAUTHORIZED', message: auth.error } },
+      { status: 401 }
+    )
+  }
+
   try {
     const { searchParams } = new URL(req.url)
     const status = (searchParams.get('status') as EnquiryStatus) || undefined
@@ -232,4 +277,95 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+/**
+ * PATCH /api/enquiries — Update enquiry status (Admin only).
+ * Body: { id: string, status?: EnquiryStatus, ... }
+ */
+export async function PATCH(req: NextRequest) {
+  const auth = await verifyAdminAuth(req)
+  if (!auth.authenticated) {
+    return NextResponse.json(
+      { success: false, error: { code: 'UNAUTHORIZED', message: auth.error } },
+      { status: 401 }
+    )
+  }
+
+  try {
+    const body = await req.json()
+    const { id, ...updates } = body
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: { code: 'VALIDATION_ERROR', message: 'Enquiry ID is required.' } },
+        { status: 400 }
+      )
+    }
+
+    // Validate status if provided
+    const validStatuses: EnquiryStatus[] = ['new', 'contacted', 'in_progress', 'closed', 'spam']
+    if (updates.status && !validStatuses.includes(updates.status)) {
+      return NextResponse.json(
+        { success: false, error: { code: 'VALIDATION_ERROR', message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` } },
+        { status: 400 }
+      )
+    }
+
+    const existing = await getEnquiryById(id)
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: `Enquiry ${id} not found.` } },
+        { status: 404 }
+      )
+    }
+
+    // Only allow safe fields to be updated
+    const safeUpdates: Record<string, any> = {}
+    if (updates.status) safeUpdates.status = updates.status
+    if (updates.notes !== undefined) safeUpdates.notes = updates.notes
+
+    const updated = await updateEnquiry(id, safeUpdates)
+    return NextResponse.json({ success: true, data: updated })
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to update enquiry.' } },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * DELETE /api/enquiries — Archive/delete an enquiry (Admin only).
+ * Query: ?id=enquiry-id
+ */
+export async function DELETE(req: NextRequest) {
+  const auth = await verifyAdminAuth(req)
+  if (!auth.authenticated) {
+    return NextResponse.json(
+      { success: false, error: { code: 'UNAUTHORIZED', message: auth.error } },
+      { status: 401 }
+    )
+  }
+
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  if (!id) {
+    return NextResponse.json(
+      { success: false, error: { code: 'VALIDATION_ERROR', message: 'Enquiry ID is required.' } },
+      { status: 400 }
+    )
+  }
+
+  const existing = await getEnquiryById(id)
+  if (!existing) {
+    return NextResponse.json(
+      { success: false, error: { code: 'NOT_FOUND', message: `Enquiry ${id} not found.` } },
+      { status: 404 }
+    )
+  }
+
+  // Soft-delete by marking status as 'spam' / archived
+  await updateEnquiry(id, { status: 'spam' })
+  return NextResponse.json({ success: true, data: { archived: true } })
 }

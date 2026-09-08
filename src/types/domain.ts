@@ -5,12 +5,21 @@ export interface MediaItem {
   caption?: string
 }
 
-export interface ItineraryItem {
+export interface ItineraryDay {
   day: number
   title: string
   description: string
-  highlights?: string[]
+  locations?: string[]
+  activities?: string[]
+  meals?: string[]
+  accommodation?: string
+  travelInfo?: string
+  images?: string[]
+  highlights?: string[] // Backwards compatibility with early models
 }
+
+// Backwards compatibility alias
+export type ItineraryItem = ItineraryDay
 
 export interface SEOData {
   title?: string
@@ -29,15 +38,22 @@ export interface Package {
   category?: string
   tag?: string
   duration?: string
+  nights?: number | string
   price?: string
   priceNote?: string
+  shortDescription?: string
   description?: string
-  itinerary?: ItineraryItem[]
+  itinerary?: ItineraryDay[]
   highlights?: string[]
   inclusions?: string[]
   exclusions?: string[]
+  importantInformation?: string[]
+  hotelIds?: string[]
+  vehicleIds?: string[]
   media?: MediaItem[]
   image?: string
+  coverImage?: string
+  gallery?: string[]
   active: boolean
   seo?: SEOData
   createdAt?: string | Date

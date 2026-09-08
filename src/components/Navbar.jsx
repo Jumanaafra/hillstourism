@@ -1,21 +1,25 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 
 const NAV_LINKS = [
-  { label: 'Home',        href: '#home' },
-  { label: 'Packages',    href: '#packages' },
-  { label: 'Experiences', href: '#experiences' },
-  { label: 'Stays',       href: '#stays' },
-  { label: 'Vehicles',    href: '#vehicles' },
-  { label: 'Gallery',     href: '#gallery' },
-  { label: 'About',       href: '#about' },
+  { label: 'Home',        href: '/#home' },
+  { label: 'Packages',    href: '/#packages' },
+  { label: 'Experiences', href: '/#experiences' },
+  { label: 'Stays',       href: '/#stays' },
+  { label: 'Vehicles',    href: '/#vehicles' },
+  { label: 'Gallery',     href: '/#gallery' },
+  { label: 'About',       href: '/#about' },
 ]
 
 export default function Navbar() {
   const [scrolled,    setScrolled]    = useState(false)
   const [menuOpen,    setMenuOpen]    = useState(false)
   const [menuMounted, setMenuMounted] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
 
   /* Scroll listener */
   useEffect(() => {
@@ -46,8 +50,13 @@ export default function Navbar() {
   const handleNavClick = (href) => {
     setMenuOpen(false)
     setTimeout(() => {
-      const el = document.querySelector(href)
-      if (el) el.scrollIntoView({ behavior: 'smooth' })
+      if (pathname === '/' && href.startsWith('/#')) {
+        const id = href.replace('/', '')
+        const el = document.querySelector(id)
+        if (el) el.scrollIntoView({ behavior: 'smooth' })
+      } else {
+        router.push(href)
+      }
     }, menuOpen ? 450 : 0)
   }
 
@@ -72,8 +81,8 @@ export default function Navbar() {
         }}>
           {/* Logo */}
           <a
-            href="#home"
-            onClick={(e) => { e.preventDefault(); handleNavClick('#home') }}
+            href="/#home"
+            onClick={(e) => { e.preventDefault(); handleNavClick('/#home') }}
             aria-label="Hillstourism — go to home"
             style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
           >
@@ -123,9 +132,9 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
             {/* Desktop CTA */}
             <a
-              href="#contact"
+              href="/#contact"
               className="btn-primary desktop-cta"
-              onClick={(e) => { e.preventDefault(); handleNavClick('#contact') }}
+              onClick={(e) => { e.preventDefault(); handleNavClick('/#contact') }}
               style={{ padding: '0.6rem 1.35rem', fontSize: '0.72rem' }}
             >
               Plan My Trip
@@ -252,7 +261,7 @@ export default function Navbar() {
 
           <nav>
             <ul style={{ listStyle: 'none', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-              {[...NAV_LINKS, { label: 'Contact', href: '#contact' }].map((link, i) => (
+              {[...NAV_LINKS, { label: 'Contact', href: '/#contact' }].map((link, i) => (
                 <li key={link.href} style={{
                   opacity:    menuOpen ? 1 : 0,
                   transform:  menuOpen ? 'translateY(0)' : 'translateY(20px)',
@@ -281,9 +290,9 @@ export default function Navbar() {
             justifyContent: 'center',
           }}>
             <a
-              href="#contact"
+              href="/#contact"
               className="btn-primary"
-              onClick={(e) => { e.preventDefault(); handleNavClick('#contact') }}
+              onClick={(e) => { e.preventDefault(); handleNavClick('/#contact') }}
             >
               Plan My Trip
             </a>

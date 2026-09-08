@@ -10,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getHotels(true),
   ])
 
+  // Static routes — only real page URLs, no hash fragments
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -17,38 +18,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 1.0,
     },
-    {
-      url: `${baseUrl}/#packages`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/#stays`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/#vehicles`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/#experiences`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/#contact`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
   ]
 
+  // Dynamic package pages
   const packageRoutes: MetadataRoute.Sitemap = packages.map(pkg => ({
     url: `${baseUrl}/packages/${pkg.slug || pkg.id}`,
     lastModified: new Date(pkg.updatedAt || Date.now()),
@@ -56,6 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
+  // Dynamic hotel pages
   const hotelRoutes: MetadataRoute.Sitemap = hotels.map(hotel => ({
     url: `${baseUrl}/hotels/${hotel.slug || hotel.id}`,
     lastModified: new Date(hotel.updatedAt || Date.now()),

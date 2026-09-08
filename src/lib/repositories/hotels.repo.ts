@@ -72,7 +72,7 @@ export async function findHotelByNormalizedName(normalizedName: string, excludeI
 /**
  * Creates a new hotel with server-side uniqueness enforcement.
  */
-export async function createHotel(data: Omit<Hotel, 'id' | 'normalizedName' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<Hotel> {
+export async function createHotel(data: Omit<Hotel, 'id' | 'normalizedName' | 'createdAt' | 'updatedAt' | 'slug'> & { id?: string; slug?: string }): Promise<Hotel> {
   const normalizedName = normalizeHotelName(data.name)
   if (!normalizedName) {
     throw new Error('Hotel name is required')
@@ -87,6 +87,7 @@ export async function createHotel(data: Omit<Hotel, 'id' | 'normalizedName' | 'c
   const newHotel: Hotel = {
     ...data,
     id: data.id || `hotel-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
     normalizedName,
     active: data.active !== undefined ? data.active : true,
     createdAt: new Date().toISOString(),

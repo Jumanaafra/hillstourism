@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { packages } from '../data/packages'
 
 const FILTERS = ['All', 'Couple', 'Family', 'Friends', 'Honeymoon']
@@ -91,42 +92,44 @@ export default function FeaturedTrips({ id }) {
               aria-label={`${pkg.title} — ${pkg.destination}`}
             >
               {/* Image */}
-              <div className="package-card-img">
-                <img
-                  src={pkg.image}
-                  alt={`${pkg.title} — ${pkg.destination}`}
-                  loading="lazy"
-                  onError={e => {
-                    e.target.style.display = 'none'
-                    e.target.parentNode.style.background = 'linear-gradient(135deg, #001040, #0050C0)'
-                  }}
-                />
-                {/* Tag badge */}
-                <div style={{
-                  position:     'absolute',
-                  top:          '0.9rem',
-                  left:         '0.9rem',
-                }}>
-                  <span className="badge badge-navy">{pkg.tag}</span>
+              <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ display: 'block', textDecoration: 'none' }} tabIndex={-1}>
+                <div className="package-card-img">
+                  <img
+                    src={pkg.image}
+                    alt={`${pkg.title} — ${pkg.destination}`}
+                    loading="lazy"
+                    onError={e => {
+                      e.target.style.display = 'none'
+                      e.target.parentNode.style.background = 'linear-gradient(135deg, #001040, #0050C0)'
+                    }}
+                  />
+                  {/* Tag badge */}
+                  <div style={{
+                    position:     'absolute',
+                    top:          '0.9rem',
+                    left:         '0.9rem',
+                  }}>
+                    <span className="badge badge-navy">{pkg.tag}</span>
+                  </div>
+                  {/* Duration */}
+                  <div style={{
+                    position:     'absolute',
+                    bottom:       '0.9rem',
+                    right:        '0.9rem',
+                    background:   'rgba(0,9,31,0.85)',
+                    backdropFilter: 'blur(8px)',
+                    borderRadius: '6px',
+                    padding:      '4px 10px',
+                    fontSize:     '0.65rem',
+                    fontWeight:   700,
+                    color:        '#ffffff',
+                    fontFamily:   'var(--font-body)',
+                    letterSpacing: '0.06em',
+                  }}>
+                    {pkg.duration}
+                  </div>
                 </div>
-                {/* Duration */}
-                <div style={{
-                  position:     'absolute',
-                  bottom:       '0.9rem',
-                  right:        '0.9rem',
-                  background:   'rgba(0,9,31,0.85)',
-                  backdropFilter: 'blur(8px)',
-                  borderRadius: '6px',
-                  padding:      '4px 10px',
-                  fontSize:     '0.65rem',
-                  fontWeight:   700,
-                  color:        '#ffffff',
-                  fontFamily:   'var(--font-body)',
-                  letterSpacing: '0.06em',
-                }}>
-                  {pkg.duration}
-                </div>
-              </div>
+              </Link>
 
               {/* Body */}
               <div className="package-card-body">
@@ -143,7 +146,9 @@ export default function FeaturedTrips({ id }) {
                     {pkg.destination}
                   </p>
                   <h3 className="heading-sm" style={{ color: 'var(--hill-navy)', marginBottom: '0.5rem' }}>
-                    {pkg.title}
+                    <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                      {pkg.title}
+                    </Link>
                   </h3>
                   <p className="body-md" style={{ color: 'var(--hill-muted)', lineHeight: 1.6 }}>
                     {pkg.description}
@@ -193,14 +198,14 @@ export default function FeaturedTrips({ id }) {
                     </p>
                     <p style={{ fontSize: '0.6rem', color: 'var(--hill-muted)' }}>{pkg.priceNote}</p>
                   </div>
-                  <button
+                  <Link
+                    href={`/packages/${pkg.slug || pkg.id}`}
                     className="btn-primary"
-                    style={{ padding: '0.6rem 1.2rem', fontSize: '0.7rem' }}
-                    onClick={() => document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' })}
-                    aria-label={`Enquire about ${pkg.title}`}
+                    style={{ padding: '0.6rem 1.2rem', fontSize: '0.7rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                    aria-label={`View journey details for ${pkg.title}`}
                   >
                     View Journey →
-                  </button>
+                  </Link>
                 </div>
               </div>
             </article>

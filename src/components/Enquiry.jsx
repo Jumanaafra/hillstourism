@@ -1,11 +1,11 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { packages } from '../data/packages'
+import { trackEnquiryStart, trackEnquirySubmit } from '../lib/analytics/events'
 
 const TRIP_TYPES = ['Honeymoon', 'Couple Getaway', 'Family Trip', 'Friends Group', 'Corporate Retreat', 'Solo Journey']
 
-export default function Enquiry({ id }) {
+export default function Enquiry({ id, initialPackageId = '', initialHotelId = '', initialVehicleId = '', packageLocked = false }) {
   const sectionRef = useRef(null)
   const [form, setForm] = useState({
     name: '',
@@ -14,14 +14,44 @@ export default function Enquiry({ id }) {
     travelDate: '',
     groupSize: '',
     tripType: '',
-    package: '',
+    packageId: initialPackageId || '',
+    hotelId: initialHotelId || '',
+    vehicleId: initialVehicleId || '',
     message: '',
     _hp: '', // Honeypot anti-spam
   })
+
+  // Synchronize when initial props change
+  useEffect(() => {
+    setForm(prev => ({
+      ...prev,
+      packageId: initialPackageId || prev.packageId,
+      hotelId: initialHotelId !== undefined && initialHotelId !== '' ? initialHotelId : prev.hotelId,
+      vehicleId: initialVehicleId !== undefined && initialVehicleId !== '' ? initialVehicleId : prev.vehicleId,
+    }))
+  }, [initialPackageId, initialHotelId, initialVehicleId])
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState('')
   const [status, setStatus] = useState('idle') // idle | sending | success | error
   const [enquiryRef, setEnquiryRef] = useState('')
+
+  // Fetched catalog data (replaces static imports)
+  const [catalogPackages, setCatalogPackages] = useState([])
+  const [catalogHotels, setCatalogHotels] = useState([])
+  const [catalogVehicles, setCatalogVehicles] = useState([])
+
+  // Fetch packages/hotels/vehicles from API on mount
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/packages').then(r => r.json()).catch(() => ({ success: false })),
+      fetch('/api/hotels').then(r => r.json()).catch(() => ({ success: false })),
+      fetch('/api/vehicles').then(r => r.json()).catch(() => ({ success: false })),
+    ]).then(([pkgRes, hotelRes, vehRes]) => {
+      if (pkgRes.success) setCatalogPackages(pkgRes.data || [])
+      if (hotelRes.success) setCatalogHotels(hotelRes.data || [])
+      if (vehRes.success) setCatalogVehicles(vehRes.data || [])
+    })
+  }, [])
 
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []
@@ -61,9 +91,7 @@ export default function Enquiry({ id }) {
 
     setStatus('sending')
     setServerError('')
-
-    // Find selected package if matched
-    const selectedPkg = packages.find(p => p.title === form.package)
+    trackEnquiryStart('website_enquiry_form')
 
     try {
       const res = await fetch('/api/enquiries', {
@@ -76,7 +104,9 @@ export default function Enquiry({ id }) {
           travelDate: form.travelDate,
           groupSize: form.groupSize ? parseInt(form.groupSize) : undefined,
           tripType: form.tripType,
-          packageId: selectedPkg ? selectedPkg.id : undefined,
+          packageId: form.packageId || undefined,
+          hotelId: form.hotelId || undefined,
+          vehicleId: form.vehicleId || undefined,
           message: form.message.trim() || undefined,
           source: 'website_enquiry_form',
           _hp: form._hp,
@@ -88,14 +118,17 @@ export default function Enquiry({ id }) {
       if (res.ok && data.success) {
         setEnquiryRef(data.data?.enquiryId || 'Received')
         setStatus('success')
+        trackEnquirySubmit(true, 'website_enquiry_form')
       } else {
         setStatus('error')
         setServerError(data.error?.message || 'Failed to submit enquiry. Please check your details.')
+        trackEnquirySubmit(false, 'website_enquiry_form')
       }
     } catch (err) {
       console.error('[Enquiry Form] Network error:', err)
       setStatus('error')
       setServerError('Network error. Please try again or WhatsApp us directly.')
+      trackEnquirySubmit(false, 'website_enquiry_form')
     }
   }
 
@@ -247,7 +280,7 @@ export default function Enquiry({ id }) {
                     style={{ marginTop: '2rem' }}
                     onClick={() => {
                       setStatus('idle')
-                      setForm({ name:'', phone:'', email:'', travelDate:'', groupSize:'', tripType:'', package:'', message:'', _hp:'' })
+                      setForm({ name:'', phone:'', email:'', travelDate:'', groupSize:'', tripType:'', packageId:'', hotelId:'', vehicleId:'', message:'', _hp:'' })
                     }}
                   >
                     Send Another Enquiry
@@ -312,11 +345,27 @@ export default function Enquiry({ id }) {
                         {TRIP_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </Field>
-                    <Field id="package" label="Preferred Package">
-                      <select id="package" value={form.package} onChange={e => update('package', e.target.value)}
+                    <Field id="packageId" label="Preferred Package">
+                      <select id="packageId" value={form.packageId} onChange={e => update('packageId', e.target.value)}
                         className="form-input">
                         <option value="">Any / Not sure</option>
-                        {packages.map(p => <option key={p.id} value={p.title}>{p.title}</option>)}
+                        {catalogPackages.map(p => <option key={p.id} value={p.id}>{p.name || p.title}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                    <Field id="hotelId" label="Preferred Stay">
+                      <select id="hotelId" value={form.hotelId} onChange={e => update('hotelId', e.target.value)}
+                        className="form-input">
+                        <option value="">Any / Not sure</option>
+                        {catalogHotels.map(h => <option key={h.id} value={h.id}>{h.name}{h.location ? ` — ${h.location}` : ''}</option>)}
+                      </select>
+                    </Field>
+                    <Field id="vehicleId" label="Preferred Vehicle">
+                      <select id="vehicleId" value={form.vehicleId} onChange={e => update('vehicleId', e.target.value)}
+                        className="form-input">
+                        <option value="">Any / Not sure</option>
+                        {catalogVehicles.map(v => <option key={v.id} value={v.id}>{v.name} ({v.type} · {v.capacity} seats)</option>)}
                       </select>
                     </Field>
                   </div>
