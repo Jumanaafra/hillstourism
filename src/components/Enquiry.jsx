@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useRef, useEffect } from 'react'
 import { packages } from '../data/packages'
 
@@ -5,12 +7,21 @@ const TRIP_TYPES = ['Honeymoon', 'Couple Getaway', 'Family Trip', 'Friends Group
 
 export default function Enquiry({ id }) {
   const sectionRef = useRef(null)
-  const [form, setForm]     = useState({
-    name: '', phone: '', travelDate: '', groupSize: '',
-    tripType: '', package: '', message: '',
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    travelDate: '',
+    groupSize: '',
+    tripType: '',
+    package: '',
+    message: '',
+    _hp: '', // Honeypot anti-spam
   })
-  const [errors, setErrors]   = useState({})
-  const [status, setStatus]   = useState('idle') // idle | sending | success | error
+  const [errors, setErrors] = useState({})
+  const [serverError, setServerError] = useState('')
+  const [status, setStatus] = useState('idle') // idle | sending | success | error
+  const [enquiryRef, setEnquiryRef] = useState('')
 
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []
@@ -27,26 +38,65 @@ export default function Enquiry({ id }) {
   const update = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }))
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
+    if (serverError) setServerError('')
   }
 
   const validate = () => {
     const e = {}
-    if (!form.name.trim())      e.name      = 'Name is required'
-    if (!form.phone.match(/^[0-9+\-\s]{8,15}$/)) e.phone = 'Enter a valid phone number'
-    if (!form.travelDate)       e.travelDate = 'Please select a travel date'
+    if (!form.name.trim()) e.name = 'Name is required'
+    if (!form.phone.match(/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{6,15}$/)) e.phone = 'Enter a valid phone number'
+    if (!form.travelDate) e.travelDate = 'Please select a travel date'
     if (!form.groupSize || isNaN(form.groupSize) || +form.groupSize < 1) e.groupSize = 'Enter group size (min 1)'
-    if (!form.tripType)         e.tripType  = 'Please select a trip type'
+    if (!form.tripType) e.tripType = 'Please select a trip type'
     return e
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     const validationErrors = validate()
-    if (Object.keys(validationErrors).length > 0) { setErrors(validationErrors); return }
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      return
+    }
+
     setStatus('sending')
-    // Simulate form submission (replace with actual endpoint)
-    await new Promise(r => setTimeout(r, 1500))
-    setStatus('success')
+    setServerError('')
+
+    // Find selected package if matched
+    const selectedPkg = packages.find(p => p.title === form.package)
+
+    try {
+      const res = await fetch('/api/enquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim() || undefined,
+          travelDate: form.travelDate,
+          groupSize: form.groupSize ? parseInt(form.groupSize) : undefined,
+          tripType: form.tripType,
+          packageId: selectedPkg ? selectedPkg.id : undefined,
+          message: form.message.trim() || undefined,
+          source: 'website_enquiry_form',
+          _hp: form._hp,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        setEnquiryRef(data.data?.enquiryId || 'Received')
+        setStatus('success')
+      } else {
+        setStatus('error')
+        setServerError(data.error?.message || 'Failed to submit enquiry. Please check your details.')
+      }
+    } catch (err) {
+      console.error('[Enquiry Form] Network error:', err)
+      setStatus('error')
+      setServerError('Network error. Please try again or WhatsApp us directly.')
+    }
   }
 
   const whatsappText = encodeURIComponent(
@@ -181,22 +231,56 @@ export default function Enquiry({ id }) {
               {status === 'success' ? (
                 <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
                   <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: '#ffffff', marginBottom: '0.75rem' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: '#ffffff', marginBottom: '0.5rem' }}>
                     Enquiry Sent!
                   </h3>
+                  {enquiryRef && (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--hill-blue-bright)', fontWeight: 600, letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+                      REF: {enquiryRef}
+                    </p>
+                  )}
                   <p style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.65 }}>
-                    Thank you, {form.name}! Our team will reach you within 2 hours with a personalised plan.
+                    Thank you, {form.name}! Our team will review your mountain escape and reach you within 2 hours with a personalized plan.
                   </p>
                   <button
                     className="btn-primary"
                     style={{ marginTop: '2rem' }}
-                    onClick={() => { setStatus('idle'); setForm({ name:'',phone:'',travelDate:'',groupSize:'',tripType:'',package:'',message:'' }) }}
+                    onClick={() => {
+                      setStatus('idle')
+                      setForm({ name:'', phone:'', email:'', travelDate:'', groupSize:'', tripType:'', package:'', message:'', _hp:'' })
+                    }}
                   >
                     Send Another Enquiry
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} noValidate aria-label="Trip enquiry">
+                  {/* Anti-spam honeypot (invisible to humans) */}
+                  <div style={{ display: 'none' }} aria-hidden="true">
+                    <input
+                      type="text"
+                      name="_hp"
+                      value={form._hp}
+                      onChange={e => update('_hp', e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  {serverError && (
+                    <div style={{
+                      padding: '0.75rem 1rem',
+                      background: 'rgba(239,68,68,0.12)',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      borderRadius: '8px',
+                      color: '#FCA5A5',
+                      fontSize: '0.8rem',
+                      marginBottom: '1.25rem',
+                    }}>
+                      ⚠️ {serverError}
+                    </div>
+                  )}
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
                     <Field id="name" label="Full Name" required error={errors.name}>
                       <input id="name" type="text" value={form.name} onChange={e => update('name', e.target.value)}
@@ -206,6 +290,10 @@ export default function Enquiry({ id }) {
                     <Field id="phone" label="Phone / WhatsApp" required error={errors.phone}>
                       <input id="phone" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)}
                         placeholder="+91 9999 000000" className="form-input" required aria-required="true" />
+                    </Field>
+                    <Field id="email" label="Email Address">
+                      <input id="email" type="email" value={form.email} onChange={e => update('email', e.target.value)}
+                        placeholder="rahul@example.com" className="form-input" />
                     </Field>
                     <Field id="travelDate" label="Travel Date" required error={errors.travelDate}>
                       <input id="travelDate" type="date" value={form.travelDate} onChange={e => update('travelDate', e.target.value)}
