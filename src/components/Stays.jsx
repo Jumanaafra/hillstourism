@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useMemo } from 'react'
+import { cachedFetch } from '../lib/cache/clientCache'
+import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
 import { stays } from '../data/stays'
 import { FiStar, FiMapPin, FiArrowRight } from 'react-icons/fi'
 
@@ -13,8 +15,7 @@ export default function Stays({ id }) {
   const sectionRef = useRef(null)
 
   useEffect(() => {
-    fetch('/api/hotels')
-      .then(res => res.json())
+    cachedFetch('/api/hotels')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
           setStayList(data.data)
@@ -113,12 +114,13 @@ export default function Stays({ id }) {
               {/* Image */}
               <div className="stay-card-img">
                 <img
-                  src={stay.image}
+                  src={getOptimizedImageUrl(stay.image, 600)}
                   alt={stay.name}
                   loading="lazy"
+                  decoding="async"
                   onError={e => {
                     e.currentTarget.onerror = null
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80&auto=format'
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=75&auto=format'
                   }}
                 />
                 {/* Category badge */}

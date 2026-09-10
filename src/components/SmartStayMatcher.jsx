@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import { cachedFetch } from '../lib/cache/clientCache'
 import { stays } from '../data/stays'
 import { FiCheck, FiMapPin } from 'react-icons/fi'
 
@@ -27,8 +28,7 @@ export default function SmartStayMatcher({ id }) {
   const sectionRef = useRef(null)
 
   useEffect(() => {
-    fetch('/api/hotels')
-      .then(res => res.json())
+    cachedFetch('/api/hotels')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
           setStayList(data.data)

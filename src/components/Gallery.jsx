@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useRef, useState, useEffect } from 'react'
+import { cachedFetch } from '../lib/cache/clientCache'
+import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
 import { FiArrowRight } from 'react-icons/fi'
 
 const GALLERY_ITEMS = [
@@ -22,8 +24,7 @@ export default function Gallery({ id }) {
 
   // Fetch active photos from API
   useEffect(() => {
-    fetch('/api/gallery')
-      .then(res => res.json())
+    cachedFetch('/api/gallery')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
           setItems(data.data)
@@ -219,12 +220,13 @@ export default function Gallery({ id }) {
               aria-label={item.alt}
             >
               <img
-                src={item.src}
+                src={getOptimizedImageUrl(item.src, 700)}
                 alt={item.alt}
                 loading="lazy"
+                decoding="async"
                 onError={e => {
                   e.currentTarget.onerror = null
-                  e.currentTarget.src = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=700&q=80&auto=format'
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=700&q=75&auto=format'
                 }}
               />
               <div className="gallery-item-overlay" />

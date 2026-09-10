@@ -1,27 +1,36 @@
-import { getFirestoreDB } from '../firebase/admin'
+import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 import { seedHotels } from './seed'
 import { normalizeHotelName } from '../normalization/hotel'
 import type { Hotel } from '../../types/domain'
 
 // In-memory store for development/testing when Firestore is offline
 let memoryHotels: Hotel[] = [...seedHotels]
+let lastFirestoreSync = 0
+const SYNC_INTERVAL = 15000 // 15s TTL
 
 export async function getHotels(onlyActive = true): Promise<Hotel[]> {
+  const now = Date.now()
   const db = getFirestoreDB()
-  if (db) {
+
+  if (db && now - lastFirestoreSync >= SYNC_INTERVAL) {
     try {
       let query: FirebaseFirestore.Query = db.collection('hotels')
       if (onlyActive) {
         query = query.where('active', '==', true)
       }
-      const snapshot = await query.get()
-      if (!snapshot.empty) {
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hotel))
-      }
+      const snapshot = await withFirestoreTimeout(query.get(), 15000, 'getHotels')
+      memoryHotels = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hotel))
+      lastFirestoreSync = now
     } catch (err) {
-      console.warn('[Hotels Repo] Firestore fetch failed, falling back to memory store:', err)
+      console.error('[Hotels Repo] Firestore fetch failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
+
   return onlyActive ? memoryHotels.filter(h => h.active) : [...memoryHotels]
 }
 
@@ -29,15 +38,32 @@ export async function getHotelById(id: string): Promise<Hotel | null> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const doc = await db.collection('hotels').doc(id).get()
+      const doc = await withFirestoreTimeout(db.collection('hotels').doc(id).get(), 15000, `getHotelById:${id}`)
       if (doc.exists) {
         return { id: doc.id, ...doc.data() } as Hotel
       }
+      // Also check slug
+      const slugSnap = await withFirestoreTimeout(
+        db.collection('hotels').where('slug', '==', id).limit(1).get(),
+        15000,
+        `getHotelById:slug:${id}`
+      )
+      if (!slugSnap.empty) {
+        const d = slugSnap.docs[0]
+        return { id: d.id, ...d.data() } as Hotel
+      }
+      return null
     } catch (err) {
-      console.warn(`[Hotels Repo] Firestore getById failed for ${id}:`, err)
+      console.error(`[Hotels Repo] Firestore getById failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
-  return memoryHotels.find(h => h.id === id) || null
+
+  return memoryHotels.find(h => h.id === id || h.slug === id) || null
 }
 
 /**
@@ -48,10 +74,14 @@ export async function findHotelByNormalizedName(normalizedName: string, excludeI
   const db = getFirestoreDB()
   if (db) {
     try {
-      const snapshot = await db.collection('hotels')
-        .where('normalizedName', '==', normalizedName)
-        .limit(1)
-        .get()
+      const snapshot = await withFirestoreTimeout(
+        db.collection('hotels')
+          .where('normalizedName', '==', normalizedName)
+          .limit(1)
+          .get(),
+        15000,
+        `findHotelByNormalizedName:${normalizedName}`
+      )
 
       if (!snapshot.empty) {
         const doc = snapshot.docs[0]
@@ -59,9 +89,15 @@ export async function findHotelByNormalizedName(normalizedName: string, excludeI
           return { id: doc.id, ...doc.data() } as Hotel
         }
       }
+      return null
     } catch (err) {
-      console.warn('[Hotels Repo] Firestore normalized name lookup failed:', err)
+      console.error('[Hotels Repo] Firestore normalized name lookup failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   // Memory fallback check
@@ -97,13 +133,19 @@ export async function createHotel(data: Omit<Hotel, 'id' | 'normalizedName' | 'c
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('hotels').doc(newHotel.id).set(newHotel)
+      await withFirestoreTimeout(db.collection('hotels').doc(newHotel.id).set(newHotel), 15000, 'hotels.create')
     } catch (err) {
-      console.warn('[Hotels Repo] Firestore save failed, saving to memory:', err)
+      console.error('[Hotels Repo] Firestore save failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   memoryHotels.unshift(newHotel)
+  lastFirestoreSync = 0
   return newHotel
 }
 
@@ -135,16 +177,22 @@ export async function updateHotel(id: string, data: Partial<Hotel>): Promise<Hot
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('hotels').doc(id).set(updated, { merge: true })
+      await withFirestoreTimeout(db.collection('hotels').doc(id).set(updated, { merge: true }), 15000, `hotels.update:${id}`)
     } catch (err) {
-      console.warn(`[Hotels Repo] Firestore update failed for ${id}:`, err)
+      console.error(`[Hotels Repo] Firestore update failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   const idx = memoryHotels.findIndex(h => h.id === id)
   if (idx !== -1) {
     memoryHotels[idx] = updated
   }
+  lastFirestoreSync = 0
 
   return updated
 }
@@ -156,17 +204,25 @@ export async function deleteHotel(id: string): Promise<boolean> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('hotels').doc(id).delete()
+      await withFirestoreTimeout(db.collection('hotels').doc(id).delete(), 15000, `hotels.delete:${id}`)
     } catch (err) {
-      console.warn(`[Hotels Repo] Firestore delete failed for ${id}:`, err)
+      console.error(`[Hotels Repo] Firestore delete failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   memoryHotels = memoryHotels.filter(h => h.id !== id)
+  lastFirestoreSync = 0
   return true
 }
 
 // Reset memory store for testing purposes
 export function _resetMemoryHotels(seed = seedHotels) {
   memoryHotels = [...seed]
+  lastFirestoreSync = 0
 }
+

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import { cachedFetch } from '../lib/cache/clientCache'
 import { packages } from '../data/packages'
 
 const DURATIONS = ['1–2 Days', '3–4 Days', '5+ Days']
@@ -37,8 +38,7 @@ export default function TripFinder({ id }) {
   const [pkgList,  setPkgList]  = useState(packages)
 
   useEffect(() => {
-    fetch('/api/packages')
-      .then(res => res.json())
+    cachedFetch('/api/packages')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
           setPkgList(data.data)

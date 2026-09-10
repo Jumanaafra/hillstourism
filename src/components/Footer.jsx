@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { cachedFetch } from '../lib/cache/clientCache'
 import Link from 'next/link'
 import { FaHeart, FaWhatsapp, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from 'react-icons/fa'
 import { FiCheck } from 'react-icons/fi'
@@ -42,8 +43,7 @@ export default function Footer({ id }) {
   const [whatsappUrl, setWhatsappUrl] = useState("https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism.")
 
   useEffect(() => {
-    fetch('/api/social-links')
-      .then(r => r.json())
+    cachedFetch('/api/social-links')
       .then(res => {
         if (res.success && Array.isArray(res.data) && res.data.length > 0) {
           setSocialLinks(res.data)

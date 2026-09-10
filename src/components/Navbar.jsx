@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { cachedFetch } from '../lib/cache/clientCache'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
@@ -26,8 +27,7 @@ export default function Navbar() {
   const [whatsappUrl, setWhatsappUrl] = useState("https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip.")
 
   useEffect(() => {
-    fetch('/api/social-links')
-      .then(r => r.json())
+    cachedFetch('/api/social-links')
       .then(res => {
         if (res.success && Array.isArray(res.data)) {
           const wa = res.data.find(s => s.platform === 'whatsapp' && s.active)

@@ -1,4 +1,4 @@
-import { getFirestoreDB } from '../firebase/admin'
+import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 import type { Enquiry, EnquiryStatus } from '../../types/domain'
 
 let memoryEnquiries: Enquiry[] = []
@@ -19,10 +19,15 @@ export async function createEnquiry(data: Omit<Enquiry, 'id' | 'createdAt' | 'up
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('enquiries').doc(newEnquiry.id).set(newEnquiry)
+      await withFirestoreTimeout(db.collection('enquiries').doc(newEnquiry.id).set(newEnquiry), 15000, 'enquiries.create')
     } catch (err) {
-      console.warn('[Enquiries Repo] Firestore save failed, saving to memory:', err)
+      console.error('[Enquiries Repo] Firestore save failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   memoryEnquiries.unshift(newEnquiry)
@@ -33,14 +38,21 @@ export async function getEnquiryById(id: string): Promise<Enquiry | null> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const doc = await db.collection('enquiries').doc(id).get()
+      const doc = await withFirestoreTimeout(db.collection('enquiries').doc(id).get(), 15000, `enquiries.getById:${id}`)
       if (doc.exists) {
         return { id: doc.id, ...doc.data() } as Enquiry
       }
+      return null
     } catch (err) {
-      console.warn(`[Enquiries Repo] Firestore getById failed for ${id}:`, err)
+      console.error(`[Enquiries Repo] Firestore getById failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
+
   return memoryEnquiries.find(e => e.id === id) || null
 }
 
@@ -59,22 +71,26 @@ export async function getEnquiries(filters?: {
       if (filters?.limit) {
         query = query.limit(filters.limit)
       }
-      const snapshot = await query.get()
-      if (!snapshot.empty) {
-        let results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Enquiry))
-        if (filters?.search) {
-          const q = filters.search.toLowerCase()
-          results = results.filter(e =>
-            e.customer.name.toLowerCase().includes(q) ||
-            e.customer.phone.includes(q) ||
-            (e.customer.email && e.customer.email.toLowerCase().includes(q))
-          )
-        }
-        return results
+      const snapshot = await withFirestoreTimeout(query.get(), 15000, 'enquiries.get')
+      let results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Enquiry))
+      if (filters?.search) {
+        const q = filters.search.toLowerCase()
+        results = results.filter(e =>
+          e.customer.name.toLowerCase().includes(q) ||
+          e.customer.phone.includes(q) ||
+          (e.customer.email && e.customer.email.toLowerCase().includes(q))
+        )
       }
+      memoryEnquiries = [...results]
+      return results
     } catch (err) {
-      console.warn('[Enquiries Repo] Firestore query failed, falling back to memory:', err)
+      console.error('[Enquiries Repo] Firestore query failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   let list = [...memoryEnquiries]
@@ -110,10 +126,15 @@ export async function updateEnquiry(id: string, data: Partial<Enquiry>): Promise
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('enquiries').doc(id).set(updated, { merge: true })
+      await withFirestoreTimeout(db.collection('enquiries').doc(id).set(updated, { merge: true }), 15000, `enquiries.update:${id}`)
     } catch (err) {
-      console.warn(`[Enquiries Repo] Firestore update failed for ${id}:`, err)
+      console.error(`[Enquiries Repo] Firestore update failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   const idx = memoryEnquiries.findIndex(e => e.id === id)
@@ -157,3 +178,4 @@ export async function isRecentDuplicateEnquiry(phone: string, name: string, wind
 export function _resetMemoryEnquiries() {
   memoryEnquiries = []
 }
+

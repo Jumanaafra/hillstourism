@@ -1,16 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-// Layout components
+// Critical Above-The-Fold & Layout components
 import Navbar from '@/components/Navbar'
-import LoadingScreen from '@/components/LoadingScreen'
 import Footer from '@/components/Footer'
-import HillGuide from '@/components/HillGuide'
-
-// Content sections in SDD-specified order
 import Hero from '@/components/Hero'
 import Journey from '@/components/Journey'
 import TripFinder from '@/components/TripFinder'
@@ -22,9 +19,13 @@ import Gallery from '@/components/Gallery'
 import WhyChooseUs from '@/components/WhyChooseUs'
 import Testimonials from '@/components/Testimonials'
 import Stays from '@/components/Stays'
-import SmartStayMatcher from '@/components/SmartStayMatcher'
 import Vehicles from '@/components/Vehicles'
-import Enquiry from '@/components/Enquiry'
+
+// Dynamic code-split components
+const LoadingScreen = dynamic(() => import('@/components/LoadingScreen'), { ssr: false })
+const HillGuide = dynamic(() => import('@/components/HillGuide'), { ssr: false })
+const SmartStayMatcher = dynamic(() => import('@/components/SmartStayMatcher'), { ssr: true })
+const Enquiry = dynamic(() => import('@/components/Enquiry'), { ssr: true })
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)

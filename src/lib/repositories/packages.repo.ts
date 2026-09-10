@@ -1,4 +1,4 @@
-import { getFirestoreDB } from '../firebase/admin'
+import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 import { seedPackages } from './seed'
 import type { Package } from '../../types/domain'
 import { sortItineraryDays } from '../validation/itinerary'
@@ -13,23 +13,32 @@ function normalizePackage(pkg: Package): Package {
 }
 
 let memoryPackages: Package[] = seedPackages.map(normalizePackage)
+let lastFirestoreSync = 0
+const SYNC_INTERVAL = 15000 // 15s cache TTL
 
 export async function getPackages(onlyActive = true): Promise<Package[]> {
+  const now = Date.now()
   const db = getFirestoreDB()
-  if (db) {
+
+  if (db && now - lastFirestoreSync >= SYNC_INTERVAL) {
     try {
       let query: FirebaseFirestore.Query = db.collection('packages')
       if (onlyActive) {
         query = query.where('active', '==', true)
       }
-      const snapshot = await query.get()
-      if (!snapshot.empty) {
-        return snapshot.docs.map(doc => normalizePackage({ id: doc.id, ...doc.data() } as Package))
-      }
+      const snapshot = await withFirestoreTimeout(query.get(), 15000, 'getPackages')
+      memoryPackages = snapshot.docs.map(doc => normalizePackage({ id: doc.id, ...doc.data() } as Package))
+      lastFirestoreSync = now
     } catch (err) {
-      console.warn('[Packages Repo] Firestore fetch failed, falling back to memory store:', err)
+      console.error('[Packages Repo] Firestore fetch failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
+
   return onlyActive
     ? memoryPackages.filter(p => p.active).map(normalizePackage)
     : memoryPackages.map(normalizePackage)
@@ -39,19 +48,30 @@ export async function getPackageById(id: string): Promise<Package | null> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const doc = await db.collection('packages').doc(id).get()
+      const doc = await withFirestoreTimeout(db.collection('packages').doc(id).get(), 15000, `getPackageById:${id}`)
       if (doc.exists) {
         return normalizePackage({ id: doc.id, ...doc.data() } as Package)
       }
-      const snapshot = await db.collection('packages').where('slug', '==', id).limit(1).get()
+      const snapshot = await withFirestoreTimeout(
+        db.collection('packages').where('slug', '==', id).limit(1).get(),
+        15000,
+        `getPackageById:slug:${id}`
+      )
       if (!snapshot.empty) {
         const d = snapshot.docs[0]
         return normalizePackage({ id: d.id, ...d.data() } as Package)
       }
+      return null
     } catch (err) {
-      console.warn(`[Packages Repo] Firestore getById failed for ${id}:`, err)
+      console.error(`[Packages Repo] Firestore getById failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
+
   const found = memoryPackages.find(p => p.id === id || p.slug === id)
   return found ? normalizePackage(found) : null
 }
@@ -60,18 +80,26 @@ export async function getPackageBySlug(slug: string): Promise<Package | null> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const snapshot = await db.collection('packages')
-        .where('slug', '==', slug)
-        .limit(1)
-        .get()
+      const snapshot = await withFirestoreTimeout(
+        db.collection('packages').where('slug', '==', slug).limit(1).get(),
+        15000,
+        `getPackageBySlug:${slug}`
+      )
       if (!snapshot.empty) {
         const doc = snapshot.docs[0]
         return normalizePackage({ id: doc.id, ...doc.data() } as Package)
       }
+      return null
     } catch (err) {
-      console.warn(`[Packages Repo] Firestore getBySlug failed for ${slug}:`, err)
+      console.error(`[Packages Repo] Firestore getBySlug failed for ${slug}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
+
   const found = memoryPackages.find(p => p.slug === slug || p.id === slug)
   return found ? normalizePackage(found) : null
 }
@@ -89,13 +117,19 @@ export async function createPackage(data: Omit<Package, 'id' | 'createdAt' | 'up
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('packages').doc(newPackage.id).set(newPackage)
+      await withFirestoreTimeout(db.collection('packages').doc(newPackage.id).set(newPackage), 15000, 'packages.create')
     } catch (err) {
-      console.warn('[Packages Repo] Firestore save failed, saving to memory:', err)
+      console.error('[Packages Repo] Firestore save failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   memoryPackages.unshift(newPackage)
+  lastFirestoreSync = 0
   return newPackage
 }
 
@@ -114,10 +148,15 @@ export async function updatePackage(id: string, data: Partial<Package>): Promise
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('packages').doc(id).set(updated, { merge: true })
+      await withFirestoreTimeout(db.collection('packages').doc(id).set(updated, { merge: true }), 15000, `packages.update:${id}`)
     } catch (err) {
-      console.warn(`[Packages Repo] Firestore update failed for ${id}:`, err)
+      console.error(`[Packages Repo] Firestore update failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   const normalized = normalizePackage(updated)
@@ -125,6 +164,7 @@ export async function updatePackage(id: string, data: Partial<Package>): Promise
   if (idx !== -1) {
     memoryPackages[idx] = normalized
   }
+  lastFirestoreSync = 0
 
   return normalized
 }
@@ -133,16 +173,24 @@ export async function deletePackage(id: string): Promise<boolean> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('packages').doc(id).delete()
+      await withFirestoreTimeout(db.collection('packages').doc(id).delete(), 15000, `packages.delete:${id}`)
     } catch (err) {
-      console.warn(`[Packages Repo] Firestore delete failed for ${id}:`, err)
+      console.error(`[Packages Repo] Firestore delete failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   memoryPackages = memoryPackages.filter(p => p.id !== id)
+  lastFirestoreSync = 0
   return true
 }
 
 export function _resetMemoryPackages(seed = seedPackages) {
   memoryPackages = seed.map(normalizePackage)
+  lastFirestoreSync = 0
 }
+
