@@ -19,15 +19,19 @@ function matchStay({ budget, groupSize, comfort, stayList = stays }) {
   return filtered[0] || stayList[0] || stays[0]
 }
 
-export default function SmartStayMatcher({ id }) {
+export default function SmartStayMatcher({ id, initialHotels }) {
   const [budget,    setBudget]    = useState(null)
   const [groupSize, setGroupSize] = useState(null)
   const [comfort,   setComfort]   = useState(null)
   const [result,    setResult]    = useState(null)
-  const [stayList,  setStayList]  = useState(stays)
+  const [stayList,  setStayList]  = useState(
+    Array.isArray(initialHotels) && initialHotels.length > 0 ? initialHotels : stays
+  )
   const sectionRef = useRef(null)
 
   useEffect(() => {
+    // Skip fetch when real data was already provided server-side
+    if (Array.isArray(initialHotels) && initialHotels.length > 0) return
     cachedFetch('/api/hotels')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -35,7 +39,7 @@ export default function SmartStayMatcher({ id }) {
         }
       })
       .catch(() => {})
-  }, [])
+  }, [initialHotels])
 
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []

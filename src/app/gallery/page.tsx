@@ -5,6 +5,7 @@ import HillGuide from '@/components/HillGuide'
 import Gallery from '@/components/Gallery'
 import { getCanonicalUrl } from '@/lib/seo/siteUrl'
 import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
+import { getGalleryPhotos } from '@/lib/repositories/gallery.repo'
 
 const defaultMeta: Metadata = {
   title: 'Visual Mountain Stories & Photo Gallery — Hills Tourism',
@@ -27,12 +28,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return resolvePageMetadata('/gallery', defaultMeta)
 }
 
-export default function GalleryPage() {
+export default async function GalleryPage() {
+  // Fetch gallery photos server-side — eliminates client-side /api/gallery waterfall
+  const photos = await getGalleryPhotos(true).catch(() => [])
+
   return (
     <>
       <Navbar />
       <main style={{ paddingTop: '80px' }}>
-        <Gallery id="gallery" />
+        <Gallery id="gallery" initialPhotos={photos} />
       </main>
       <Footer id="footer" />
       <HillGuide />

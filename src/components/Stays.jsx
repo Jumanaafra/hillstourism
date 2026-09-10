@@ -8,13 +8,17 @@ import { FiStar, FiMapPin, FiArrowRight } from 'react-icons/fi'
 
 const FILTERS = ['All', 'Normal', 'Premium', '5 Star']
 
-export default function Stays({ id }) {
+export default function Stays({ id, initialHotels }) {
   const [activeFilter, setActiveFilter] = useState('All')
-  const [stayList, setStayList] = useState(stays)
+  const [stayList, setStayList] = useState(
+    Array.isArray(initialHotels) && initialHotels.length > 0 ? initialHotels : stays
+  )
   const [sectionRevealed, setSectionRevealed] = useState(false)
   const sectionRef = useRef(null)
 
   useEffect(() => {
+    // Skip fetch when real data was already provided server-side
+    if (Array.isArray(initialHotels) && initialHotels.length > 0) return
     cachedFetch('/api/hotels')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -22,7 +26,7 @@ export default function Stays({ id }) {
         }
       })
       .catch(() => {})
-  }, [])
+  }, [initialHotels])
 
   const filtered = useMemo(() => {
     if (!activeFilter || activeFilter.toLowerCase().trim() === 'all') {

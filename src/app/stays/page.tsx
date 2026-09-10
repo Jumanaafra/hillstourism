@@ -6,6 +6,7 @@ import Stays from '@/components/Stays'
 import SmartStayMatcher from '@/components/SmartStayMatcher'
 import { getCanonicalUrl } from '@/lib/seo/siteUrl'
 import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
+import { getHotels } from '@/lib/repositories/hotels.repo'
 
 const defaultMeta: Metadata = {
   title: 'Curated Mountain Stays & Homestays — Hills Tourism',
@@ -28,13 +29,17 @@ export async function generateMetadata(): Promise<Metadata> {
   return resolvePageMetadata('/stays', defaultMeta)
 }
 
-export default function StaysPage() {
+export default async function StaysPage() {
+  // Fetch hotels server-side — eliminates client-side /api/hotels waterfall
+  // Both Stays and SmartStayMatcher receive the same data; no duplicate requests
+  const hotels = await getHotels(true).catch(() => [])
+
   return (
     <>
       <Navbar />
       <main style={{ paddingTop: '80px' }}>
-        <Stays id="stays" />
-        <SmartStayMatcher id="smart-stay" />
+        <Stays id="stays" initialHotels={hotels} />
+        <SmartStayMatcher id="smart-stay" initialHotels={hotels} />
       </main>
       <Footer id="footer" />
       <HillGuide />

@@ -16,14 +16,17 @@ const GALLERY_ITEMS = [
   { id: 'g8', src: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=700&q=80&auto=format', alt: 'Peaceful mountain lake reflection' },
 ]
 
-export default function Gallery({ id }) {
+export default function Gallery({ id, initialPhotos }) {
   const sectionRef = useRef(null)
   const headerRef = useRef(null)
   const [headerVisible, setHeaderVisible] = useState(false)
-  const [items, setItems] = useState(GALLERY_ITEMS)
+  const [items, setItems] = useState(
+    Array.isArray(initialPhotos) && initialPhotos.length > 0 ? initialPhotos : GALLERY_ITEMS
+  )
 
-  // Fetch active photos from API
+  // Fetch active photos from API (only when no server-side data provided)
   useEffect(() => {
+    if (Array.isArray(initialPhotos) && initialPhotos.length > 0) return
     cachedFetch('/api/gallery')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -31,7 +34,7 @@ export default function Gallery({ id }) {
         }
       })
       .catch(() => {})
-  }, [])
+  }, [initialPhotos])
 
   // Scroll reveal for header content
   useEffect(() => {

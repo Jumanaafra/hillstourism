@@ -9,13 +9,17 @@ import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 
 const FILTERS = ['All', 'Couple', 'Family', 'Friends', 'Honeymoon']
 
-export default function FeaturedTrips({ id }) {
+export default function FeaturedTrips({ id, initialPackages }) {
   const [activeFilter, setActiveFilter] = useState('All')
-  const [pkgList, setPkgList] = useState(packages)
+  const [pkgList, setPkgList] = useState(
+    Array.isArray(initialPackages) && initialPackages.length > 0 ? initialPackages : packages
+  )
   const [sectionRevealed, setSectionRevealed] = useState(false)
   const sectionRef = useRef(null)
 
   useEffect(() => {
+    // Skip fetch when real data was already provided server-side
+    if (Array.isArray(initialPackages) && initialPackages.length > 0) return
     cachedFetch('/api/packages')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -23,7 +27,7 @@ export default function FeaturedTrips({ id }) {
         }
       })
       .catch(() => {})
-  }, [])
+  }, [initialPackages])
 
   const filtered = useMemo(() => {
     if (!activeFilter || activeFilter.toLowerCase().trim() === 'all') {

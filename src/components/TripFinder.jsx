@@ -28,16 +28,20 @@ function matchPackages({ duration, budget, tripType, pkgList = packages }) {
   })
 }
 
-export default function TripFinder({ id }) {
+export default function TripFinder({ id, initialPackages }) {
   const sectionRef = useRef(null)
   const [duration, setDuration] = useState(null)
   const [budget,   setBudget]   = useState(null)
   const [tripType, setTripType] = useState(null)
   const [results,  setResults]  = useState([])
   const [searched, setSearched] = useState(false)
-  const [pkgList,  setPkgList]  = useState(packages)
+  const [pkgList,  setPkgList]  = useState(
+    Array.isArray(initialPackages) && initialPackages.length > 0 ? initialPackages : packages
+  )
 
   useEffect(() => {
+    // Skip fetch when real data was already provided server-side
+    if (Array.isArray(initialPackages) && initialPackages.length > 0) return
     cachedFetch('/api/packages')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -45,7 +49,7 @@ export default function TripFinder({ id }) {
         }
       })
       .catch(() => {})
-  }, [])
+  }, [initialPackages])
 
   // Scroll reveal
   useEffect(() => {

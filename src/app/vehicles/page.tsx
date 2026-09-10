@@ -5,6 +5,7 @@ import HillGuide from '@/components/HillGuide'
 import Vehicles from '@/components/Vehicles'
 import { getCanonicalUrl } from '@/lib/seo/siteUrl'
 import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
+import { getVehicles } from '@/lib/repositories/vehicles.repo'
 
 const defaultMeta: Metadata = {
   title: 'Dedicated Hill Fleet & Mountain Chauffeurs — Hills Tourism',
@@ -27,12 +28,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return resolvePageMetadata('/vehicles', defaultMeta)
 }
 
-export default function VehiclesPage() {
+export default async function VehiclesPage() {
+  // Fetch vehicles server-side — eliminates client-side /api/vehicles waterfall
+  const vehicles = await getVehicles(true).catch(() => [])
+
   return (
     <>
       <Navbar />
       <main style={{ paddingTop: '80px' }}>
-        <Vehicles id="vehicles" />
+        <Vehicles id="vehicles" initialVehicles={vehicles} />
       </main>
       <Footer id="footer" />
       <HillGuide />

@@ -7,12 +7,16 @@ import { vehicles } from '../data/vehicles'
 import { FiUsers, FiBriefcase, FiMap, FiMapPin } from 'react-icons/fi'
 import { FaCarSide } from 'react-icons/fa'
 
-export default function Vehicles({ id }) {
-  const [vehicleList, setVehicleList] = useState(vehicles)
+export default function Vehicles({ id, initialVehicles }) {
+  const [vehicleList, setVehicleList] = useState(
+    Array.isArray(initialVehicles) && initialVehicles.length > 0 ? initialVehicles : vehicles
+  )
   const [sectionRevealed, setSectionRevealed] = useState(false)
   const sectionRef = useRef(null)
 
   useEffect(() => {
+    // Skip fetch when real data was already provided server-side
+    if (Array.isArray(initialVehicles) && initialVehicles.length > 0) return
     cachedFetch('/api/vehicles')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -20,7 +24,7 @@ export default function Vehicles({ id }) {
         }
       })
       .catch(() => {})
-  }, [])
+  }, [initialVehicles])
 
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []

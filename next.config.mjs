@@ -8,6 +8,13 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ['react-icons', 'react-icons/fi', 'react-icons/fa', 'gsap'],
+    // Prevent webpack from trying to bundle firebase-admin's native/WASM modules.
+    // These packages must be required at Node.js runtime, not compiled by webpack.
+    serverComponentsExternalPackages: [
+      'firebase-admin',
+      'farmhash-modern',
+      '@google-cloud/firestore',
+    ],
   },
   images: {
     formats: ['image/avif', 'image/webp'],
