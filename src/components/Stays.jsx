@@ -1,29 +1,51 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { stays } from '../data/stays'
+import { FiStar, FiMapPin, FiArrowRight } from 'react-icons/fi'
 
 const FILTERS = ['All', 'Normal', 'Premium', '5 Star']
 
 export default function Stays({ id }) {
   const [activeFilter, setActiveFilter] = useState('All')
+  const [stayList, setStayList] = useState(stays)
+  const [sectionRevealed, setSectionRevealed] = useState(false)
   const sectionRef = useRef(null)
 
-  const filtered = activeFilter === 'All'
-    ? stays
-    : stays.filter(s => s.category === activeFilter)
+  useEffect(() => {
+    fetch('/api/hotels')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setStayList(data.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const filtered = useMemo(() => {
+    if (!activeFilter || activeFilter.toLowerCase().trim() === 'all') {
+      return stayList
+    }
+    const target = activeFilter.toLowerCase().trim()
+    return stayList.filter(s => (s.category || '').toLowerCase().trim() === target)
+  }, [stayList, activeFilter])
 
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => {
-        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) }
+        if (e.isIntersecting) {
+          setSectionRevealed(true)
+          e.target.classList.add('visible')
+          observer.unobserve(e.target)
+        }
       }),
-      { threshold: 0.1 }
+      { threshold: 0.08 }
     )
     reveals.forEach(el => observer.observe(el))
     return () => observer.disconnect()
-  }, [])
+  }, [stayList, activeFilter])
 
   const categoryColor = {
     'Normal':  '#5F9E2F',
@@ -70,7 +92,7 @@ export default function Stays({ id }) {
               role="tab"
               aria-selected={activeFilter === f}
             >
-              {f === '5 Star' ? '⭐ 5 Star' : f}
+              {f === '5 Star' ? <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiStar /> 5 Star</span> : f}
             </button>
           ))}
         </div>
@@ -84,7 +106,7 @@ export default function Stays({ id }) {
           {filtered.map((stay, i) => (
             <article
               key={stay.id}
-              className="stay-card reveal"
+              className={`stay-card ${sectionRevealed ? 'visible' : 'reveal'}`}
               style={{ transitionDelay: `${i * 0.07}s` }}
               aria-label={`${stay.name} — ${stay.location}`}
             >
@@ -95,8 +117,8 @@ export default function Stays({ id }) {
                   alt={stay.name}
                   loading="lazy"
                   onError={e => {
-                    e.target.style.display = 'none'
-                    e.target.parentNode.style.background = 'linear-gradient(135deg,#001040,#0050C0)'
+                    e.currentTarget.onerror = null
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80&auto=format'
                   }}
                 />
                 {/* Category badge */}
@@ -128,7 +150,7 @@ export default function Stays({ id }) {
                   alignItems:   'center',
                   gap:          '3px',
                 }}>
-                  <span style={{ color: '#F59E0B', fontSize: '0.7rem' }}>★</span>
+                  <span style={{ color: '#F59E0B', fontSize: '0.75rem', display: 'flex' }}><FiStar /></span>
                   <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#ffffff' }}>{stay.rating}</span>
                 </div>
               </div>
@@ -136,7 +158,8 @@ export default function Stays({ id }) {
               {/* Body */}
               <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div>
-                  <p style={{ fontSize: '0.65rem', color: 'var(--hill-blue-bright)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                  <p style={{ fontSize: '0.65rem', color: 'var(--hill-blue-bright)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <FiMapPin style={{ fontSize: '0.75rem', flexShrink: 0 }} />
                     {stay.location}
                   </p>
                   <h3 className="heading-sm" style={{ color: 'var(--hill-navy)' }}>{stay.name}</h3>
@@ -188,11 +211,11 @@ export default function Stays({ id }) {
                   </div>
                   <button
                     className="btn-primary"
-                    style={{ padding: '0.6rem 1.1rem', fontSize: '0.7rem' }}
+                    style={{ padding: '0.6rem 1.1rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     onClick={() => document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' })}
                     aria-label={`View ${stay.name}`}
                   >
-                    View Stay
+                    View Stay <FiArrowRight style={{ fontSize: '0.75rem' }} />
                   </button>
                 </div>
               </div>

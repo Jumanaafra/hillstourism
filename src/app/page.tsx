@@ -31,7 +31,23 @@ if (typeof window !== 'undefined') {
 }
 
 export default function HomePage() {
-  const [loading, setLoading] = useState(true)
+  const [showLoader, setShowLoader] = useState(true)
+
+  // Use isomorphic layout effect to avoid a flash of the loading screen on return visits
+  const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+
+  useIsomorphicLayoutEffect(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('ht_loaded') === '1') {
+      setShowLoader(false)
+    }
+  }, [])
+
+  const handleLoadComplete = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('ht_loaded', '1')
+    }
+    setShowLoader(false)
+  }
 
   // GSAP ScrollTrigger refresh on resize
   useEffect(() => {
@@ -42,12 +58,10 @@ export default function HomePage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  if (loading) {
-    return <LoadingScreen onComplete={() => setLoading(false)} />
-  }
-
   return (
     <>
+      {showLoader && <LoadingScreen onComplete={handleLoadComplete} />}
+
       {/* Navigation */}
       <Navbar />
 

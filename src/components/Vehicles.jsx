@@ -1,26 +1,45 @@
 'use client'
 
-import React, { useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { vehicles } from '../data/vehicles'
+import { FiUsers, FiBriefcase, FiMap, FiMapPin } from 'react-icons/fi'
+import { FaCarSide } from 'react-icons/fa'
 
 export default function Vehicles({ id }) {
+  const [vehicleList, setVehicleList] = useState(vehicles)
+  const [sectionRevealed, setSectionRevealed] = useState(false)
   const sectionRef = useRef(null)
+
+  useEffect(() => {
+    fetch('/api/vehicles')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setVehicleList(data.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => {
-        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) }
+        if (e.isIntersecting) {
+          setSectionRevealed(true)
+          e.target.classList.add('visible')
+          observer.unobserve(e.target)
+        }
       }),
-      { threshold: 0.1 }
+      { threshold: 0.08 }
     )
     reveals.forEach(el => observer.observe(el))
     return () => observer.disconnect()
-  }, [])
+  }, [vehicleList])
 
   const Feature = ({ icon, label }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-      <span style={{ fontSize: '0.85rem' }} aria-hidden="true">{icon}</span>
+      <span style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center' }} aria-hidden="true">{icon}</span>
       <span style={{ fontSize: '0.75rem', color: 'var(--hill-muted)', fontWeight: 500 }}>{label}</span>
     </div>
   )
@@ -56,10 +75,10 @@ export default function Vehicles({ id }) {
           gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))',
           gap:                 'clamp(1rem,2vw,1.5rem)',
         }}>
-          {vehicles.map((v, i) => (
+          {vehicleList.map((v, i) => (
             <article
               key={v.id}
-              className="vehicle-card reveal"
+              className={`vehicle-card ${sectionRevealed ? 'visible' : 'reveal'}`}
               style={{ transitionDelay: `${i * 0.08}s` }}
               aria-label={`${v.name} — ${v.type}`}
             >
@@ -79,8 +98,8 @@ export default function Vehicles({ id }) {
                   onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
                   onMouseLeave={e => e.target.style.transform = 'scale(1)'}
                   onError={e => {
-                    e.target.style.display = 'none'
-                    e.target.parentNode.style.background = 'linear-gradient(135deg,#EEF3F8,#DCEBFF)'
+                    e.currentTarget.onerror = null
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&q=80&auto=format'
                   }}
                 />
               </div>
@@ -106,16 +125,16 @@ export default function Vehicles({ id }) {
                 borderRadius: '8px',
                 marginBottom: '1.25rem',
               }}>
-                <Feature icon="👥" label={`${v.capacity} Seats`} />
-                <Feature icon="🧳" label={v.luggage} />
-                {v.driverAvailable && <Feature icon="🚗" label="Driver Incl." />}
-                {v.localRoutes    && <Feature icon="🗺️" label="Hill Routes" />}
-                {v.flexiblePickup && <Feature icon="📍" label="Flex Pickup" />}
+                <Feature icon={<FiUsers />} label={`${v.capacity} Seats`} />
+                <Feature icon={<FiBriefcase />} label={v.luggage} />
+                {v.driverAvailable && <Feature icon={<FaCarSide />} label="Driver Incl." />}
+                {v.localRoutes    && <Feature icon={<FiMap />} label="Hill Routes" />}
+                {v.flexiblePickup && <Feature icon={<FiMapPin />} label="Flex Pickup" />}
               </div>
 
               {/* Features */}
               <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-                {v.features.map(f => (
+                {(v.features || []).map(f => (
                   <span key={f} style={{
                     fontSize:     '0.6rem',
                     padding:      '2px 8px',

@@ -10,7 +10,7 @@ export const packages = [
     category: 'Couple',
     tag: 'Most Popular',
     description: 'Lose yourself in rolling tea gardens, cool mountain air, and the timeless beauty of Kerala\'s crown jewel.',
-    image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&q=80&auto=format',
+    image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&q=80&auto=format',
     highlights: ['Tea Garden Walk', 'Eravikulam Park', 'Mattupetty Dam'],
   },
   {
@@ -23,7 +23,7 @@ export const packages = [
     category: 'Family',
     tag: 'Nature Immersion',
     description: 'Step into the Scotland of India — emerald coffee estates, ancient abbeys, and cascading waterfalls await.',
-    image: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80&auto=format',
+    image: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80&auto=format',
     highlights: ['Abbey Falls', 'Dubare Elephant Camp', 'Coffee Estate Tour'],
   },
   {
@@ -36,7 +36,7 @@ export const packages = [
     category: 'Friends',
     tag: 'New Route',
     description: 'Breathe in the crisp air of the Nilgiris as you journey through eucalyptus groves and vintage hill railways.',
-    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80&auto=format',
+    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80&auto=format',
     highlights: ['Nilgiri Mountain Railway', 'Botanical Garden', 'Doddabetta Peak'],
   },
   {
@@ -49,7 +49,7 @@ export const packages = [
     category: 'Honeymoon',
     tag: 'Premium Stay',
     description: 'Colonial charm meets Himalayan grandeur — a romantic journey through snow-dusted forests and heritage boulevards.',
-    image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80&auto=format',
+    image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80&auto=format',
     highlights: ['Mall Road', 'Kufri Ski Slopes', 'Jakhu Temple'],
   },
   {
@@ -62,7 +62,7 @@ export const packages = [
     category: 'Couple',
     tag: 'Sunrise Special',
     description: 'Watch Kanchenjunga glow gold at dawn, sip the world\'s finest tea, and ride the legendary toy train.',
-    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=600&q=80&auto=format',
+    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80&auto=format',
     highlights: ['Tiger Hill Sunrise', 'Toy Train Ride', 'Tea Estate Visit'],
   },
   {
@@ -75,7 +75,7 @@ export const packages = [
     category: 'Friends',
     tag: 'Adventure Pack',
     description: 'From river rafting to snow treks — Manali delivers the ultimate mountain adventure for thrill seekers.',
-    image: 'https://images.unsplash.com/photo-1522163182402-834f871fd851?w=600&q=80&auto=format',
+    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80&auto=format',
     highlights: ['Rohtang Pass', 'River Rafting', 'Hadimba Temple'],
   },
 ]

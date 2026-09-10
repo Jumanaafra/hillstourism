@@ -74,6 +74,7 @@ export interface Hotel {
   media?: MediaItem[]
   image?: string
   active: boolean
+  seo?: SEOData
   createdAt?: string | Date
   updatedAt?: string | Date
 }
@@ -97,6 +98,7 @@ export interface Vehicle {
   media?: MediaItem[]
   image?: string
   active: boolean
+  seo?: SEOData
   createdAt?: string | Date
   updatedAt?: string | Date
 }
@@ -202,6 +204,29 @@ export interface AdminUser {
   createdAt: string | Date
 }
 
+export interface SocialLink {
+  id: string
+  platform: 'whatsapp' | 'facebook' | 'instagram' | 'youtube' | 'twitter' | string
+  url: string
+  label?: string
+  active: boolean
+  order: number
+  updatedAt?: string
+}
+
+export interface PageSEO {
+  id: string
+  route: string
+  title: string
+  description: string
+  canonicalUrl?: string
+  ogTitle?: string
+  ogDescription?: string
+  ogImage?: string
+  robots?: 'index, follow' | 'noindex, nofollow' | string
+  updatedAt?: string
+}
+
 export interface SiteSettings {
   siteName: string
   tagline: string
@@ -213,4 +238,6 @@ export interface SiteSettings {
   totalTravelersMetric: string
   routesCountMetric: string
   averageRatingMetric: string
+  socialLinks?: SocialLink[]
 }
+

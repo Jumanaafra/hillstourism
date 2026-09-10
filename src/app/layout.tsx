@@ -1,7 +1,11 @@
 import type { Metadata } from 'next'
 import '../index.css'
+import { getSiteUrl } from '@/lib/seo/siteUrl'
+import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
 
-export const metadata: Metadata = {
+const siteUrl = getSiteUrl()
+
+const defaultMeta: Metadata = {
   title: 'Hills Tourism — Premium Mountain Journeys & Curated Hill Escapes',
   description:
     'Discover the hills beyond the ordinary. Handcrafted mountain tours, authentic curated stays, and experienced hill drivers across Munnar, Coorg, Ooty, Shimla, Darjeeling, and Manali.',
@@ -17,7 +21,7 @@ export const metadata: Metadata = {
     'curated mountain stays',
   ],
   authors: [{ name: 'Hills Tourism' }],
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://hillstourism.com'),
+  metadataBase: new URL(siteUrl),
   alternates: {
     canonical: '/',
   },
@@ -25,7 +29,7 @@ export const metadata: Metadata = {
     title: 'Hills Tourism — Discover the Hills Beyond the Ordinary',
     description:
       'Cinematic journeys through India’s most breathtaking mountains. Curated escapes crafted by local experts who call the hills home.',
-    url: 'https://hillstourism.com',
+    url: siteUrl,
     siteName: 'Hills Tourism',
     locale: 'en_IN',
     type: 'website',
@@ -39,6 +43,18 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || process.env.GOOGLE_SITE_VERIFICATION || undefined,
+  },
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata('/', defaultMeta)
 }
 
 export const viewport = {
@@ -53,32 +69,45 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const jsonLd = {
+  const structuredData = {
     '@context': 'https://schema.org',
-    '@type': 'TravelAgency',
-    name: 'Hills Tourism',
-    description: 'Enquiry-led curated mountain travel and hill station escapes.',
-    url: 'https://hillstourism.com',
-    telephone: '+919999000000',
-    email: 'hello@hillstourism.com',
-    address: {
-      '@type': 'PostalAddress',
-      addressCountry: 'IN',
-      addressRegion: 'Tamil Nadu & Kerala',
-    },
-    areaServed: ['Munnar', 'Coorg', 'Ooty', 'Shimla', 'Darjeeling', 'Manali'],
-    priceRange: '₹₹',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': `${siteUrl}/#website`,
+        url: siteUrl,
+        name: 'Hills Tourism',
+        description: 'Premium Mountain Journeys & Curated Hill Escapes across India',
+        inLanguage: 'en-IN',
+      },
+      {
+        '@type': 'TravelAgency',
+        '@id': `${siteUrl}/#agency`,
+        name: 'Hills Tourism',
+        description: 'Enquiry-led curated mountain travel and hill station escapes.',
+        url: siteUrl,
+        telephone: '+919999000000',
+        email: 'hello@hillstourism.com',
+        address: {
+          '@type': 'PostalAddress',
+          addressCountry: 'IN',
+          addressRegion: 'Tamil Nadu & Kerala',
+        },
+        areaServed: ['Munnar', 'Coorg', 'Ooty', 'Shimla', 'Darjeeling', 'Manali'],
+        priceRange: '₹₹',
+      },
+    ],
   }
 
   return (
     <html lang="en">
-      <head>
+      <body>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-      </head>
-      <body>{children}</body>
+        {children}
+      </body>
     </html>
   )
 }

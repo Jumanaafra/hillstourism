@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { trackEnquiryStart, trackEnquirySubmit } from '../lib/analytics/events'
+import { FiZap, FiMapPin, FiLock, FiCheckCircle, FiCheck, FiAlertCircle, FiArrowRight } from 'react-icons/fi'
 
 const TRIP_TYPES = ['Honeymoon', 'Couple Getaway', 'Family Trip', 'Friends Group', 'Corporate Retreat', 'Solo Journey']
 
@@ -206,10 +207,10 @@ export default function Enquiry({ id, initialPackageId = '', initialHotelId = ''
 
             {/* Trust signals */}
             {[
-              { icon: '⚡', text: '2-hour response guarantee' },
-              { icon: '🏔️', text: 'Expert local trip planners' },
-              { icon: '🔒', text: 'Zero booking fees' },
-              { icon: '💯', text: 'Fully customisable itineraries' },
+              { icon: <FiZap />, text: '2-hour response guarantee' },
+              { icon: <FiMapPin />, text: 'Expert local trip planners' },
+              { icon: <FiLock />, text: 'Zero booking fees' },
+              { icon: <FiCheckCircle />, text: 'Fully customisable itineraries' },
             ].map(item => (
               <div key={item.text} style={{
                 display:      'flex',
@@ -263,7 +264,7 @@ export default function Enquiry({ id, initialPackageId = '', initialHotelId = ''
             }}>
               {status === 'success' ? (
                 <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem', color: '#22C55E' }}><FiCheck /></div>
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: '#ffffff', marginBottom: '0.5rem' }}>
                     Enquiry Sent!
                   </h3>
@@ -310,7 +311,7 @@ export default function Enquiry({ id, initialPackageId = '', initialHotelId = ''
                       fontSize: '0.8rem',
                       marginBottom: '1.25rem',
                     }}>
-                      ⚠️ {serverError}
+                      <FiAlertCircle style={{ marginRight: 6, display: 'inline' }} /> {serverError}
                     </div>
                   )}
 
@@ -388,7 +389,7 @@ export default function Enquiry({ id, initialPackageId = '', initialHotelId = ''
                         Sending…
                       </>
                     ) : (
-                      <>Send Enquiry →</>
+                      <>Send Enquiry <FiArrowRight style={{ marginLeft: '6px' }} /></>
                     )}
                   </button>
 
@@ -404,13 +405,6 @@ export default function Enquiry({ id, initialPackageId = '', initialHotelId = ''
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 900px) {
-          #contact > div > div { grid-template-columns: 1fr !important; }
-          #contact > div > div > div:last-child > div > form > div:first-child { grid-template-columns: 1fr !important; }
-        }
-        @media (max-width: 600px) {
-          #contact > div > div > div:last-child > div > form > div:first-child { grid-template-columns: 1fr !important; }
-        }
       `}</style>
     </section>
   )

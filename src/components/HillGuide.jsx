@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { trackChatOpen, trackChatMessage } from '../lib/analytics/events'
+import { FiMessageCircle } from 'react-icons/fi'
 
 const QUICK_ACTIONS = ['Couple', 'Family', 'Friends', 'Adventure']
 
@@ -33,7 +34,7 @@ export default function HillGuide() {
     {
       id: 1,
       from: 'bot',
-      text: "Hi 👋 I am HillGuide, your mountain companion!\nWhat kind of hill escape are you planning?",
+      text: "Hi! I am HillGuide, your mountain companion!\nWhat kind of hill escape are you planning?",
       chips: QUICK_ACTIONS,
     }
   ])
@@ -70,11 +71,13 @@ export default function HillGuide() {
     setTyping(true)
     trackChatMessage(trimmed.length)
 
-    // Build history for grounding context
-    const chatHistory = messages.map(m => ({
-      role: m.from === 'user' ? 'user' : 'model',
-      text: m.text,
-    }))
+    // Build history for grounding context (filter out initial welcome greeting)
+    const chatHistory = messages
+      .filter(m => m.id !== 1 && m.text?.trim())
+      .map(m => ({
+        role: m.from === 'user' ? 'user' : 'model',
+        text: m.text,
+      }))
 
     try {
       const res = await fetch('/api/chat', {
@@ -188,7 +191,7 @@ export default function HillGuide() {
                 fontSize:     '1.1rem',
                 flexShrink:   0,
               }} aria-hidden="true">
-                🏔️
+                <FiMessageCircle color="#ffffff" />
               </div>
               <div>
                 <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: '#ffffff', fontSize: '0.9rem', lineHeight: 1 }}>

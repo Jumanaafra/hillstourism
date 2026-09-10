@@ -1,31 +1,53 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { packages } from '../data/packages'
+import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 
 const FILTERS = ['All', 'Couple', 'Family', 'Friends', 'Honeymoon']
 
 export default function FeaturedTrips({ id }) {
   const [activeFilter, setActiveFilter] = useState('All')
+  const [pkgList, setPkgList] = useState(packages)
+  const [sectionRevealed, setSectionRevealed] = useState(false)
   const sectionRef = useRef(null)
 
-  const filtered = activeFilter === 'All'
-    ? packages
-    : packages.filter(p => p.category === activeFilter)
+  useEffect(() => {
+    fetch('/api/packages')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setPkgList(data.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const filtered = useMemo(() => {
+    if (!activeFilter || activeFilter.toLowerCase().trim() === 'all') {
+      return pkgList
+    }
+    const target = activeFilter.toLowerCase().trim()
+    return pkgList.filter(p => (p.category || '').toLowerCase().trim() === target)
+  }, [pkgList, activeFilter])
 
   // Scroll reveal
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => {
-        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) }
+        if (e.isIntersecting) {
+          setSectionRevealed(true)
+          e.target.classList.add('visible')
+          observer.unobserve(e.target)
+        }
       }),
-      { threshold: 0.1 }
+      { threshold: 0.08 }
     )
     reveals.forEach(el => observer.observe(el))
     return () => observer.disconnect()
-  }, [])
+  }, [pkgList, activeFilter])
 
   return (
     <section
@@ -87,7 +109,7 @@ export default function FeaturedTrips({ id }) {
           {filtered.map((pkg, i) => (
             <article
               key={pkg.id}
-              className="package-card reveal"
+              className={`package-card ${sectionRevealed ? 'visible' : 'reveal'}`}
               style={{ transitionDelay: `${i * 0.07}s` }}
               aria-label={`${pkg.title} — ${pkg.destination}`}
             >
@@ -99,8 +121,8 @@ export default function FeaturedTrips({ id }) {
                     alt={`${pkg.title} — ${pkg.destination}`}
                     loading="lazy"
                     onError={e => {
-                      e.target.style.display = 'none'
-                      e.target.parentNode.style.background = 'linear-gradient(135deg, #001040, #0050C0)'
+                      e.currentTarget.onerror = null
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&q=80&auto=format'
                     }}
                   />
                   {/* Tag badge */}
@@ -125,7 +147,11 @@ export default function FeaturedTrips({ id }) {
                     color:        '#ffffff',
                     fontFamily:   'var(--font-body)',
                     letterSpacing: '0.06em',
+                    display:      'inline-flex',
+                    alignItems:   'center',
+                    gap:          '4px',
                   }}>
+                    <FiClock style={{ fontSize: '0.7rem' }} />
                     {pkg.duration}
                   </div>
                 </div>
@@ -142,7 +168,11 @@ export default function FeaturedTrips({ id }) {
                     fontWeight:    700,
                     textTransform: 'uppercase',
                     marginBottom:  '0.3rem',
+                    display:       'flex',
+                    alignItems:    'center',
+                    gap:           '4px',
                   }}>
+                    <FiMapPin style={{ fontSize: '0.75rem', flexShrink: 0 }} />
                     {pkg.destination}
                   </p>
                   <h3 className="heading-sm" style={{ color: 'var(--hill-navy)', marginBottom: '0.5rem' }}>
@@ -201,10 +231,10 @@ export default function FeaturedTrips({ id }) {
                   <Link
                     href={`/packages/${pkg.slug || pkg.id}`}
                     className="btn-primary"
-                    style={{ padding: '0.6rem 1.2rem', fontSize: '0.7rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                    style={{ padding: '0.6rem 1.2rem', fontSize: '0.7rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     aria-label={`View journey details for ${pkg.title}`}
                   >
-                    View Journey →
+                    View Journey <FiArrowRight style={{ fontSize: '0.8rem' }} />
                   </Link>
                 </div>
               </div>

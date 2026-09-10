@@ -24,9 +24,19 @@ export async function verifyAdminAuth(req: NextRequest): Promise<AdminAuthResult
 
   const token = authHeader.split('Bearer ')[1].trim()
 
-  // 1. Check for configured development admin secret key
-  const devSecret = process.env.ADMIN_SECRET_KEY || 'hillstourism-admin-secret'
-  if (token === devSecret) {
+  // 1. Check for configured server-side admin access token or secret key
+  const serverAdminToken = process.env.ADMIN_ACCESS_TOKEN || process.env.ADMIN_SECRET_KEY
+  if (serverAdminToken && token === serverAdminToken) {
+    return {
+      authenticated: true,
+      uid: 'admin-token-user',
+      email: 'admin@hillstourism.com',
+      role: 'admin',
+    }
+  }
+
+  // Accept test/dev secret when running in non-production environments (e.g. vitest or local dev)
+  if (process.env.NODE_ENV !== 'production' && token === 'hillstourism-admin-secret') {
     return {
       authenticated: true,
       uid: 'dev-admin-uid',

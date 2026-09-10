@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import HillGuide from '@/components/HillGuide'
 import PackageItineraryView from '@/components/PackageItineraryView'
+import { getSiteUrl, getCanonicalUrl } from '@/lib/seo/siteUrl'
 
 export const revalidate = 3600 // ISR: Revalidate at most once per hour or on-demand via admin actions
 
@@ -96,9 +97,11 @@ export default async function PackageDetailPage({ params }: Props) {
     connectedVehicles = allVehicles.slice(0, 2)
   }
 
-  // Generate Schema.org TouristTrip structured data grounded only in real data
-  const jsonLd: Record<string, any> = {
-    '@context': 'https://schema.org',
+  const siteUrl = getSiteUrl()
+  const pageCanonical = getCanonicalUrl(`/packages/${params.slug}`)
+
+  // Generate Schema.org TouristTrip + BreadcrumbList structured data
+  const touristTripSchema: Record<string, any> = {
     '@type': 'TouristTrip',
     name: pkg.name,
     description: pkg.shortDescription || pkg.description,
@@ -106,12 +109,12 @@ export default async function PackageDetailPage({ params }: Props) {
     provider: {
       '@type': 'TravelAgency',
       name: 'Hills Tourism',
-      url: 'https://hillstourism.com',
+      url: siteUrl,
     },
   }
 
   if (pkg.price) {
-    jsonLd.offers = {
+    touristTripSchema.offers = {
       '@type': 'Offer',
       price: pkg.price.replace(/[^0-9]/g, '') || undefined,
       priceCurrency: 'INR',
@@ -120,11 +123,41 @@ export default async function PackageDetailPage({ params }: Props) {
   }
 
   if (pkg.itinerary && pkg.itinerary.length > 0) {
-    jsonLd.itinerary = pkg.itinerary.map(d => ({
+    touristTripSchema.itinerary = pkg.itinerary.map(d => ({
       '@type': 'TouristTrip',
       name: `Day ${d.day}: ${d.title}`,
       description: d.description,
     }))
+  }
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: siteUrl,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Packages',
+            item: `${siteUrl}/packages`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: pkg.name,
+            item: pageCanonical,
+          },
+        ],
+      },
+      touristTripSchema,
+    ],
   }
 
   return (

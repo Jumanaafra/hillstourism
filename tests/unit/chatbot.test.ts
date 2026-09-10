@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { retrieveGroundedContext } from '../../src/lib/rag/retrieval'
-import { generateChatbotReply } from '../../src/lib/services/gemini.service'
+import { generateChatbotReply, sanitizeChatHistory } from '../../src/lib/services/gemini.service'
 
 describe('Chatbot RAG Grounding & Policy Compliance (spec.md Section 36, 37, 61)', () => {
   it('retrieves relevant company data and packages based on user query', async () => {
@@ -25,5 +25,32 @@ describe('Chatbot RAG Grounding & Policy Compliance (spec.md Section 36, 37, 61)
     const response = await generateChatbotReply('Do you have Innova Crysta with a driver?')
     expect(response.reply.toLowerCase()).toContain('innova')
     expect(response.reply.toLowerCase()).toContain('driver')
+  })
+
+  it('sanitizes chat history correctly for Gemini API', () => {
+    // 1. Initial bot greeting should be discarded so history starts with user
+    const rawWithGreeting = [
+      { role: 'model' as const, text: 'Hi! I am HillGuide...' },
+      { role: 'user' as const, text: 'Hi there' },
+      { role: 'model' as const, text: 'How can I help?' },
+    ]
+    const sanitized = sanitizeChatHistory(rawWithGreeting)
+    expect(sanitized.length).toBe(2)
+    expect(sanitized[0].role).toBe('user')
+    expect(sanitized[1].role).toBe('model')
+
+    // 2. Trailing user message should be pruned so next sendMessage(userMessage) alternates cleanly
+    const rawWithTrailingUser = [
+      { role: 'user' as const, text: 'Hi there' },
+      { role: 'model' as const, text: 'How can I help?' },
+      { role: 'user' as const, text: 'Tell me about Ooty' },
+    ]
+    const sanitizedTrailing = sanitizeChatHistory(rawWithTrailingUser)
+    expect(sanitizedTrailing.length).toBe(2)
+    expect(sanitizedTrailing[sanitizedTrailing.length - 1].role).toBe('model')
+
+    // 3. Only model greeting in history returns empty array
+    const onlyBot = [{ role: 'model' as const, text: 'Hi! I am HillGuide...' }]
+    expect(sanitizeChatHistory(onlyBot)).toEqual([])
   })
 })

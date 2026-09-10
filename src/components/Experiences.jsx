@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { experiences } from '../data/experiences'
+import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 
 export default function Experiences({ id }) {
   const [activeIdx, setActiveIdx] = useState(0)
@@ -81,8 +82,8 @@ export default function Experiences({ id }) {
                   animation:  'imgReveal 0.6s cubic-bezier(0.16,1,0.3,1) both',
                 }}
                 onError={e => {
-                  e.target.style.display = 'none'
-                  e.target.parentNode.style.background = 'linear-gradient(135deg,#001040,#0050C0)'
+                  e.currentTarget.onerror = null
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&q=80&auto=format'
                 }}
               />
               {/* Overlay */}
@@ -112,13 +113,9 @@ export default function Experiences({ id }) {
                 }}>
                   {active.title}
                 </h3>
-                <p style={{
-                  fontSize:   '0.82rem',
-                  color:      'rgba(255,255,255,0.65)',
-                  marginBottom: '0.5rem',
-                }}>
-                  📍 {active.location}
-                </p>
+                <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', fontSize: '0.82rem', color: 'rgba(255,255,255,0.65)', marginBottom: '0.5rem' }}>
+                  <FiMapPin style={{ color: 'var(--hill-blue-bright)' }} /> <span style={{ opacity: 0.9 }}>{active.location}</span>
+                </div>
                 <p style={{
                   fontSize: '0.85rem',
                   color:    'rgba(255,255,255,0.78)',
@@ -157,8 +154,8 @@ export default function Experiences({ id }) {
                 padding:      '0.4rem 1rem',
                 border:       '1px solid rgba(255,255,255,0.12)',
               }}>
-                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: '#ffffff' }}>
-                  ⏱ {active.duration}
+                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: '#ffffff', display: 'flex', alignItems: 'center' }}>
+                  <FiClock style={{ marginRight: 4 }} /> {active.duration}
                 </p>
               </div>
             </div>
@@ -231,8 +228,10 @@ export default function Experiences({ id }) {
                       marginLeft:  'auto',
                       color:       'var(--hill-blue-bright)',
                       fontSize:    '1rem',
+                      display:     'flex',
+                      alignItems:  'center',
                     }}>
-                      →
+                      <FiArrowRight />
                     </span>
                   )}
                 </div>
@@ -264,15 +263,6 @@ export default function Experiences({ id }) {
         @keyframes imgReveal {
           from { opacity: 0; transform: scale(1.04); }
           to   { opacity: 1; transform: scale(1); }
-        }
-        @media (max-width: 900px) {
-          #experiences > div > div:last-child {
-            grid-template-columns: 1fr !important;
-          }
-          #experiences > div > div:last-child > div:last-child {
-            flex-direction: row !important;
-            flex-wrap: wrap;
-          }
         }
       `}</style>
     </section>

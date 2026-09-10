@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useRef } from 'react'
+import { FiMessageCircle } from 'react-icons/fi'
 import { useScrollReveal } from '../hooks/useScrollReveal'
 
 export default function FinalCTA() {
@@ -99,7 +100,7 @@ export default function FinalCTA() {
             style={{ fontSize:'0.82rem', padding:'1rem 2.2rem' }}
             aria-label="Chat with us on WhatsApp"
           >
-            💬 Talk to Us
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiMessageCircle /> Talk to Us</span>
           </a>
         </div>
 

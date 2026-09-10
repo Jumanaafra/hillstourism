@@ -1,40 +1,49 @@
 import { MetadataRoute } from 'next'
 import { getPackages } from '@/lib/repositories/packages.repo'
 import { getHotels } from '@/lib/repositories/hotels.repo'
+import { getSiteUrl } from '@/lib/seo/siteUrl'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://hillstourism.com'
+  const baseUrl = getSiteUrl()
 
   const [packages, hotels] = await Promise.all([
     getPackages(true),
     getHotels(true),
   ])
 
-  // Static routes — only real page URLs, no hash fragments
-  const staticRoutes: MetadataRoute.Sitemap = [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 1.0,
-    },
+  // Core public indexable static routes (no private, admin, or API paths)
+  const staticPaths = [
+    '',
+    '/packages',
+    '/stays',
+    '/vehicles',
+    '/experiences',
+    '/gallery',
+    '/about',
+    '/privacy-policy',
+    '/terms-and-conditions',
   ]
 
-  // Dynamic package pages
-  const packageRoutes: MetadataRoute.Sitemap = packages.map(pkg => ({
-    url: `${baseUrl}/packages/${pkg.slug || pkg.id}`,
-    lastModified: new Date(pkg.updatedAt || Date.now()),
-    changeFrequency: 'weekly',
-    priority: 0.8,
+  const staticRoutes: MetadataRoute.Sitemap = staticPaths.map(path => ({
+    url: `${baseUrl}${path}`,
+    lastModified: new Date(),
   }))
 
-  // Dynamic hotel pages
-  const hotelRoutes: MetadataRoute.Sitemap = hotels.map(hotel => ({
-    url: `${baseUrl}/hotels/${hotel.slug || hotel.id}`,
-    lastModified: new Date(hotel.updatedAt || Date.now()),
-    changeFrequency: 'monthly',
-    priority: 0.7,
-  }))
+  // Active public package detail pages
+  const packageRoutes: MetadataRoute.Sitemap = packages
+    .filter(pkg => pkg.active !== false && (pkg.slug || pkg.id))
+    .map(pkg => ({
+      url: `${baseUrl}/packages/${pkg.slug || pkg.id}`,
+      lastModified: pkg.updatedAt ? new Date(pkg.updatedAt) : new Date(),
+    }))
+
+  // Active public hotel detail pages
+  const hotelRoutes: MetadataRoute.Sitemap = hotels
+    .filter(hotel => hotel.active !== false && (hotel.slug || hotel.id))
+    .map(hotel => ({
+      url: `${baseUrl}/hotels/${hotel.slug || hotel.id}`,
+      lastModified: hotel.updatedAt ? new Date(hotel.updatedAt) : new Date(),
+    }))
 
   return [...staticRoutes, ...packageRoutes, ...hotelRoutes]
 }

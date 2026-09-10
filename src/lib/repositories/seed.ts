@@ -150,7 +150,7 @@ const packageDetails: Record<string, Partial<Package>> = {
   'ooty-highlands': {
     nights: 2,
     shortDescription: 'Breathe in the crisp air of the Nilgiris as you journey through eucalyptus groves and vintage hill railways.',
-    coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80&auto=format',
+    coverImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80&auto=format',
     hotelIds: ['nilgiri-forest-resort'],
     vehicleIds: ['innova-crysta', 'tempo-traveller'],
     inclusions: [
@@ -180,7 +180,7 @@ const packageDetails: Record<string, Partial<Package>> = {
         meals: ['Dinner'],
         accommodation: 'Nilgiri Forest Escape',
         travelInfo: 'Private transfer from Coimbatore (~85 km / 3 hours)',
-        images: ['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80&auto=format'],
+        images: ['https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80&auto=format'],
       },
       {
         day: 2,

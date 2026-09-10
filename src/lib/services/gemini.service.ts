@@ -7,6 +7,73 @@ export interface ChatResponse {
   grounded: boolean
 }
 
+export interface ChatHistoryItem {
+  role: 'user' | 'model'
+  text: string
+}
+
+/**
+ * Normalizes and validates chat history for Gemini API.
+ * 1. Discards any initial greetings from the bot so the history starts with a 'user' turn.
+ * 2. Merges consecutive messages with the same role to strictly alternate user/model.
+ * 3. Ensures the history ends on a 'model' turn so the subsequent user message
+ *    can be sent cleanly via chat.sendMessage.
+ * 4. Caps to recent turns.
+ */
+export function sanitizeChatHistory(
+  rawHistory: Array<{ role: 'user' | 'model'; text: string }> = [],
+  maxTurns: number = 6
+): Array<{ role: 'user' | 'model'; parts: [{ text: string }] }> {
+  if (!Array.isArray(rawHistory) || rawHistory.length === 0) {
+    return []
+  }
+
+  // 1. Skip any initial bot messages until the first user message
+  const firstUserIndex = rawHistory.findIndex(m => m.role === 'user' && m.text?.trim())
+  if (firstUserIndex === -1) {
+    return []
+  }
+
+  const validItems = rawHistory.slice(firstUserIndex)
+  const normalized: Array<{ role: 'user' | 'model'; text: string }> = []
+
+  // 2. Normalize and merge consecutive identical roles
+  for (const item of validItems) {
+    const text = (item.text || '').trim()
+    if (!text) continue
+
+    const role = item.role === 'user' ? 'user' : 'model'
+    if (normalized.length === 0) {
+      if (role === 'user') {
+        normalized.push({ role, text })
+      }
+    } else {
+      const prev = normalized[normalized.length - 1]
+      if (prev.role === role) {
+        prev.text = `${prev.text}\n${text}`
+      } else {
+        normalized.push({ role, text })
+      }
+    }
+  }
+
+  // 3. History must end on a 'model' message because the user's new message will follow
+  while (normalized.length > 0 && normalized[normalized.length - 1].role === 'user') {
+    normalized.pop()
+  }
+
+  // 4. Slice to maxTurns (ensuring it still starts on 'user' and ends on 'model')
+  let sliced = normalized.slice(-maxTurns)
+  if (sliced.length > 0 && sliced[0].role !== 'user') {
+    sliced = sliced.slice(1)
+  }
+
+  return sliced.map(item => ({
+    role: item.role,
+    parts: [{ text: item.text }],
+  }))
+}
+
 /**
  * Server-side Gemini service for HillGuide chatbot.
  * API key remains strictly server-side.
@@ -49,20 +116,37 @@ STRICT BEHAVIOUR RULES:
   if (apiKey) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey)
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-        systemInstruction: systemInstructions,
-      })
+      const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash'
+      const fallbackModel = 'gemini-flash-latest'
 
-      const chat = model.startChat({
-        history: history.slice(-6).map(h => ({
-          role: h.role === 'user' ? 'user' : 'model',
-          parts: [{ text: h.text }],
-        })),
-      })
+      const sanitizedHistory = sanitizeChatHistory(history, 6)
 
-      const result = await chat.sendMessage(userMessage)
-      const reply = result.response.text().trim()
+      const executeWithModel = async (modelName: string) => {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: systemInstructions,
+        })
+
+        const chat = model.startChat({
+          history: sanitizedHistory,
+        })
+
+        const result = await chat.sendMessage(userMessage)
+        return result.response.text().trim()
+      }
+
+      let reply = ''
+      try {
+        reply = await executeWithModel(primaryModel)
+      } catch (primaryErr: any) {
+        // If primary model encounters 404 or 503 spike, try fallback model
+        if (primaryModel !== fallbackModel) {
+          console.warn(`[Gemini Service] Primary model ${primaryModel} failed (${primaryErr?.message || primaryErr}), trying ${fallbackModel}...`)
+          reply = await executeWithModel(fallbackModel)
+        } else {
+          throw primaryErr
+        }
+      }
 
       const chips = generateRelevantChips(userMessage, context)
 
@@ -131,7 +215,7 @@ function generateRuleBasedGroundedAnswer(userMessage: string, context: any): { t
   }
 
   return {
-    text: "Welcome to Hills Tourism! 🏔️ I am HillGuide, your local mountain companion. I can help you discover packages for Munnar, Coorg, Ooty, Shimla, Darjeeling, and Manali, explore curated stays, or learn about our hill-ready vehicle fleet. How can I help you plan your journey?",
+    text: "Welcome to Hills Tourism! I am HillGuide, your local mountain companion. I can help you discover packages for Munnar, Coorg, Ooty, Shimla, Darjeeling, and Manali, explore curated stays, or learn about our hill-ready vehicle fleet. How can I help you plan your journey?",
     chips: ['Couple getaways', 'Family trips', 'Curated stays', 'Contact team'],
   }
 }

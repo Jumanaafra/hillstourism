@@ -4,6 +4,9 @@ import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
 import type { Package, Hotel, Vehicle, ItineraryDay } from '@/types/domain'
 import Enquiry from '@/components/Enquiry'
+import { FiClock, FiStar, FiMap, FiMapPin, FiInfo, FiUsers, FiCheck, FiX, FiArrowRight, FiPlus } from 'react-icons/fi'
+import { FaStar, FaCarSide } from 'react-icons/fa'
+import { MdRestaurant, MdHotel } from 'react-icons/md'
 
 interface PackageItineraryViewProps {
   pkg: Package
@@ -161,7 +164,7 @@ export default function PackageItineraryView({
                   fontWeight: 600,
                 }}
               >
-                ⏳ {pkg.duration}
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiClock /> {pkg.duration}</span>
               </span>
             )}
           </div>
@@ -235,7 +238,7 @@ export default function PackageItineraryView({
               }}
               aria-label="Enquire about this journey"
             >
-              Send Enquiry →
+              Send Enquiry <FiArrowRight style={{ marginLeft: '4px' }} />
             </button>
           </div>
         </div>
@@ -334,7 +337,7 @@ export default function PackageItineraryView({
                   gap: '8px',
                 }}
               >
-                <span style={{ color: 'var(--hill-blue-bright)' }}>✨</span>
+                <span style={{ color: 'var(--hill-blue-bright)', display: 'flex', alignItems: 'center' }}><FiStar /></span>
                 {h}
               </div>
             ))}
@@ -417,15 +420,15 @@ export default function PackageItineraryView({
               textAlign: 'center',
             }}
           >
-            <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '1rem' }}>🗺️</span>
+            <span style={{ fontSize: '2.5rem', display: 'flex', justifyContent: 'center', marginBottom: '1rem', color: 'var(--hill-navy)' }}><FiMap /></span>
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', color: 'var(--hill-navy)', marginBottom: '0.5rem' }}>
               Customized Day-by-Day Itinerary
             </h3>
             <p style={{ color: 'var(--hill-muted)', maxWidth: '540px', margin: '0 auto 1.5rem', lineHeight: 1.6 }}>
               Our mountain travel specialists tailor the exact daily sequence, stops, and activities to your travel season, group dynamics, and preferences.
             </p>
-            <button onClick={scrollToEnquiry} className="btn-primary" style={{ padding: '0.75rem 1.75rem' }}>
-              Request Custom Day Plan →
+            <button onClick={scrollToEnquiry} className="btn-primary" style={{ padding: '0.75rem 1.75rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              Request Custom Day Plan <FiArrowRight />
             </button>
           </div>
         ) : (
@@ -507,7 +510,15 @@ export default function PackageItineraryView({
                               gap: '6px',
                             }}
                           >
-                            📍 {dayItem.locations.join(' → ')}
+                            <FiMapPin style={{ marginRight: 4, flexShrink: 0 }} />
+                            <span>
+                              {dayItem.locations.map((loc, lIdx) => (
+                                <span key={loc} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                  {lIdx > 0 && <FiArrowRight style={{ margin: '0 4px', fontSize: '0.65rem', opacity: 0.7 }} />}
+                                  {loc}
+                                </span>
+                              ))}
+                            </span>
                           </p>
                         )}
                       </div>
@@ -610,7 +621,7 @@ export default function PackageItineraryView({
                               fontWeight: 600,
                             }}
                           >
-                            <span>🍽️ Meals:</span>
+                            <span style={{ display: 'flex', alignItems: 'center' }}><MdRestaurant style={{ marginRight: 4 }} /> Meals:</span>
                             <span>{dayItem.meals.join(', ')}</span>
                           </div>
                         )}
@@ -630,7 +641,7 @@ export default function PackageItineraryView({
                               fontWeight: 600,
                             }}
                           >
-                            <span>🏨 Stay:</span>
+                            <span style={{ display: 'flex', alignItems: 'center' }}><MdHotel style={{ marginRight: 4 }} /> Stay:</span>
                             <span>{dayItem.accommodation}</span>
                           </div>
                         )}
@@ -650,7 +661,7 @@ export default function PackageItineraryView({
                               fontWeight: 500,
                             }}
                           >
-                            <span>🚗 Travel:</span>
+                            <span style={{ display: 'flex', alignItems: 'center' }}><FaCarSide style={{ marginRight: 4 }} /> Travel:</span>
                             <span>{dayItem.travelInfo}</span>
                           </div>
                         )}
@@ -699,6 +710,57 @@ export default function PackageItineraryView({
         )}
       </section>
 
+      {/* ── PHOTO GALLERY ── */}
+      {pkg.gallery && pkg.gallery.length > 0 && (
+        <section
+          style={{
+            maxWidth: 'var(--container-w)',
+            margin: '0 auto 4.5rem',
+            padding: '0 clamp(1.25rem, 5vw, 5rem)',
+          }}
+          aria-label="Package Photo Gallery"
+        >
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p className="eyebrow" style={{ color: 'var(--hill-blue-bright)', marginBottom: '0.35rem' }}>Visual Journey</p>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: 'var(--hill-navy)', fontWeight: 700 }}>
+              Package Gallery
+            </h2>
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gap: '1.25rem',
+          }}>
+            {pkg.gallery.map((media: any, idx: number) => {
+              const url = typeof media === 'string' ? media : media.url || media.src
+              if (!url) return null
+              return (
+                <div
+                  key={media.id || idx}
+                  style={{
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    height: '200px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+                    background: 'var(--hill-surface)',
+                  }}
+                >
+                  <img
+                    src={url}
+                    alt={media.caption || `${pkg.name} photo ${idx + 1}`}
+                    loading="lazy"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={e => {
+                      ;(e.target as HTMLElement).style.display = 'none'
+                    }}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* ── SECTION 5 & 6: INCLUSIONS & EXCLUSIONS ── */}
       {((pkg.inclusions && pkg.inclusions.length > 0) || (pkg.exclusions && pkg.exclusions.length > 0)) && (
         <section
@@ -728,7 +790,7 @@ export default function PackageItineraryView({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.25rem' }}>
-                  <span style={{ fontSize: '1.2rem', color: '#16A34A' }}>✓</span>
+                  <span style={{ fontSize: '1.2rem', color: '#16A34A', display: 'flex', alignItems: 'center' }}><FiCheck /></span>
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--hill-navy)' }}>
                     What&apos;s Included
                   </h3>
@@ -746,7 +808,7 @@ export default function PackageItineraryView({
                         lineHeight: 1.5,
                       }}
                     >
-                      <span style={{ color: '#16A34A', fontWeight: 700, fontSize: '1rem', flexShrink: 0 }}>✓</span>
+                      <span style={{ color: '#16A34A', fontWeight: 700, fontSize: '1rem', flexShrink: 0, marginTop: '2px', display: 'flex', alignItems: 'center' }}><FiCheck /></span>
                       <span>{inc}</span>
                     </li>
                   ))}
@@ -766,7 +828,7 @@ export default function PackageItineraryView({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.25rem' }}>
-                  <span style={{ fontSize: '1.2rem', color: '#DC2626' }}>✕</span>
+                  <span style={{ fontSize: '1.2rem', color: '#DC2626', display: 'flex', alignItems: 'center' }}><FiX /></span>
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--hill-navy)' }}>
                     What&apos;s Not Included
                   </h3>
@@ -784,7 +846,7 @@ export default function PackageItineraryView({
                         lineHeight: 1.5,
                       }}
                     >
-                      <span style={{ color: '#DC2626', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0 }}>✕</span>
+                      <span style={{ color: '#DC2626', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0, marginTop: '2px', display: 'flex', alignItems: 'center' }}><FiX /></span>
                       <span>{exc}</span>
                     </li>
                   ))}
@@ -814,7 +876,7 @@ export default function PackageItineraryView({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-              <span style={{ fontSize: '1.25rem' }}>ℹ️</span>
+              <span style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center' }}><FiInfo /></span>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, color: '#92400E' }}>
                 Important Travel Notes & Guidelines
               </h3>
@@ -906,8 +968,8 @@ export default function PackageItineraryView({
                               {hotel.category}
                             </span>
                             {hotel.rating && (
-                              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#D97706' }}>
-                                ★ {hotel.rating}
+                              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#D97706', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <FaStar /> {hotel.rating}
                               </span>
                             )}
                           </div>
@@ -927,7 +989,15 @@ export default function PackageItineraryView({
                             className={isSelected ? 'btn-primary' : 'btn-outline'}
                             style={{ width: '100%', padding: '0.5rem', fontSize: '0.75rem', justifyContent: 'center' }}
                           >
-                            {isSelected ? '✓ Selected with Package' : '+ Select for Enquiry'}
+                            {isSelected ? (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <FiCheck /> Selected with Package
+                              </span>
+                            ) : (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <FiPlus /> Select for Enquiry
+                              </span>
+                            )}
                           </button>
                         </div>
                       </div>
@@ -965,8 +1035,8 @@ export default function PackageItineraryView({
                           <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--hill-blue-bright)', textTransform: 'uppercase' }}>
                             {veh.type}
                           </span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--hill-muted)' }}>
-                            👥 {veh.capacity} Seats
+                          <span style={{ fontSize: '0.75rem', color: 'var(--hill-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <FiUsers /> {veh.capacity} Seats
                           </span>
                         </div>
                         <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 700, color: 'var(--hill-navy)', marginBottom: '4px' }}>
@@ -980,7 +1050,15 @@ export default function PackageItineraryView({
                           className={isSelected ? 'btn-primary' : 'btn-outline'}
                           style={{ width: '100%', padding: '0.5rem', fontSize: '0.75rem', justifyContent: 'center' }}
                         >
-                          {isSelected ? '✓ Selected Vehicle' : '+ Select for Enquiry'}
+                          {isSelected ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <FiCheck /> Selected Vehicle
+                            </span>
+                          ) : (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <FiPlus /> Select for Enquiry
+                            </span>
+                          )}
                         </button>
                       </div>
                     )

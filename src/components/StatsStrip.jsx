@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useRef, useEffect, useState } from 'react'
-
+import { FiBriefcase, FiMap, FiStar, FiMapPin } from 'react-icons/fi'
 const STATS = [
-  { value: 2500, suffix: '+', label: 'Happy Travelers', icon: '🧳' },
-  { value: 120,  suffix: '+', label: 'Curated Routes',  icon: '🗺️' },
-  { value: 4.9,  suffix: '/5', label: 'Traveler Rating', icon: '⭐', isDecimal: true },
-  { value: 100,  suffix: '%', label: 'Hill Focused',    icon: '🏔️' },
+  { value: 2500, suffix: '+', label: 'Happy Travelers', icon: <FiBriefcase /> },
+  { value: 120,  suffix: '+', label: 'Curated Routes',  icon: <FiMap /> },
+  { value: 4.9,  suffix: '/5', label: 'Traveler Rating', icon: <FiStar />, isDecimal: true },
+  { value: 100,  suffix: '%', label: 'Hill Focused',    icon: <FiMapPin /> },
 ]
 
 function useCountUp(target, duration, start) {
@@ -129,12 +129,7 @@ export default function StatsStrip({ id }) {
         ))}
       </div>
 
-      <style>{`
-        @media (max-width: 768px) {
-          #stats-strip > div > div { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.08); }
-          #stats-strip > div > div:last-child { border-bottom: none; }
-        }
-      `}</style>
+
     </section>
   )
 }

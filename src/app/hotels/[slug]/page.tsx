@@ -5,6 +5,10 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import HillGuide from '@/components/HillGuide'
 import Enquiry from '@/components/Enquiry'
+import { FaStar } from 'react-icons/fa'
+import { FiMapPin, FiHome } from 'react-icons/fi'
+
+import { getSiteUrl, getCanonicalUrl } from '@/lib/seo/siteUrl'
 
 interface Props {
   params: { slug: string }
@@ -22,16 +26,33 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hotel = hotels.find(h => h.slug === params.slug || h.id === params.slug)
   if (!hotel) return { title: 'Hotel Not Found — Hills Tourism' }
 
+  const pageCanonical = hotel.seo?.canonicalUrl || getCanonicalUrl(`/hotels/${params.slug}`)
+  const title = hotel.seo?.title || `${hotel.name} — ${hotel.location || 'Curated Mountain Stay'} — Hills Tourism`
+  const description =
+    hotel.seo?.description ||
+    hotel.description ||
+    `Experience ${hotel.name} in ${hotel.location}. Curated authentic mountain stays with Hills Tourism.`
+  const image = hotel.seo?.ogImage || hotel.image
+
   return {
-    title: `${hotel.name} — ${hotel.location || 'Curated Mountain Stay'} — Hills Tourism`,
-    description: hotel.description || `Experience ${hotel.name} in ${hotel.location}. Curated authentic mountain stays with Hills Tourism.`,
+    title,
+    description,
     alternates: {
-      canonical: `/hotels/${params.slug}`,
+      canonical: pageCanonical,
     },
     openGraph: {
-      title: `${hotel.name} (${hotel.location})`,
-      description: hotel.description,
-      images: hotel.image ? [{ url: hotel.image }] : undefined,
+      title,
+      description,
+      url: pageCanonical,
+      siteName: 'Hills Tourism',
+      images: image ? [{ url: image }] : undefined,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: image ? [image] : undefined,
     },
   }
 }
@@ -43,8 +64,10 @@ export default async function HotelDetailPage({ params }: Props) {
     notFound()
   }
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
+  const siteUrl = getSiteUrl()
+  const pageCanonical = getCanonicalUrl(`/hotels/${params.slug}`)
+
+  const lodgingSchema: Record<string, any> = {
     '@type': 'LodgingBusiness',
     name: hotel.name,
     description: hotel.description,
@@ -57,7 +80,40 @@ export default async function HotelDetailPage({ params }: Props) {
       '@type': 'Rating',
       ratingValue: hotel.rating || 4.5,
     },
-    priceRange: hotel.pricePerNight,
+  }
+
+  if (hotel.pricePerNight) {
+    lodgingSchema.priceRange = hotel.pricePerNight
+  }
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: siteUrl,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Stays',
+            item: `${siteUrl}/stays`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: hotel.name,
+            item: pageCanonical,
+          },
+        ],
+      },
+      lodgingSchema,
+    ],
   }
 
   return (
@@ -88,14 +144,14 @@ export default async function HotelDetailPage({ params }: Props) {
           )}
 
           <div style={{ maxWidth: 'var(--container-w)', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-            <span className="badge badge-blue" style={{ marginBottom: '1rem' }}>
-              {hotel.category} Stay · ★ {hotel.rating}
+            <span className="badge badge-blue" style={{ marginBottom: '1rem', display: 'inline-flex', alignItems: 'center' }}>
+              {hotel.category} Stay <span style={{ margin: '0 6px' }}>·</span> <FaStar style={{ marginRight: 4 }} /> {hotel.rating}
             </span>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.4rem, 5vw, 4rem)', fontWeight: 700, lineHeight: 1.1, marginBottom: '0.75rem' }}>
               {hotel.name}
             </h1>
-            <p style={{ fontSize: '1rem', color: 'var(--hill-blue-soft)', marginBottom: '1.5rem', fontWeight: 500 }}>
-              📍 {hotel.location}
+            <p style={{ fontSize: '1rem', color: 'var(--hill-blue-soft)', marginBottom: '1.5rem', fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+              <FiMapPin style={{ marginRight: 6 }} /> {hotel.location}
             </p>
             <p style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.7)', maxWidth: '640px', lineHeight: 1.6, marginBottom: '2rem' }}>
               {hotel.description}
@@ -124,9 +180,10 @@ export default async function HotelDetailPage({ params }: Props) {
                   border: '1px solid var(--hill-border)',
                   color: 'var(--hill-navy)',
                   fontWeight: 500,
-                  fontSize: '0.9rem',
+                  display: 'inline-flex',
+                  alignItems: 'center'
                 }}>
-                  🏡 {a}
+                  <FiHome style={{ marginRight: 6 }} /> {a}
                 </div>
               ))}
             </div>

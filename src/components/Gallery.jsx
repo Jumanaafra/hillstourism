@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useRef, useState, useEffect } from 'react'
+import { FiArrowRight } from 'react-icons/fi'
 
 const GALLERY_ITEMS = [
   { id: 'g1', src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=80&auto=format', alt: 'Majestic mountain range at golden hour' },
@@ -17,6 +18,19 @@ export default function Gallery({ id }) {
   const sectionRef = useRef(null)
   const headerRef = useRef(null)
   const [headerVisible, setHeaderVisible] = useState(false)
+  const [items, setItems] = useState(GALLERY_ITEMS)
+
+  // Fetch active photos from API
+  useEffect(() => {
+    fetch('/api/gallery')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setItems(data.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   // Scroll reveal for header content
   useEffect(() => {
@@ -37,7 +51,7 @@ export default function Gallery({ id }) {
 
   // Scroll reveal for each gallery item
   useEffect(() => {
-    const items = sectionRef.current?.querySelectorAll('.gallery-item') || []
+    const elList = sectionRef.current?.querySelectorAll('.gallery-item') || []
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => {
         if (e.isIntersecting) {
@@ -48,9 +62,9 @@ export default function Gallery({ id }) {
       }),
       { threshold: 0.1 }
     )
-    items.forEach(el => observer.observe(el))
+    elList.forEach(el => observer.observe(el))
     return () => observer.disconnect()
-  }, [])
+  }, [items])
 
   return (
     <section
@@ -186,14 +200,14 @@ export default function Gallery({ id }) {
               }}
             >
               <span>View Full Gallery</span>
-              <span aria-hidden="true">→</span>
+              <FiArrowRight aria-hidden="true" style={{ fontSize: '1rem' }} />
             </a>
           </div>
         </div>
 
         {/* Asymmetric masonry-style gallery grid (Intact) */}
         <div className="gallery-grid">
-          {GALLERY_ITEMS.map((item, i) => (
+          {items.map((item, i) => (
             <div
               key={item.id}
               className="gallery-item"
@@ -209,8 +223,8 @@ export default function Gallery({ id }) {
                 alt={item.alt}
                 loading="lazy"
                 onError={e => {
-                  e.target.style.display = 'none'
-                  e.target.parentNode.style.background = 'linear-gradient(135deg, #EEF3F8, #DCEBFF)'
+                  e.currentTarget.onerror = null
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=700&q=80&auto=format'
                 }}
               />
               <div className="gallery-item-overlay" />
