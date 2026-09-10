@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getGalleryPhotos } from '@/lib/repositories/gallery.repo'
 
+export const dynamic = 'force-dynamic'
+
+
 export async function GET() {
   try {
     const photos = await getGalleryPhotos(true)

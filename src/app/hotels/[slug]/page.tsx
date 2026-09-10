@@ -10,9 +10,12 @@ import { FiMapPin, FiHome } from 'react-icons/fi'
 
 import { getSiteUrl, getCanonicalUrl } from '@/lib/seo/siteUrl'
 
+export const revalidate = 3600 // ISR: regenerate at most hourly or on-demand from admin
+
 interface Props {
   params: { slug: string }
 }
+
 
 export async function generateStaticParams() {
   const hotels = await getHotels(true)

@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { verifyAdminAuth } from '@/lib/auth/adminAuth'
 import { createVehicle, updateVehicle, deleteVehicle, getVehicles } from '@/lib/repositories/vehicles.repo'
+
+function safeRevalidate() {
+  try {
+    revalidatePath('/vehicles')
+    revalidatePath('/')
+  } catch (err) {
+    console.warn('[Admin Vehicles] Revalidation error:', err)
+  }
+}
+
 
 export async function GET(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
@@ -43,6 +54,7 @@ export async function POST(req: NextRequest) {
       active: body.active !== undefined ? body.active : true,
     })
 
+    safeRevalidate()
     return NextResponse.json({ success: true, data: vehicle }, { status: 201 })
   } catch (err: any) {
     const isConflict = err?.message?.includes('already exists')
@@ -76,6 +88,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updated = await updateVehicle(id, updates)
+    safeRevalidate()
     return NextResponse.json({ success: true, data: updated })
   } catch (err: any) {
     const isConflict = err?.message?.includes('already exists')
@@ -108,5 +121,6 @@ export async function DELETE(req: NextRequest) {
   }
 
   await deleteVehicle(id)
+  safeRevalidate()
   return NextResponse.json({ success: true, data: { deleted: true } })
 }

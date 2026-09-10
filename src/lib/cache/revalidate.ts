@@ -18,6 +18,7 @@ export function triggerTargetedRevalidation(
         break
       case 'hotel':
         revalidatePath('/stays')
+        revalidatePath('/')
         if (slugOrId) revalidatePath(`/hotels/${slugOrId}`)
         break
       case 'vehicle':

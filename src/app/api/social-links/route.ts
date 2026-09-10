@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSocialLinks } from '@/lib/repositories/social.repo'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/social-links — Public endpoint to retrieve active social links for Navbar, Footer, etc.
  */

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getHotels } from '@/lib/repositories/hotels.repo'
 
+export const dynamic = 'force-dynamic'
+
+
 export async function GET() {
   try {
     const hotels = await getHotels(true)

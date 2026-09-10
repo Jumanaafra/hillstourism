@@ -21,10 +21,12 @@ export async function POST(req: NextRequest) {
     if (path) {
       revalidatePath(path)
     } else {
+      // Bulk revalidation — invalidate all major public cached pages
       revalidatePath('/')
       revalidatePath('/packages')
-      revalidatePath('/hotels')
+      revalidatePath('/stays')
       revalidatePath('/vehicles')
+      revalidatePath('/gallery')
     }
 
     return NextResponse.json({

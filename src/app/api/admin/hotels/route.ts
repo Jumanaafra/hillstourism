@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { verifyAdminAuth } from '@/lib/auth/adminAuth'
-import { createHotel, updateHotel, deleteHotel, getHotels } from '@/lib/repositories/hotels.repo'
+import { createHotel, updateHotel, deleteHotel, getHotels, getHotelById } from '@/lib/repositories/hotels.repo'
+
+function safeRevalidate(slug?: string) {
+  try {
+    revalidatePath('/stays')
+    revalidatePath('/')
+    if (slug) revalidatePath(`/hotels/${slug}`)
+  } catch (err) {
+    console.warn('[Admin Hotels] Revalidation error:', err)
+  }
+}
+
 
 export async function GET(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
@@ -40,6 +52,7 @@ export async function POST(req: NextRequest) {
       active: body.active !== undefined ? body.active : true,
     })
 
+    safeRevalidate(hotel.slug)
     return NextResponse.json({ success: true, data: hotel }, { status: 201 })
   } catch (err: any) {
     const isConflict = err?.message?.includes('already exists')
@@ -73,6 +86,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updated = await updateHotel(id, updates)
+    safeRevalidate(updated.slug)
     return NextResponse.json({ success: true, data: updated })
   } catch (err: any) {
     const isConflict = err?.message?.includes('already exists')
@@ -104,6 +118,10 @@ export async function DELETE(req: NextRequest) {
     )
   }
 
+  const existing = await getHotelById(id).catch(() => null)
   await deleteHotel(id)
+  if (existing?.slug) {
+    safeRevalidate(existing.slug)
+  }
   return NextResponse.json({ success: true, data: { deleted: true } })
 }

@@ -8,6 +8,8 @@ import { getCanonicalUrl } from '@/lib/seo/siteUrl'
 import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
 import { getHotels } from '@/lib/repositories/hotels.repo'
 
+export const revalidate = 3600 // ISR: CDN-cached; regenerates hourly or on admin mutation
+
 const defaultMeta: Metadata = {
   title: 'Curated Mountain Stays & Homestays — Hills Tourism',
   description:

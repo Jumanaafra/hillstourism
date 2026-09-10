@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getVehicles } from '@/lib/repositories/vehicles.repo'
 
+export const dynamic = 'force-dynamic'
+
+
 export async function GET() {
   try {
     const vehicles = await getVehicles(true)

@@ -7,6 +7,8 @@
  *
  * Client interactivity (Hero, LoadingScreen, GSAP, filters) lives in HomePageClient.tsx.
  */
+export const revalidate = 3600 // ISR: background-regenerate at most every hour; on-demand via admin revalidation
+
 import { getPackages } from '@/lib/repositories/packages.repo'
 import { getHotels } from '@/lib/repositories/hotels.repo'
 import { getVehicles } from '@/lib/repositories/vehicles.repo'
