@@ -142,9 +142,16 @@ export async function POST(req: NextRequest) {
     safeRevalidate(pkg.slug)
     return NextResponse.json({ success: true, data: pkg }, { status: 201 })
   } catch (err: any) {
+    const isConflict = err?.message?.includes('already exists')
     return NextResponse.json(
-      { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to create package.' } },
-      { status: 500 }
+      {
+        success: false,
+        error: {
+          code: isConflict ? 'DUPLICATE_SLUG' : 'OPERATION_FAILED',
+          message: err?.message || 'Failed to create package.',
+        },
+      },
+      { status: isConflict ? 409 : 500 }
     )
   }
 }
@@ -195,9 +202,16 @@ export async function PATCH(req: NextRequest) {
     safeRevalidate(updated.slug, oldSlug)
     return NextResponse.json({ success: true, data: updated })
   } catch (err: any) {
+    const isConflict = err?.message?.includes('already exists')
     return NextResponse.json(
-      { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to update package.' } },
-      { status: 500 }
+      {
+        success: false,
+        error: {
+          code: isConflict ? 'DUPLICATE_SLUG' : 'OPERATION_FAILED',
+          message: err?.message || 'Failed to update package.',
+        },
+      },
+      { status: isConflict ? 409 : 500 }
     )
   }
 }
