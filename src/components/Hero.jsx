@@ -88,7 +88,7 @@ export default function Hero({ id }) {
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: 'url(/frames/frame_050_delay-0.1s.gif)',
+              backgroundImage: 'url(/frames-webp/frame_050.webp)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}

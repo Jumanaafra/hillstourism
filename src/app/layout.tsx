@@ -1,7 +1,27 @@
 import type { Metadata } from 'next'
+import { Sora, Inter } from 'next/font/google'
 import '../index.css'
 import { getSiteUrl } from '@/lib/seo/siteUrl'
 import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
+
+// ── Self-hosted Google Fonts via next/font ────────────────────────────────────
+// Eliminates the render-blocking external fonts.googleapis.com request.
+// Next.js downloads and self-hosts font files at build time — zero external DNS.
+const sora = Sora({
+  subsets:  ['latin'],
+  weight:   ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-sora',
+  display:  'swap',
+  preload:  true,
+})
+
+const inter = Inter({
+  subsets:  ['latin'],
+  weight:   ['300', '400', '500', '600', '700'],
+  variable: '--font-inter',
+  display:  'swap',
+  preload:  false, // Sora is the primary brand font; preload only that one
+})
 
 const siteUrl = getSiteUrl()
 
@@ -28,7 +48,7 @@ const defaultMeta: Metadata = {
   openGraph: {
     title: 'Hills Tourism — Discover the Hills Beyond the Ordinary',
     description:
-      'Cinematic journeys through India’s most breathtaking mountains. Curated escapes crafted by local experts who call the hills home.',
+      "Cinematic journeys through India's most breathtaking mountains. Curated escapes crafted by local experts who call the hills home.",
     url: siteUrl,
     siteName: 'Hills Tourism',
     locale: 'en_IN',
@@ -100,15 +120,7 @@ export default function RootLayout({
   }
 
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${sora.variable} ${inter.variable}`}>
       <body>
         <script
           type="application/ld+json"

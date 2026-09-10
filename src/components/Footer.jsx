@@ -79,18 +79,21 @@ export default function Footer({ id }) {
           {/* Logo */}
           <a href="#home" aria-label="Hillstourism — go to top" style={{ display: 'inline-block' }}
             onClick={e => { e.preventDefault(); document.querySelector('#home')?.scrollIntoView({ behavior: 'smooth' }) }}>
-            <img
-              src="/logo.png"
-              alt="Hillstourism"
-              style={{ height: 'clamp(36px,5vw,52px)', width: 'auto', objectFit: 'contain', filter: 'brightness(1.1)' }}
-              onError={e => {
-                e.target.style.display = 'none'
-                const s = document.createElement('span')
-                s.style.cssText = 'font-family:"Sora",sans-serif;font-size:1.2rem;color:#ffffff;font-weight:700;letter-spacing:-0.02em;'
-                s.textContent = 'HILLSTOURISM'
-                e.target.parentNode.appendChild(s)
-              }}
-            />
+            <picture>
+              <source srcSet="/logo.webp" type="image/webp" />
+              <img
+                src="/logo.png"
+                alt="Hillstourism"
+                style={{ height: 'clamp(36px,5vw,52px)', width: 'auto', objectFit: 'contain', filter: 'brightness(1.1)' }}
+                onError={e => {
+                  e.target.style.display = 'none'
+                  const s = document.createElement('span')
+                  s.style.cssText = 'font-family:"Sora",sans-serif;font-size:1.2rem;color:#ffffff;font-weight:700;letter-spacing:-0.02em;'
+                  s.textContent = 'HILLSTOURISM'
+                  e.target.parentNode.appendChild(s)
+                }}
+              />
+            </picture>
           </a>
 
           <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.75, maxWidth: '260px' }}>

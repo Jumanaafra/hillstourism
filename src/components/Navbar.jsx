@@ -123,23 +123,26 @@ export default function Navbar() {
             aria-label="Hillstourism — go to home"
             style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
           >
-            <img
-              src="/logo.png"
-              alt="Hillstourism"
-              style={{
-                height:    'clamp(34px, 4vw, 48px)',
-                width:     'auto',
-                objectFit: 'contain',
-                filter:    'brightness(1.05)',
-              }}
-              onError={(e) => {
-                e.target.style.display = 'none'
-                const s = document.createElement('span')
-                s.style.cssText = 'font-family:"Sora",sans-serif;font-size:1.2rem;color:#ffffff;font-weight:700;letter-spacing:-0.02em;'
-                s.textContent = 'HILLSTOURISM'
-                e.target.parentNode.appendChild(s)
-              }}
-            />
+            <picture>
+              <source srcSet="/logo.webp" type="image/webp" />
+              <img
+                src="/logo.png"
+                alt="Hillstourism"
+                style={{
+                  height:    'clamp(34px, 4vw, 48px)',
+                  width:     'auto',
+                  objectFit: 'contain',
+                  filter:    'brightness(1.05)',
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none'
+                  const s = document.createElement('span')
+                  s.style.cssText = 'font-family:"Sora",sans-serif;font-size:1.2rem;color:#ffffff;font-weight:700;letter-spacing:-0.02em;'
+                  s.textContent = 'HILLSTOURISM'
+                  e.target.parentNode.appendChild(s)
+                }}
+              />
+            </picture>
           </a>
 
           {/* Desktop nav links */}
