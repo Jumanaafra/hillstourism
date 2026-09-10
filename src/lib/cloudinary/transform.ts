@@ -1,6 +1,7 @@
 /**
  * Cloudinary image transformation utilities.
  * Generates optimized, responsive delivery URLs without altering visual styling.
+ * Strictly client-safe: no server SDK imports, zero secrets exposed.
  */
 
 export interface TransformOptions {
@@ -33,31 +34,43 @@ export function buildOptimizedUrl(
 
   // If it's not a Cloudinary asset/URL, return as-is (graceful fallback)
   const isCloudinaryUrl = urlOrPublicId.includes('res.cloudinary.com')
-  const isPublicId = !urlOrPublicId.startsWith('http://') && !urlOrPublicId.startsWith('https://') && !urlOrPublicId.startsWith('/')
+  const isPublicId =
+    !urlOrPublicId.startsWith('http://') &&
+    !urlOrPublicId.startsWith('https://') &&
+    !urlOrPublicId.startsWith('/')
+
+  if (!isCloudinaryUrl && !isPublicId) {
+    return urlOrPublicId
+  }
 
   const transformations: string[] = []
 
   if (format) transformations.push(`f_${format}`)
   if (quality) transformations.push(`q_${quality}`)
   if (crop) transformations.push(`c_${crop}`)
+  if (gravity) transformations.push(`g_${gravity}`)
   if (width) transformations.push(`w_${width}`)
   if (height) transformations.push(`h_${height}`)
-  if (gravity) transformations.push(`g_${gravity}`)
 
   const transformString = transformations.join(',')
 
   if (isCloudinaryUrl) {
-    // Inject transformation string into URL before /upload/
     const uploadIdx = urlOrPublicId.indexOf('/upload/')
     if (uploadIdx !== -1) {
       const prefix = urlOrPublicId.substring(0, uploadIdx + 8)
       const rest = urlOrPublicId.substring(uploadIdx + 8)
 
-      // Avoid duplicate transformations
-      if (rest.startsWith('f_') || rest.startsWith('c_') || rest.startsWith('w_') || rest.startsWith('q_')) {
-        const nextSlash = rest.indexOf('/')
-        if (nextSlash !== -1) {
-          return `${prefix}${transformString}/${rest.substring(nextSlash + 1)}`
+      // Replace existing transformation segment if present before the version/path
+      const firstSlashIdx = rest.indexOf('/')
+      if (firstSlashIdx !== -1) {
+        const firstSegment = rest.substring(0, firstSlashIdx)
+        if (
+          firstSegment.includes('f_') ||
+          firstSegment.includes('q_') ||
+          firstSegment.includes('w_') ||
+          firstSegment.includes('c_')
+        ) {
+          return `${prefix}${transformString}/${rest.substring(firstSlashIdx + 1)}`
         }
       }
       return `${prefix}${transformString}/${rest}`
@@ -66,7 +79,11 @@ export function buildOptimizedUrl(
   }
 
   if (isPublicId) {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || ''
+    const cloudName =
+      (typeof process !== 'undefined' &&
+        (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
+          process.env.CLOUDINARY_CLOUD_NAME)) ||
+      ''
     if (!cloudName) return urlOrPublicId
     return `https://res.cloudinary.com/${cloudName}/image/upload/${transformString}/${urlOrPublicId}`
   }
@@ -75,38 +92,91 @@ export function buildOptimizedUrl(
 }
 
 /**
- * Generates srcset attributes for responsive images.
- */
-export function generateResponsiveSrcSet(
-  urlOrPublicId: string,
-  widths: number[] = [320, 640, 768, 1024, 1280]
-): string {
-  if (!urlOrPublicId) return ''
-  return widths
-    .map(w => `${buildOptimizedUrl(urlOrPublicId, { width: w })} ${w}w`)
-    .join(', ')
-}
-
-/**
  * Universal image URL optimizer.
- * Handles Cloudinary transformations (f_auto, q_auto, width scaling)
- * and Unsplash query parameter optimization (auto=format, q=75, w=width).
+ * Supports:
+ * - Cloudinary URLs & public IDs (f_auto, q_auto, crop, responsive width, gravity)
+ * - Unsplash URLs (auto=format, fit=crop, responsive width, quality)
+ * - Transparent fallback for local static assets and other external URLs.
  */
-export function getOptimizedImageUrl(url: string, width: number = 600): string {
+export function getOptimizedImageUrl(
+  url: string,
+  optionsOrWidth: number | TransformOptions = 600
+): string {
   if (!url) return ''
-  if (url.includes('res.cloudinary.com')) {
-    return buildOptimizedUrl(url, { width, quality: 'auto', format: 'auto' })
+  const options: TransformOptions =
+    typeof optionsOrWidth === 'number'
+      ? { width: optionsOrWidth }
+      : optionsOrWidth
+
+  const {
+    width,
+    height,
+    crop,
+    quality = 'auto',
+    gravity,
+  } = options
+
+  // 1. Cloudinary URL or public ID
+  if (
+    url.includes('res.cloudinary.com') ||
+    (!url.startsWith('http://') &&
+      !url.startsWith('https://') &&
+      !url.startsWith('/'))
+  ) {
+    return buildOptimizedUrl(url, options)
   }
+
+  // 2. Unsplash URL
   if (url.includes('images.unsplash.com')) {
     try {
       const u = new URL(url)
-      u.searchParams.set('w', String(width))
-      u.searchParams.set('q', '75')
+      if (width) u.searchParams.set('w', String(width))
+      if (height) u.searchParams.set('h', String(height))
+      if (quality) u.searchParams.set('q', quality === 'auto' ? '80' : String(quality))
       u.searchParams.set('auto', 'format')
+      if (crop === 'fill') {
+        u.searchParams.set('fit', 'crop')
+        if (gravity === 'face') u.searchParams.set('crop', 'faces')
+      }
       return u.toString()
     } catch {
       return url
     }
   }
+
   return url
 }
+
+/**
+ * Generates srcset attributes for responsive images.
+ * Universally supports Cloudinary and Unsplash image sources.
+ */
+export function generateResponsiveSrcSet(
+  urlOrPublicId: string,
+  widths: number[] = [320, 480, 640, 768, 1024, 1280],
+  options: Omit<TransformOptions, 'width'> = {}
+): string {
+  if (!urlOrPublicId) return ''
+  return widths
+    .map(w => `${getOptimizedImageUrl(urlOrPublicId, { ...options, width: w })} ${w}w`)
+    .join(', ')
+}
+
+/**
+ * Next.js custom image loader compatible with next/image.
+ */
+export function cloudinaryLoader({
+  src,
+  width,
+  quality,
+}: {
+  src: string
+  width: number
+  quality?: number
+}): string {
+  return getOptimizedImageUrl(src, {
+    width,
+    quality: quality ? quality : 'auto',
+  })
+}
+

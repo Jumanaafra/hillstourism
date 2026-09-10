@@ -84,7 +84,15 @@ export default function Footer({ id }) {
               <img
                 src="/logo.png"
                 alt="Hillstourism"
-                style={{ height: 'clamp(36px,5vw,52px)', width: 'auto', objectFit: 'contain', filter: 'brightness(1.1)' }}
+                width={150}
+                height={100}
+                style={{
+                  height:      'clamp(36px,5vw,52px)',
+                  width:       'auto',
+                  aspectRatio: '1536 / 1024',
+                  objectFit:   'contain',
+                  filter:      'brightness(1.1)',
+                }}
                 onError={e => {
                   e.target.style.display = 'none'
                   const s = document.createElement('span')

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { cachedFetch } from '../lib/cache/clientCache'
-import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
+import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { vehicles } from '../data/vehicles'
 import { FiUsers, FiBriefcase, FiMap, FiMapPin } from 'react-icons/fi'
 import { FaCarSide } from 'react-icons/fa'
@@ -96,8 +96,12 @@ export default function Vehicles({ id, initialVehicles }) {
                 background:   'var(--hill-surface)',
               }}>
                 <img
-                  src={getOptimizedImageUrl(v.image, 600)}
+                  src={getOptimizedImageUrl(v.image, { width: 640, crop: 'fill' })}
+                  srcSet={generateResponsiveSrcSet(v.image, [360, 480, 640, 768], { crop: 'fill' })}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
                   alt={v.name}
+                  width={640}
+                  height={360}
                   loading="lazy"
                   decoding="async"
                   style={{ width:'100%', height:'100%', objectFit:'cover', transition:'transform 0.5s ease' }}
@@ -105,7 +109,7 @@ export default function Vehicles({ id, initialVehicles }) {
                   onMouseLeave={e => e.target.style.transform = 'scale(1)'}
                   onError={e => {
                     e.currentTarget.onerror = null
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&q=75&auto=format'
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=640&q=75&auto=format'
                   }}
                 />
               </div>

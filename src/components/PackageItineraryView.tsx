@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
 import type { Package, Hotel, Vehicle, ItineraryDay } from '@/types/domain'
+import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
 import Enquiry from '@/components/Enquiry'
 import { FiClock, FiStar, FiMap, FiMapPin, FiInfo, FiUsers, FiCheck, FiX, FiArrowRight, FiPlus } from 'react-icons/fi'
 import { FaStar, FaCarSide } from 'react-icons/fa'
@@ -94,7 +95,7 @@ export default function PackageItineraryView({
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: `url(${heroImage})`,
+              backgroundImage: `url(${getOptimizedImageUrl(heroImage, { width: 1600, quality: 'auto' })})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               opacity: 0.35,
@@ -688,9 +689,12 @@ export default function PackageItineraryView({
                                 }}
                               >
                                 <img
-                                  src={imgUrl}
+                                  src={getOptimizedImageUrl(imgUrl, { width: 640, crop: 'fill' })}
                                   alt={`Day ${dayItem.day} — ${dayItem.title}`}
+                                  width={640}
+                                  height={360}
                                   loading="lazy"
+                                  decoding="async"
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                   onError={e => {
                                     ;(e.target as HTMLElement).style.display = 'none'
@@ -746,9 +750,12 @@ export default function PackageItineraryView({
                   }}
                 >
                   <img
-                    src={url}
+                    src={getOptimizedImageUrl(url, { width: 640, crop: 'fill' })}
                     alt={media.caption || `${pkg.name} photo ${idx + 1}`}
+                    width={640}
+                    height={400}
                     loading="lazy"
+                    decoding="async"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={e => {
                       ;(e.target as HTMLElement).style.display = 'none'
@@ -952,9 +959,12 @@ export default function PackageItineraryView({
                         {hotel.image && (
                           <div style={{ height: '140px', overflow: 'hidden' }}>
                             <img
-                              src={hotel.image}
+                              src={getOptimizedImageUrl(hotel.image, { width: 480, crop: 'fill' })}
                               alt={hotel.name}
+                              width={480}
+                              height={280}
                               loading="lazy"
+                              decoding="async"
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               onError={e => {
                                 ;(e.target as HTMLElement).style.display = 'none'

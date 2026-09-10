@@ -7,6 +7,7 @@ import HillGuide from '@/components/HillGuide'
 import Enquiry from '@/components/Enquiry'
 import { FaStar } from 'react-icons/fa'
 import { FiMapPin, FiHome } from 'react-icons/fi'
+import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
 
 import { getSiteUrl, getCanonicalUrl } from '@/lib/seo/siteUrl'
 
@@ -139,7 +140,7 @@ export default async function HotelDetailPage({ params }: Props) {
             <div style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: `url(${hotel.image})`,
+              backgroundImage: `url(${getOptimizedImageUrl(hotel.image, { width: 1600, quality: 'auto' })})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               opacity: 0.25,

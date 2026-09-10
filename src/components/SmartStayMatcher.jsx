@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { cachedFetch } from '../lib/cache/clientCache'
 import { stays } from '../data/stays'
+import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
 import { FiCheck, FiMapPin } from 'react-icons/fi'
 
 const BUDGETS  = ['Budget (< ₹4k)', 'Comfort (₹4k–8k)', 'Premium (₹8k+)']
@@ -189,12 +190,16 @@ export default function SmartStayMatcher({ id, initialHotels }) {
             }}>
               <div style={{ position: 'relative', height: '160px' }}>
                 <img
-                  src={result.image}
+                  src={getOptimizedImageUrl(result.image, { width: 400, height: 320, crop: 'fill' })}
                   alt={result.name}
+                  width={200}
+                  height={160}
+                  loading="lazy"
+                  decoding="async"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={e => {
                     e.currentTarget.onerror = null
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80&auto=format'
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=75&auto=format'
                   }}
                 />
               </div>

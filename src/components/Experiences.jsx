@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { experiences } from '../data/experiences'
+import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 
 export default function Experiences({ id }) {
@@ -72,9 +73,14 @@ export default function Experiences({ id }) {
             }}>
               <img
                 key={imgKey}
-                src={active.image}
+                src={getOptimizedImageUrl(active.image, { width: 1024, crop: 'fill' })}
+                srcSet={generateResponsiveSrcSet(active.image, [480, 768, 1024, 1280], { crop: 'fill' })}
+                sizes="(max-width: 768px) 100vw, 650px"
                 alt={active.title}
+                width={1024}
+                height={680}
                 loading="lazy"
+                decoding="async"
                 style={{
                   width:      '100%',
                   height:     '100%',
@@ -83,7 +89,7 @@ export default function Experiences({ id }) {
                 }}
                 onError={e => {
                   e.currentTarget.onerror = null
-                  e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&q=80&auto=format'
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1024&q=80&auto=format'
                 }}
               />
               {/* Overlay */}

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { categories } from '../data/categories'
+import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { FiChevronLeft, FiChevronRight, FiArrowRight } from 'react-icons/fi'
 
 /* ─── 3D Position Config ─────────────────────────── */
@@ -168,13 +169,18 @@ export default function TripCategoryCarousel({ id }) {
                   }}
                 >
                   <img
-                    src={cat.image}
+                    src={getOptimizedImageUrl(cat.image, { width: 560, height: 750, crop: 'fill' })}
+                    srcSet={generateResponsiveSrcSet(cat.image, [280, 420, 560, 700], { crop: 'fill' })}
+                    sizes="(max-width: 640px) 220px, 280px"
                     alt={cat.title}
+                    width={280}
+                    height={380}
                     loading="lazy"
+                    decoding="async"
                     style={{ width:'100%', height:'100%', objectFit:'cover', userSelect:'none', WebkitUserDrag:'none', pointerEvents:'none' }}
                     onError={e => {
                       e.currentTarget.onerror = null
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&q=80&auto=format'
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&q=75&auto=format'
                     }}
                   />
 

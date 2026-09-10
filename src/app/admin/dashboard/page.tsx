@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import type { Package, ItineraryDay, Hotel, Vehicle, Category, Experience, Testimonial, SocialLink, PageSEO } from '@/types/domain'
 import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
 import ImageUploadField from '@/components/admin/ImageUploadField'
+import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
 import { FiCheck, FiAlertTriangle, FiMail, FiBarChart2, FiStar, FiCalendar, FiArrowUpRight, FiX, FiArrowRight, FiPlus, FiTrash2, FiEdit2, FiCopy, FiGlobe, FiShare2, FiExternalLink, FiRefreshCw } from 'react-icons/fi'
 import { FaStar, FaWhatsapp, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from 'react-icons/fa'
 
@@ -1556,7 +1557,7 @@ export default function AdminDashboardPage() {
                                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
                                   {(dayItem.images || []).map((imgUrl, imgIdx) => (
                                     <div key={imgIdx} style={{ position: 'relative', width: '60px', height: '45px', borderRadius: '4px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.2)' }}>
-                                      <img src={imgUrl} alt={`Day ${dayItem.day} photo`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      <img src={getOptimizedImageUrl(imgUrl, { width: 120, height: 90, crop: 'fill' })} alt={`Day ${dayItem.day} photo`} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -2001,7 +2002,7 @@ export default function AdminDashboardPage() {
                 <div key={h.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
                   {h.image && (
                     <div style={{ width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', marginBottom: '1rem' }}>
-                      <img src={h.image} alt={h.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={getOptimizedImageUrl(h.image, { width: 400, height: 240, crop: 'fill' })} alt={h.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -2174,7 +2175,7 @@ export default function AdminDashboardPage() {
                 <div key={v.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
                   {v.image && (
                     <div style={{ width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', marginBottom: '1rem' }}>
-                      <img src={v.image} alt={v.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={getOptimizedImageUrl(v.image, { width: 400, height: 240, crop: 'fill' })} alt={v.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -2339,7 +2340,7 @@ export default function AdminDashboardPage() {
               {galleryPhotos.map(photo => (
                 <div key={photo.id} style={{ ...cardStyle, padding: '1rem', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ width: '100%', height: '160px', borderRadius: '8px', overflow: 'hidden', marginBottom: '0.75rem', background: '#000' }}>
-                    <img src={photo.src} alt={photo.alt} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={getOptimizedImageUrl(photo.src, { width: 400, height: 260, crop: 'fill' })} alt={photo.alt} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <span style={{ fontSize: '0.65rem', color: 'var(--hill-blue-bright)', fontWeight: 700, textTransform: 'uppercase' }}>
@@ -2488,7 +2489,7 @@ export default function AdminDashboardPage() {
                   <div key={c.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column' }}>
                     {c.image && (
                       <div style={{ width: '100%', height: '90px', borderRadius: '6px', overflow: 'hidden', marginBottom: '8px', background: '#000' }}>
-                        <img src={c.image} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={getOptimizedImageUrl(c.image, { width: 300, height: 160, crop: 'fill' })} alt={c.title} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
@@ -2619,7 +2620,7 @@ export default function AdminDashboardPage() {
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', background: 'var(--hill-blue-bright)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem', color: '#fff', flexShrink: 0 }}>
                         {t.avatar ? (
-                          <img src={t.avatar} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={getOptimizedImageUrl(t.avatar, { width: 80, height: 80, crop: 'fill', gravity: 'face' })} alt={t.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           t.initials || 'HT'
                         )}
@@ -2756,7 +2757,7 @@ export default function AdminDashboardPage() {
                   <div key={e.id} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     {e.image && (
                       <div style={{ width: '100%', height: '120px', background: '#000' }}>
-                        <img src={e.image} alt={e.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={getOptimizedImageUrl(e.image, { width: 400, height: 200, crop: 'fill' })} alt={e.title} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
                     )}
                     <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
@@ -2865,7 +2866,7 @@ export default function AdminDashboardPage() {
                   {libraryUploadedImages.map((asset, idx) => (
                     <div key={idx} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
                       <div style={{ width: '100%', height: '140px', background: '#000', position: 'relative' }}>
-                        <img src={asset.url} alt="Cloudinary asset" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={getOptimizedImageUrl(asset.url, { width: 360, height: 210, crop: 'fill' })} alt="Cloudinary asset" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <span style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(0,0,0,0.7)', color: 'var(--hill-blue-bright)', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
                           {asset.folder}
                         </span>

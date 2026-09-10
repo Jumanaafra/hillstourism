@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react'
 import { FiUploadCloud, FiX, FiCheck, FiRefreshCw, FiImage, FiAlertCircle } from 'react-icons/fi'
+import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
 
 export interface ImageUploadFieldProps {
   label?: string
@@ -107,8 +108,12 @@ export default function ImageUploadField({
             justifyContent: 'center',
           }}>
             <img
-              src={value}
+              src={getOptimizedImageUrl(value, { width: 128, height: 128, crop: 'fill' })}
               alt={altText || 'Preview'}
+              width={64}
+              height={64}
+              loading="lazy"
+              decoding="async"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={(e) => {
                 // Fallback indicator

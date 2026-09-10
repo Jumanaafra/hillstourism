@@ -128,11 +128,14 @@ export default function Navbar() {
               <img
                 src="/logo.png"
                 alt="Hillstourism"
+                width={150}
+                height={100}
                 style={{
-                  height:    'clamp(34px, 4vw, 48px)',
-                  width:     'auto',
-                  objectFit: 'contain',
-                  filter:    'brightness(1.05)',
+                  height:      'clamp(34px, 4vw, 48px)',
+                  width:       'auto',
+                  aspectRatio: '1536 / 1024',
+                  objectFit:   'contain',
+                  filter:      'brightness(1.05)',
                 }}
                 onError={(e) => {
                   e.target.style.display = 'none'

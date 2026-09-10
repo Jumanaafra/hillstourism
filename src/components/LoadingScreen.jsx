@@ -110,12 +110,15 @@ export default function LoadingScreen({ onComplete }) {
           <img
             src="/logo.png"
             alt="HillsTourism"
+            width={150}
+            height={100}
             style={{
-              height:     'clamp(60px, 10vw, 96px)',
-              width:      'auto',
-              maxWidth:   '320px',
-              objectFit:  'contain',
-              filter:     'brightness(1.08) drop-shadow(0 0 20px rgba(201,168,76,0.2))',
+              height:      'clamp(60px, 10vw, 96px)',
+              width:       'auto',
+              aspectRatio: '1536 / 1024',
+              maxWidth:    '320px',
+              objectFit:   'contain',
+              filter:      'brightness(1.08) drop-shadow(0 0 20px rgba(201,168,76,0.2))',
             }}
             onError={(e) => {
               /* Fallback text logo if image fails */

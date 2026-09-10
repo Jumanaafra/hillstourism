@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { cachedFetch } from '../lib/cache/clientCache'
-import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
+import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { packages } from '../data/packages'
 import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 
@@ -122,13 +122,17 @@ export default function FeaturedTrips({ id, initialPackages }) {
               <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ display: 'block', textDecoration: 'none' }} tabIndex={-1}>
                 <div className="package-card-img">
                   <img
-                    src={getOptimizedImageUrl(pkg.image, 600)}
+                    src={getOptimizedImageUrl(pkg.image, { width: 640, crop: 'fill' })}
+                    srcSet={generateResponsiveSrcSet(pkg.image, [360, 480, 640, 768], { crop: 'fill' })}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
                     alt={`${pkg.title} — ${pkg.destination}`}
+                    width={640}
+                    height={480}
                     loading="lazy"
                     decoding="async"
                     onError={e => {
                       e.currentTarget.onerror = null
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&q=75&auto=format'
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=640&q=75&auto=format'
                     }}
                   />
                   {/* Tag badge */}
