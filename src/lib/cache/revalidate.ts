@@ -30,6 +30,7 @@ export function triggerTargetedRevalidation(
       case 'content':
         revalidatePath('/experiences')
         revalidatePath('/about')
+        revalidatePath('/') // testimonials & categories displayed on homepage
         break
       case 'settings':
       case 'social':

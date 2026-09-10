@@ -410,6 +410,71 @@ export async function createChatKnowledge(data: Omit<ChatKnowledge, 'id' | 'crea
   return item
 }
 
+export async function updateChatKnowledge(id: string, updates: Partial<ChatKnowledge>): Promise<ChatKnowledge> {
+  // Find existing entry
+  const existing = memoryKnowledge.find(k => k.id === id) || null
+  let current = existing
+
+  const db = getFirestoreDB()
+  if (db) {
+    try {
+      const doc = await withFirestoreTimeout(db.collection('chatKnowledge').doc(id).get(), 15000, `chatKnowledge.getById:${id}`)
+      if (doc.exists) {
+        current = { id: doc.id, ...doc.data() } as ChatKnowledge
+      }
+    } catch (err) {
+      console.error(`[Content Repo] ChatKnowledge getById error for ${id}:`, err)
+      if (!allowMemoryFallback()) throw err
+    }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
+  }
+
+  if (!current) throw new Error(`Chat knowledge entry ${id} not found.`)
+
+  const updated: ChatKnowledge = {
+    ...current,
+    ...updates,
+    id,
+    updatedAt: new Date().toISOString(),
+  }
+
+  if (db) {
+    try {
+      await withFirestoreTimeout(db.collection('chatKnowledge').doc(id).set(updated, { merge: true }), 15000, `chatKnowledge.update:${id}`)
+    } catch (err) {
+      console.error(`[Content Repo] ChatKnowledge update error for ${id}:`, err)
+      if (!allowMemoryFallback()) throw err
+    }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
+  }
+
+  const idx = memoryKnowledge.findIndex(k => k.id === id)
+  if (idx !== -1) memoryKnowledge[idx] = updated
+  else memoryKnowledge.push(updated)
+
+  return updated
+}
+
+export async function deleteChatKnowledge(id: string): Promise<boolean> {
+  const db = getFirestoreDB()
+  if (db) {
+    try {
+      await withFirestoreTimeout(db.collection('chatKnowledge').doc(id).delete(), 15000, `chatKnowledge.delete:${id}`)
+    } catch (err) {
+      console.error(`[Content Repo] ChatKnowledge delete error for ${id}:`, err)
+      if (!allowMemoryFallback()) throw err
+    }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
+  }
+
+  memoryKnowledge = memoryKnowledge.filter(k => k.id !== id)
+  return true
+}
+
+
 export async function getSiteSettings(): Promise<SiteSettings> {
   const db = getFirestoreDB()
   if (db) {
