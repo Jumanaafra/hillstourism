@@ -344,6 +344,9 @@ button {
 }
 .nav-link:hover  { color: #ffffff; }
 .nav-link:hover::after { transform: scaleX(1); }
+.nav-link-active { color: #ffffff !important; }
+.nav-link-active::after { transform: scaleX(1) !important; }
+
 
 /* Mobile menu */
 .mobile-menu {
@@ -1295,3 +1298,34 @@ button {
 
 /* Horizontal scroll hide bar */
 html, body { overflow-x: hidden; }
+
+/* =============================================
+   MIGRATED COMPONENT RESPONSIVE STYLES
+   ============================================= */
+@media (max-width: 900px) {
+  #journey > div > div {
+    grid-template-columns: 1fr !important;
+  }
+  #journey > div > div > div:last-child {
+    display: none;
+  }
+  #experiences > div > div:last-child {
+    grid-template-columns: 1fr !important;
+  }
+  #experiences > div > div:last-child > div:last-child {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+  }
+  #contact > div > div { grid-template-columns: 1fr !important; }
+  #contact > div > div > div:last-child > div > form > div:first-child { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 768px) {
+  #stats-strip > div > div { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  #stats-strip > div > div:last-child { border-bottom: none; }
+}
+
+@media (max-width: 600px) {
+  #smart-stay > div > div:last-child > div > div:first-child { grid-template-columns: 1fr !important; }
+  #contact > div > div > div:last-child > div > form > div:first-child { grid-template-columns: 1fr !important; }
+}

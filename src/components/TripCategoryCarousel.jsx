@@ -1,5 +1,8 @@
+'use client'
+
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { categories } from '../data/categories'
+import { FiChevronLeft, FiChevronRight, FiArrowRight } from 'react-icons/fi'
 
 /* ─── 3D Position Config ─────────────────────────── */
 const POS_CONFIG = {
@@ -56,12 +59,13 @@ function getStyle(pos, isMob) {
 
 export default function TripCategoryCarousel({ id }) {
   const [active,  setActive]  = useState(0)
-  const [isMob,   setIsMob]   = useState(window.innerWidth < 768)
+  const [isMob,   setIsMob]   = useState(false)
   const dragRef   = useRef({ dragging: false, startX: 0, moved: 0 })
   const containerRef = useRef(null)
 
   /* Responsive check */
   useEffect(() => {
+    setIsMob(window.innerWidth < 768)
     const handler = () => setIsMob(window.innerWidth < 768)
     window.addEventListener('resize', handler, { passive: true })
     return () => window.removeEventListener('resize', handler)
@@ -168,9 +172,9 @@ export default function TripCategoryCarousel({ id }) {
                     alt={cat.title}
                     loading="lazy"
                     style={{ width:'100%', height:'100%', objectFit:'cover', userSelect:'none', WebkitUserDrag:'none', pointerEvents:'none' }}
-                    onError={(e) => {
-                      e.target.style.display = 'none'
-                      e.target.parentNode.style.background = `linear-gradient(135deg, #0c1a0c, #1e3d1e)`
+                    onError={e => {
+                      e.currentTarget.onerror = null
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&q=80&auto=format'
                     }}
                   />
 
@@ -211,10 +215,10 @@ export default function TripCategoryCarousel({ id }) {
                         </p>
                         <button
                           className="btn-primary"
-                          style={{ padding:'0.6rem 1.3rem', fontSize:'0.7rem' }}
+                          style={{ padding:'0.6rem 1.3rem', fontSize:'0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                           onClick={() => document.querySelector('#packages')?.scrollIntoView({ behavior: 'smooth' })}
                         >
-                          Explore →
+                          Explore <FiArrowRight style={{ fontSize: '0.8rem' }} />
                         </button>
                       </>
                     )}
@@ -231,9 +235,9 @@ export default function TripCategoryCarousel({ id }) {
             className="btn-outline-white"
             onClick={() => go(-1)}
             aria-label="Previous category"
-            style={{ padding:'0.7rem 1.2rem', fontSize:'1rem' }}
+            style={{ padding:'0.7rem 1.2rem', fontSize:'1rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            ←
+            <FiChevronLeft />
           </button>
 
           {/* Dots */}
@@ -263,9 +267,9 @@ export default function TripCategoryCarousel({ id }) {
             className="btn-outline-white"
             onClick={() => go(1)}
             aria-label="Next category"
-            style={{ padding:'0.7rem 1.2rem', fontSize:'1rem' }}
+            style={{ padding:'0.7rem 1.2rem', fontSize:'1rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            →
+            <FiChevronRight />
           </button>
         </div>
 

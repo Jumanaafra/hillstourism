@@ -1,0 +1,43 @@
+import type { Metadata } from 'next'
+import Navbar from '@/components/Navbar'
+import Footer from '@/components/Footer'
+import HillGuide from '@/components/HillGuide'
+import Stays from '@/components/Stays'
+import SmartStayMatcher from '@/components/SmartStayMatcher'
+import { getCanonicalUrl } from '@/lib/seo/siteUrl'
+import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
+
+const defaultMeta: Metadata = {
+  title: 'Curated Mountain Stays & Homestays — Hills Tourism',
+  description:
+    'Discover authentic hill cottages, colonial bungalows, and luxury hillside resorts across Munnar, Coorg, Ooty, and Himachal. Vetted for panoramic views and hospitality.',
+  alternates: {
+    canonical: getCanonicalUrl('/stays'),
+  },
+  openGraph: {
+    title: 'Curated Mountain Stays & Homestays — Hills Tourism',
+    description:
+      'Authentic hill cottages, colonial bungalows, and boutique mountain resorts vetted by local hill experts.',
+    url: getCanonicalUrl('/stays'),
+    siteName: 'Hills Tourism',
+    type: 'website',
+  },
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return resolvePageMetadata('/stays', defaultMeta)
+}
+
+export default function StaysPage() {
+  return (
+    <>
+      <Navbar />
+      <main style={{ paddingTop: '80px' }}>
+        <Stays id="stays" />
+        <SmartStayMatcher id="smart-stay" />
+      </main>
+      <Footer id="footer" />
+      <HillGuide />
+    </>
+  )
+}

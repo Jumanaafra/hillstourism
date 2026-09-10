@@ -1,26 +1,53 @@
+'use client'
+
 import React, { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 
 const NAV_LINKS = [
-  { label: 'Home',        href: '#home' },
-  { label: 'Packages',    href: '#packages' },
-  { label: 'Experiences', href: '#experiences' },
-  { label: 'Stays',       href: '#stays' },
-  { label: 'Vehicles',    href: '#vehicles' },
-  { label: 'Gallery',     href: '#gallery' },
-  { label: 'About',       href: '#about' },
+  { label: 'Home',        href: '/' },
+  { label: 'Packages',    href: '/packages' },
+  { label: 'Experiences', href: '/experiences' },
+  { label: 'Stays',       href: '/stays' },
+  { label: 'Vehicles',    href: '/vehicles' },
+  { label: 'Gallery',     href: '/gallery' },
+  { label: 'About',       href: '/about' },
 ]
 
 export default function Navbar() {
-  const [scrolled,    setScrolled]    = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
+
+  // On non-home pages there is no dark Hero to overlay, so always use the dark navbar style
+  const isHomePage = pathname === '/'
+  const [scrolled, setScrolled] = useState(!isHomePage)
   const [menuOpen,    setMenuOpen]    = useState(false)
   const [menuMounted, setMenuMounted] = useState(false)
+  const [whatsappUrl, setWhatsappUrl] = useState("https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip.")
 
-  /* Scroll listener */
   useEffect(() => {
+    fetch('/api/social-links')
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && Array.isArray(res.data)) {
+          const wa = res.data.find(s => s.platform === 'whatsapp' && s.active)
+          if (wa && wa.url) setWhatsappUrl(wa.url)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  /* Scroll listener — on homepage only toggles; on other pages always stays dark */
+  useEffect(() => {
+    if (!isHomePage) {
+      setScrolled(true)
+      return
+    }
+    setScrolled(window.scrollY > 60)
     const handler = () => setScrolled(window.scrollY > 60)
     window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
-  }, [])
+  }, [isHomePage])
 
   /* Prevent body scroll when menu open */
   useEffect(() => {
@@ -43,10 +70,30 @@ export default function Navbar() {
 
   const handleNavClick = (href) => {
     setMenuOpen(false)
+    const delay = menuOpen ? 450 : 0
     setTimeout(() => {
-      const el = document.querySelector(href)
-      if (el) el.scrollIntoView({ behavior: 'smooth' })
-    }, menuOpen ? 450 : 0)
+      // Pure hash anchor (e.g. #contact) → smooth-scroll within current page
+      if (href.startsWith('#')) {
+        const el = document.querySelector(href)
+        if (el) el.scrollIntoView({ behavior: 'smooth' })
+        return
+      }
+      // Hash anchor on home (e.g. /#contact) from homepage → smooth-scroll
+      if (href.startsWith('/#') && pathname === '/') {
+        const id = href.slice(1) // becomes #contact
+        const el = document.querySelector(id)
+        if (el) el.scrollIntoView({ behavior: 'smooth' })
+        return
+      }
+      // All other links → client-side route navigation
+      router.push(href)
+    }, delay)
+  }
+
+  // Determine if a nav link is active
+  const isActive = (href) => {
+    if (href === '/') return pathname === '/'
+    return pathname.startsWith(href)
   }
 
   return (
@@ -55,6 +102,7 @@ export default function Navbar() {
         className={`navbar ${scrolled ? 'scrolled' : ''}`}
         role="navigation"
         aria-label="Main navigation"
+        style={!isHomePage && !scrolled ? { background: 'rgba(0,9,31,0.95)', backdropFilter: 'blur(24px)' } : undefined}
       >
         <div style={{
           display:        'flex',
@@ -70,8 +118,8 @@ export default function Navbar() {
         }}>
           {/* Logo */}
           <a
-            href="#home"
-            onClick={(e) => { e.preventDefault(); handleNavClick('#home') }}
+            href="/"
+            onClick={(e) => { e.preventDefault(); handleNavClick('/') }}
             aria-label="Hillstourism — go to home"
             style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
           >
@@ -108,8 +156,9 @@ export default function Navbar() {
               <li key={link.href}>
                 <a
                   href={link.href}
-                  className="nav-link"
+                  className={`nav-link${isActive(link.href) ? ' nav-link-active' : ''}`}
                   onClick={(e) => { e.preventDefault(); handleNavClick(link.href) }}
+                  aria-current={isActive(link.href) ? 'page' : undefined}
                 >
                   {link.label}
                 </a>
@@ -121,9 +170,9 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
             {/* Desktop CTA */}
             <a
-              href="#contact"
+              href="/#contact"
               className="btn-primary desktop-cta"
-              onClick={(e) => { e.preventDefault(); handleNavClick('#contact') }}
+              onClick={(e) => { e.preventDefault(); handleNavClick('/#contact') }}
               style={{ padding: '0.6rem 1.35rem', fontSize: '0.72rem' }}
             >
               Plan My Trip
@@ -131,7 +180,7 @@ export default function Navbar() {
 
             {/* WhatsApp icon link */}
             <a
-              href="https://wa.me/919999000000?text=Hi! I'd like to plan a hill trip."
+              href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Contact on WhatsApp"
@@ -250,7 +299,7 @@ export default function Navbar() {
 
           <nav>
             <ul style={{ listStyle: 'none', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-              {[...NAV_LINKS, { label: 'Contact', href: '#contact' }].map((link, i) => (
+              {[...NAV_LINKS, { label: 'Contact', href: '/#contact' }].map((link, i) => (
                 <li key={link.href} style={{
                   opacity:    menuOpen ? 1 : 0,
                   transform:  menuOpen ? 'translateY(0)' : 'translateY(20px)',
@@ -279,14 +328,14 @@ export default function Navbar() {
             justifyContent: 'center',
           }}>
             <a
-              href="#contact"
+              href="/#contact"
               className="btn-primary"
-              onClick={(e) => { e.preventDefault(); handleNavClick('#contact') }}
+              onClick={(e) => { e.preventDefault(); handleNavClick('/#contact') }}
             >
               Plan My Trip
             </a>
             <a
-              href="https://wa.me/919999000000?text=Hi! I'd like to plan a hill trip."
+              href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-outline-white"

@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useRef, useState, useEffect, useCallback } from 'react'
 import { useScrollFrameSequence, TOTAL_FRAMES } from '../hooks/useFrameSequence'
 

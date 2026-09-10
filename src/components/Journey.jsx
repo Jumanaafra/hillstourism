@@ -1,5 +1,8 @@
-import React, { useRef, useEffect } from 'react'
+'use client'
 
+import React, { useRef, useEffect } from 'react'
+import { FiMapPin, FiCompass } from 'react-icons/fi'
+import { FaStar } from 'react-icons/fa'
 export default function Journey({ id }) {
   const sectionRef = useRef(null)
 
@@ -54,7 +57,7 @@ export default function Journey({ id }) {
         style={{
           position:        'absolute',
           inset:           '-60px 0',
-          backgroundImage: `url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=75&auto=format)`,
+          backgroundImage: `url(https://images.unsplash.com/photo-1585038848486-0a2b005eef3c?w=1800&q=75&auto=format)`,
           backgroundSize:  'cover',
           backgroundPosition: 'center 30%',
           opacity:         0.07,
@@ -230,8 +233,8 @@ export default function Journey({ id }) {
               padding:      '0.5rem 1.25rem',
               border:       '1px solid rgba(255,255,255,0.12)',
             }}>
-              <p style={{ color: '#ffffff', fontSize: '0.78rem', fontWeight: 600 }}>
-                🏔️ &nbsp;Hill Country, India
+              <p style={{ color: '#ffffff', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                <FiMapPin style={{ marginRight: 6 }} /> &nbsp;Hill Country, India
               </p>
             </div>
           </div>
@@ -259,7 +262,7 @@ export default function Journey({ id }) {
               marginBottom: '0.75rem',
               fontSize:     '1.2rem',
             }}>
-              🧭
+              <FiCompass />
             </div>
             <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--hill-navy)', marginBottom: '0.2rem' }}>
               Local Experts
@@ -286,7 +289,7 @@ export default function Journey({ id }) {
               <p style={{ fontSize: '1.4rem', fontWeight: 700, color: '#ffffff', lineHeight: 1 }}>4.9</p>
               <div style={{ display: 'flex', gap: '2px', marginTop: '3px' }}>
                 {[1,2,3,4,5].map(s => (
-                  <span key={s} style={{ color: '#F59E0B', fontSize: '0.65rem' }}>★</span>
+                  <span key={s} style={{ color: '#F59E0B', fontSize: '0.65rem', display: 'flex' }}><FaStar /></span>
                 ))}
               </div>
             </div>
@@ -299,17 +302,7 @@ export default function Journey({ id }) {
         </div>
       </div>
 
-      {/* ── Responsive ── */}
-      <style>{`
-        @media (max-width: 900px) {
-          #journey > div > div {
-            grid-template-columns: 1fr !important;
-          }
-          #journey > div > div > div:last-child {
-            display: none;
-          }
-        }
-      `}</style>
+
     </section>
   )
 }

@@ -1,18 +1,21 @@
+'use client'
+
 import React, { useState, useRef, useEffect } from 'react'
 import { stays } from '../data/stays'
+import { FiCheck, FiMapPin } from 'react-icons/fi'
 
 const BUDGETS  = ['Budget (< ₹4k)', 'Comfort (₹4k–8k)', 'Premium (₹8k+)']
 const SIZES    = ['Solo', 'Couple', 'Family (3–5)', 'Group (6+)']
 const COMFORTS = ['Basic', 'Comfortable', 'Luxury']
 
-function matchStay({ budget, groupSize, comfort }) {
-  let filtered = [...stays]
-  if (budget === 'Budget (< ₹4k)')       filtered = stays.filter(s => s.category === 'Normal')
-  else if (budget === 'Comfort (₹4k–8k)') filtered = stays.filter(s => s.category === 'Premium')
-  else if (budget === 'Premium (₹8k+)')   filtered = stays.filter(s => s.category === '5 Star')
+function matchStay({ budget, groupSize, comfort, stayList = stays }) {
+  let filtered = [...stayList]
+  if (budget === 'Budget (< ₹4k)')       filtered = stayList.filter(s => s.category === 'Normal')
+  else if (budget === 'Comfort (₹4k–8k)') filtered = stayList.filter(s => s.category === 'Premium')
+  else if (budget === 'Premium (₹8k+)')   filtered = stayList.filter(s => s.category === '5 Star')
   if (comfort === 'Luxury')              filtered = filtered.filter(s => s.category !== 'Normal')
   if (comfort === 'Basic')               filtered = filtered.filter(s => s.category === 'Normal')
-  return filtered[0] || stays[0]
+  return filtered[0] || stayList[0] || stays[0]
 }
 
 export default function SmartStayMatcher({ id }) {
@@ -20,7 +23,19 @@ export default function SmartStayMatcher({ id }) {
   const [groupSize, setGroupSize] = useState(null)
   const [comfort,   setComfort]   = useState(null)
   const [result,    setResult]    = useState(null)
+  const [stayList,  setStayList]  = useState(stays)
   const sectionRef = useRef(null)
+
+  useEffect(() => {
+    fetch('/api/hotels')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setStayList(data.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []
@@ -35,7 +50,7 @@ export default function SmartStayMatcher({ id }) {
   }, [])
 
   const handleMatch = () => {
-    const matched = matchStay({ budget, groupSize, comfort })
+    const matched = matchStay({ budget, groupSize, comfort, stayList })
     setResult(matched)
   }
 
@@ -157,8 +172,8 @@ export default function SmartStayMatcher({ id }) {
             marginTop: '2rem',
             animation: 'fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both',
           }} aria-live="polite">
-            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)', marginBottom: '1rem' }}>
-              ✓ We found your perfect match
+            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <FiCheck style={{ color: 'var(--hill-blue-bright)', fontSize: '1rem' }} /> We found your perfect match
             </p>
             <div style={{
               background:   '#ffffff',
@@ -173,11 +188,15 @@ export default function SmartStayMatcher({ id }) {
                   src={result.image}
                   alt={result.name}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onError={e => { e.target.style.display='none'; e.target.parentNode.style.background='linear-gradient(135deg,#001040,#0050C0)' }}
+                  onError={e => {
+                    e.currentTarget.onerror = null
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80&auto=format'
+                  }}
                 />
               </div>
               <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.65rem', color: 'var(--hill-blue-bright)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                <span style={{ fontSize: '0.65rem', color: 'var(--hill-blue-bright)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <FiMapPin style={{ fontSize: '0.75rem', flexShrink: 0 }} />
                   {result.location}
                 </span>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--hill-navy)' }}>
@@ -206,9 +225,6 @@ export default function SmartStayMatcher({ id }) {
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(24px); }
           to   { opacity: 1; transform: translateY(0); }
-        }
-        @media (max-width: 600px) {
-          #smart-stay > div > div:last-child > div > div:first-child { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </section>

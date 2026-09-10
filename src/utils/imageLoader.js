@@ -53,10 +53,25 @@ export async function loadImageBatch(srcs, onProgress) {
 /**
  * Generate the path for a hero frame given its index.
  * Frames are named: frame_000_delay-0.1s.gif … frame_099_delay-0.1s.gif
+ * Supports Cloudinary CDN delivery when NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is present,
+ * while strictly maintaining local file fallback.
  * @param {number} index  0-based index (0–99)
  * @returns {string}
  */
 export function getFramePath(index) {
   const num = String(index).padStart(3, '0')
-  return `/frames/frame_${num}_delay-0.1s.gif`
+  const fileName = `frame_${num}_delay-0.1s.gif`
+
+  const cloudName = typeof process !== 'undefined'
+    ? (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME)
+    : ''
+
+  const useCloudinaryHero = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_USE_CLOUDINARY_HERO === 'true'
+
+  if (cloudName && useCloudinaryHero) {
+    return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto/hills-tourism/hero/${fileName}`
+  }
+
+  return `/frames/${fileName}`
 }
+

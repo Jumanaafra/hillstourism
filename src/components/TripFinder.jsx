@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useRef, useEffect } from 'react'
 import { packages } from '../data/packages'
 
@@ -6,8 +8,8 @@ const BUDGETS   = ['Budget', 'Comfort', 'Premium', 'Luxury']
 const TRIP_TYPES = ['Couple', 'Family', 'Friends', 'Adventure', 'Wildlife']
 
 // Deterministic matching logic
-function matchPackages({ duration, budget, tripType }) {
-  return packages.filter(pkg => {
+function matchPackages({ duration, budget, tripType, pkgList = packages }) {
+  return pkgList.filter(pkg => {
     let match = true
     if (tripType && tripType !== 'All') {
       const t = tripType.toLowerCase()
@@ -32,6 +34,18 @@ export default function TripFinder({ id }) {
   const [tripType, setTripType] = useState(null)
   const [results,  setResults]  = useState([])
   const [searched, setSearched] = useState(false)
+  const [pkgList,  setPkgList]  = useState(packages)
+
+  useEffect(() => {
+    fetch('/api/packages')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setPkgList(data.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   // Scroll reveal
   useEffect(() => {
@@ -47,8 +61,8 @@ export default function TripFinder({ id }) {
   }, [])
 
   const handleFind = () => {
-    const matched = matchPackages({ duration, budget, tripType })
-    setResults(matched.length > 0 ? matched : packages.slice(0, 3))
+    const matched = matchPackages({ duration, budget, tripType, pkgList })
+    setResults(matched.length > 0 ? matched : pkgList.slice(0, 3))
     setSearched(true)
     setTimeout(() => {
       document.querySelector('#finder-results')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -203,7 +217,10 @@ export default function TripFinder({ id }) {
                 >
                   <div className="package-card-img">
                     <img src={pkg.image} alt={`${pkg.title} — ${pkg.destination}`} loading="lazy"
-                      onError={e => { e.target.style.display='none'; e.target.parentNode.style.background='linear-gradient(135deg,#001040,#0050C0)' }} />
+                      onError={e => {
+                        e.currentTarget.onerror = null
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&q=80&auto=format'
+                      }} />
                     <div style={{ position:'absolute', top:'0.75rem', left:'0.75rem' }}>
                       <span className="badge badge-blue">{pkg.category}</span>
                     </div>

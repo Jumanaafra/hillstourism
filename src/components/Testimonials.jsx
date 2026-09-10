@@ -1,11 +1,14 @@
+'use client'
+
 import React, { useState, useRef, useEffect } from 'react'
 import { testimonials } from '../data/testimonials'
+import { FaStar } from 'react-icons/fa'
 
 function StarRating({ rating }) {
   return (
     <div className="stars" aria-label={`${rating} out of 5 stars`}>
       {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} aria-hidden="true" style={{ color: i < rating ? '#F59E0B' : '#D1D5DB' }}>★</span>
+        <span key={i} aria-hidden="true" style={{ color: i < rating ? '#F59E0B' : '#D1D5DB', display: 'flex' }}><FaStar /></span>
       ))}
     </div>
   )

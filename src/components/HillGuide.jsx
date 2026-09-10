@@ -1,79 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+'use client'
 
-// ─────────────────────────────────────────────────────────────
-// Deterministic response engine (AI-replaceable)
-// Structure: intent patterns → response
-// Replace the `getResponse` function with your AI call later.
-// ─────────────────────────────────────────────────────────────
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { trackChatOpen, trackChatMessage } from '../lib/analytics/events'
+import { FiMessageCircle } from 'react-icons/fi'
 
 const QUICK_ACTIONS = ['Couple', 'Family', 'Friends', 'Adventure']
-
-const RESPONSES = {
-  couple: {
-    message: "💑 Perfect! For couples we recommend:\n\n🏔️ **Munnar Honeymoon Escape** (3N/4D)\n🌿 **Coorg Romance Trails** (4N/5D)\n🌄 **Darjeeling Sunrise Special** (3N/4D)\n\nAll include curated stays, private transfers, and sunset experiences. Want me to share pricing?",
-    chips: ['Yes, show pricing', 'Tell me about Munnar', 'What stays are included?'],
-  },
-  family: {
-    message: "👨‍👩‍👧‍👦 Great choice for the family! Here are our top family packages:\n\n🌲 **Coorg Family Trails** (4N/5D)\n🏕️ **Ooty Highlands Family Escape** (3N/4D)\n🦁 **Anamalai Wildlife Family Package** (5N/6D)\n\nAll our family packages include child-friendly activities and flexible itineraries.",
-    chips: ['Show pricing', 'Tell me about Coorg', 'What age groups?'],
-  },
-  friends: {
-    message: "🎉 Friends trips are our specialty! Check these out:\n\n⛺ **Manali Adventure Pack** (5N/6D)\n🏔️ **Shimla Corporate/Friends Retreat** (3N/4D)\n🌊 **Coorg Waterfall Trek** (3N/4D)\n\nAll packages include group accommodation, campfires, and local experiences.",
-    chips: ['What activities included?', 'Show group pricing', 'Trekking options'],
-  },
-  adventure: {
-    message: "🧗 Ready for an adventure? Here's what we offer:\n\n⛰️ **Mountain Trekking** — guided ridge trails\n🚙 **Jeep Safari** — forest wildlife drives\n💧 **Waterfall Trails** — 4–5 hour forest treks\n🌅 **Sunrise Viewpoints** — pre-dawn experiences\n\nAll led by local expert guides.",
-    chips: ['Book a trek', 'Tell me about safari', 'Difficulty levels'],
-  },
-  pricing: {
-    message: "💰 Our package prices start from:\n\n• Couple packages — ₹8,999/person\n• Family packages — ₹7,499/person\n• Group packages — ₹5,999/person\n• Solo/custom — contact us\n\nAll prices include accommodation, transport, and guided experiences. Seasonal offers available.",
-    chips: ['What\'s included?', 'Book now', 'Custom package'],
-  },
-  stays: {
-    message: "🏡 We curate stays across categories:\n\n• **Normal** — Cosy homestays (from ₹2,800/night)\n• **Premium** — Boutique resorts (from ₹6,500/night)\n• **5 Star** — Luxury retreats (from ₹14,500/night)\n\nYou can also use our Smart Stay Matcher on the page to find your perfect match!",
-    chips: ['Match my stay', 'Tell me about 5 star', 'Family stays'],
-  },
-  vehicles: {
-    message: "🚗 All our trips include comfortable vehicles with local drivers:\n\n• Sedan — up to 4 people\n• Innova Crysta — up to 7 people\n• Tempo Traveller — up to 12 people\n• Fortuner — premium 4×4 for mountain roads\n\nAll vehicles include hill-experienced drivers and 24/7 support.",
-    chips: ['Pricing', 'Book vehicle', 'Airport pickup?'],
-  },
-  time: {
-    message: "📅 Best times to visit:\n\n🌸 **Oct–Feb** — Cool, clear skies. Best for Munnar, Ooty, Coorg\n❄️ **Nov–Mar** — Snow season. Best for Manali, Shimla, Darjeeling\n🌧️ **Jun–Sep** — Monsoon magic in Kerala & Coorg (lush, fewer crowds)\n\nEach destination has its own sweet spot. Which area are you thinking?",
-    chips: ['Munnar timing', 'Manali timing', 'Coorg timing'],
-  },
-  duration: {
-    message: "⏱️ Our packages run from:\n\n• Weekend escape — 2N/3D\n• Short break — 3N/4D ⭐ Most popular\n• Full experience — 5N/6D\n• Extended journey — 7N/8D\n\nWe recommend at least 4 nights to truly experience any hill destination.",
-    chips: ['3N/4D options', '5N/6D options', 'Weekend escapes'],
-  },
-  contact: {
-    message: "📞 Here's how to reach us:\n\n📱 **WhatsApp** — wa.me/919999000000 (fastest)\n📧 **Email** — hello@hillstourism.com\n📞 **Phone** — +91 99990 00000\n⏰ Available 9am–9pm, 7 days\n\nOr scroll up and fill out our enquiry form for a detailed trip plan!",
-    chips: ['Fill enquiry form', 'WhatsApp now', 'Email us'],
-  },
-  itinerary: {
-    message: "🗺️ Every Hillstourism journey comes with a day-by-day itinerary that includes:\n\n• All accommodation bookings\n• Transport & transfers\n• Guided experiences\n• Meal inclusions\n• Emergency contacts\n• Local tips\n\nWould you like a sample itinerary for a specific destination?",
-    chips: ['Munnar sample', 'Manali sample', 'Coorg sample'],
-  },
-  default: {
-    message: "I'm HillGuide 🏔️, your mountain travel companion!\n\nI can help you with:\n• Finding the right package\n• Choosing a stay\n• Best times to visit\n• Experiences & activities\n• Pricing & booking\n\nWhat would you like to know?",
-    chips: ['Find a package', 'Stays info', 'Best time to visit'],
-  },
-}
-
-function getResponse(text) {
-  const t = text.toLowerCase()
-  if (t.match(/couple|honeymoon|romance|partner/))    return RESPONSES.couple
-  if (t.match(/family|kid|child|parent/))             return RESPONSES.family
-  if (t.match(/friend|group|gang|squad/))             return RESPONSES.friends
-  if (t.match(/adventure|trek|hike|wild|safari/))     return RESPONSES.adventure
-  if (t.match(/price|cost|budget|expensive|cheap|₹/)) return RESPONSES.pricing
-  if (t.match(/stay|hotel|resort|homestay|accomm/))   return RESPONSES.stays
-  if (t.match(/vehicle|car|cab|transport|drive/))     return RESPONSES.vehicles
-  if (t.match(/time|when|season|month|best time/))    return RESPONSES.time
-  if (t.match(/duration|how long|days|nights/))       return RESPONSES.duration
-  if (t.match(/contact|call|whatsapp|phone|email/))   return RESPONSES.contact
-  if (t.match(/itinerary|plan|schedule|route/))       return RESPONSES.itinerary
-  return RESPONSES.default
-}
 
 // Simple markdown-like renderer
 function MessageText({ text }) {
@@ -83,7 +14,7 @@ function MessageText({ text }) {
       {lines.map((line, i) => {
         const parts = line.split(/\*\*(.*?)\*\*/g)
         return (
-          <p key={i} style={{ margin: i > 0 ? '2px 0 0' : '0' }}>
+          <p key={i} style={{ margin: i > 0 ? '4px 0 0' : '0' }}>
             {parts.map((part, j) =>
               j % 2 === 1
                 ? <strong key={j}>{part}</strong>
@@ -97,24 +28,25 @@ function MessageText({ text }) {
 }
 
 export default function HillGuide() {
-  const [open,    setOpen]    = useState(false)
+  const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [messages, setMessages] = useState([
     {
-      id:   1,
+      id: 1,
       from: 'bot',
-      text: "Hi 👋\nWhat kind of hill escape are you planning?",
+      text: "Hi! I am HillGuide, your mountain companion!\nWhat kind of hill escape are you planning?",
       chips: QUICK_ACTIONS,
     }
   ])
-  const [input,    setInput]    = useState('')
-  const [typing,   setTyping]   = useState(false)
+  const [input, setInput] = useState('')
+  const [typing, setTyping] = useState(false)
   const messagesRef = useRef(null)
-  const inputRef    = useRef(null)
+  const inputRef = useRef(null)
 
   useEffect(() => {
     if (open) {
       setMounted(true)
+      trackChatOpen()
       setTimeout(() => inputRef.current?.focus(), 100)
     } else {
       const t = setTimeout(() => setMounted(false), 400)
@@ -129,29 +61,63 @@ export default function HillGuide() {
     }
   }, [messages, typing])
 
-  const addBotResponse = useCallback((text, chips = []) => {
-    setTyping(true)
-    setTimeout(() => {
-      setTyping(false)
-      setMessages(prev => [...prev, {
-        id:   Date.now(),
-        from: 'bot',
-        text,
-        chips,
-      }])
-    }, 900 + Math.random() * 400)
-  }, [])
-
-  const sendMessage = useCallback((text) => {
+  const sendMessage = useCallback(async (text) => {
     const trimmed = text.trim()
     if (!trimmed) return
 
-    setMessages(prev => [...prev, { id: Date.now(), from: 'user', text: trimmed }])
+    const userMsg = { id: Date.now(), from: 'user', text: trimmed }
+    setMessages(prev => [...prev, userMsg])
     setInput('')
+    setTyping(true)
+    trackChatMessage(trimmed.length)
 
-    const response = getResponse(trimmed)
-    addBotResponse(response.message, response.chips)
-  }, [addBotResponse])
+    // Build history for grounding context (filter out initial welcome greeting)
+    const chatHistory = messages
+      .filter(m => m.id !== 1 && m.text?.trim())
+      .map(m => ({
+        role: m.from === 'user' ? 'user' : 'model',
+        text: m.text,
+      }))
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: trimmed,
+          history: chatHistory,
+        }),
+      })
+
+      const data = await res.json()
+      setTyping(false)
+
+      if (res.ok && data.success && data.data?.reply) {
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          from: 'bot',
+          text: data.data.reply,
+          chips: data.data.chips || [],
+        }])
+      } else {
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          from: 'bot',
+          text: "I'm having trouble retrieving details right now. Please explore our curated packages above or reach out via WhatsApp at +91 99990 00000!",
+          chips: ['View packages', 'WhatsApp us'],
+        }])
+      }
+    } catch (err) {
+      console.error('[HillGuide] Chat network error:', err)
+      setTyping(false)
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        from: 'bot',
+        text: "You can reach our trip planning desk anytime on WhatsApp at +91 99990 00000 or fill out the enquiry form!",
+        chips: ['Fill enquiry form', 'WhatsApp us'],
+      }])
+    }
+  }, [messages])
 
   const handleSubmit = (e) => {
     e?.preventDefault()
@@ -225,7 +191,7 @@ export default function HillGuide() {
                 fontSize:     '1.1rem',
                 flexShrink:   0,
               }} aria-hidden="true">
-                🏔️
+                <FiMessageCircle color="#ffffff" />
               </div>
               <div>
                 <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: '#ffffff', fontSize: '0.9rem', lineHeight: 1 }}>
@@ -241,7 +207,7 @@ export default function HillGuide() {
                     marginRight:  '4px',
                     verticalAlign: 'middle',
                   }} />
-                  Your mountain travel expert
+                  Grounded AI travel expert
                 </p>
               </div>
             </div>
@@ -313,7 +279,7 @@ export default function HillGuide() {
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="Ask me anything about your trip…"
+              placeholder="Ask anything about packages, stays, vehicles…"
               aria-label="Type your question"
               style={{
                 flex:         1,

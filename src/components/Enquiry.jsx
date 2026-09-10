@@ -1,16 +1,58 @@
+'use client'
+
 import React, { useState, useRef, useEffect } from 'react'
-import { packages } from '../data/packages'
+import { trackEnquiryStart, trackEnquirySubmit } from '../lib/analytics/events'
+import { FiZap, FiMapPin, FiLock, FiCheckCircle, FiCheck, FiAlertCircle, FiArrowRight } from 'react-icons/fi'
 
 const TRIP_TYPES = ['Honeymoon', 'Couple Getaway', 'Family Trip', 'Friends Group', 'Corporate Retreat', 'Solo Journey']
 
-export default function Enquiry({ id }) {
+export default function Enquiry({ id, initialPackageId = '', initialHotelId = '', initialVehicleId = '', packageLocked = false }) {
   const sectionRef = useRef(null)
-  const [form, setForm]     = useState({
-    name: '', phone: '', travelDate: '', groupSize: '',
-    tripType: '', package: '', message: '',
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    travelDate: '',
+    groupSize: '',
+    tripType: '',
+    packageId: initialPackageId || '',
+    hotelId: initialHotelId || '',
+    vehicleId: initialVehicleId || '',
+    message: '',
+    _hp: '', // Honeypot anti-spam
   })
-  const [errors, setErrors]   = useState({})
-  const [status, setStatus]   = useState('idle') // idle | sending | success | error
+
+  // Synchronize when initial props change
+  useEffect(() => {
+    setForm(prev => ({
+      ...prev,
+      packageId: initialPackageId || prev.packageId,
+      hotelId: initialHotelId !== undefined && initialHotelId !== '' ? initialHotelId : prev.hotelId,
+      vehicleId: initialVehicleId !== undefined && initialVehicleId !== '' ? initialVehicleId : prev.vehicleId,
+    }))
+  }, [initialPackageId, initialHotelId, initialVehicleId])
+  const [errors, setErrors] = useState({})
+  const [serverError, setServerError] = useState('')
+  const [status, setStatus] = useState('idle') // idle | sending | success | error
+  const [enquiryRef, setEnquiryRef] = useState('')
+
+  // Fetched catalog data (replaces static imports)
+  const [catalogPackages, setCatalogPackages] = useState([])
+  const [catalogHotels, setCatalogHotels] = useState([])
+  const [catalogVehicles, setCatalogVehicles] = useState([])
+
+  // Fetch packages/hotels/vehicles from API on mount
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/packages').then(r => r.json()).catch(() => ({ success: false })),
+      fetch('/api/hotels').then(r => r.json()).catch(() => ({ success: false })),
+      fetch('/api/vehicles').then(r => r.json()).catch(() => ({ success: false })),
+    ]).then(([pkgRes, hotelRes, vehRes]) => {
+      if (pkgRes.success) setCatalogPackages(pkgRes.data || [])
+      if (hotelRes.success) setCatalogHotels(hotelRes.data || [])
+      if (vehRes.success) setCatalogVehicles(vehRes.data || [])
+    })
+  }, [])
 
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []
@@ -27,26 +69,68 @@ export default function Enquiry({ id }) {
   const update = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }))
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
+    if (serverError) setServerError('')
   }
 
   const validate = () => {
     const e = {}
-    if (!form.name.trim())      e.name      = 'Name is required'
-    if (!form.phone.match(/^[0-9+\-\s]{8,15}$/)) e.phone = 'Enter a valid phone number'
-    if (!form.travelDate)       e.travelDate = 'Please select a travel date'
+    if (!form.name.trim()) e.name = 'Name is required'
+    if (!form.phone.match(/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{6,15}$/)) e.phone = 'Enter a valid phone number'
+    if (!form.travelDate) e.travelDate = 'Please select a travel date'
     if (!form.groupSize || isNaN(form.groupSize) || +form.groupSize < 1) e.groupSize = 'Enter group size (min 1)'
-    if (!form.tripType)         e.tripType  = 'Please select a trip type'
+    if (!form.tripType) e.tripType = 'Please select a trip type'
     return e
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     const validationErrors = validate()
-    if (Object.keys(validationErrors).length > 0) { setErrors(validationErrors); return }
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      return
+    }
+
     setStatus('sending')
-    // Simulate form submission (replace with actual endpoint)
-    await new Promise(r => setTimeout(r, 1500))
-    setStatus('success')
+    setServerError('')
+    trackEnquiryStart('website_enquiry_form')
+
+    try {
+      const res = await fetch('/api/enquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim() || undefined,
+          travelDate: form.travelDate,
+          groupSize: form.groupSize ? parseInt(form.groupSize) : undefined,
+          tripType: form.tripType,
+          packageId: form.packageId || undefined,
+          hotelId: form.hotelId || undefined,
+          vehicleId: form.vehicleId || undefined,
+          message: form.message.trim() || undefined,
+          source: 'website_enquiry_form',
+          _hp: form._hp,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        setEnquiryRef(data.data?.enquiryId || 'Received')
+        setStatus('success')
+        trackEnquirySubmit(true, 'website_enquiry_form')
+      } else {
+        setStatus('error')
+        setServerError(data.error?.message || 'Failed to submit enquiry. Please check your details.')
+        trackEnquirySubmit(false, 'website_enquiry_form')
+      }
+    } catch (err) {
+      console.error('[Enquiry Form] Network error:', err)
+      setStatus('error')
+      setServerError('Network error. Please try again or WhatsApp us directly.')
+      trackEnquirySubmit(false, 'website_enquiry_form')
+    }
   }
 
   const whatsappText = encodeURIComponent(
@@ -123,10 +207,10 @@ export default function Enquiry({ id }) {
 
             {/* Trust signals */}
             {[
-              { icon: '⚡', text: '2-hour response guarantee' },
-              { icon: '🏔️', text: 'Expert local trip planners' },
-              { icon: '🔒', text: 'Zero booking fees' },
-              { icon: '💯', text: 'Fully customisable itineraries' },
+              { icon: <FiZap />, text: '2-hour response guarantee' },
+              { icon: <FiMapPin />, text: 'Expert local trip planners' },
+              { icon: <FiLock />, text: 'Zero booking fees' },
+              { icon: <FiCheckCircle />, text: 'Fully customisable itineraries' },
             ].map(item => (
               <div key={item.text} style={{
                 display:      'flex',
@@ -180,23 +264,57 @@ export default function Enquiry({ id }) {
             }}>
               {status === 'success' ? (
                 <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: '#ffffff', marginBottom: '0.75rem' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem', color: '#22C55E' }}><FiCheck /></div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: '#ffffff', marginBottom: '0.5rem' }}>
                     Enquiry Sent!
                   </h3>
+                  {enquiryRef && (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--hill-blue-bright)', fontWeight: 600, letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+                      REF: {enquiryRef}
+                    </p>
+                  )}
                   <p style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.65 }}>
-                    Thank you, {form.name}! Our team will reach you within 2 hours with a personalised plan.
+                    Thank you, {form.name}! Our team will review your mountain escape and reach you within 2 hours with a personalized plan.
                   </p>
                   <button
                     className="btn-primary"
                     style={{ marginTop: '2rem' }}
-                    onClick={() => { setStatus('idle'); setForm({ name:'',phone:'',travelDate:'',groupSize:'',tripType:'',package:'',message:'' }) }}
+                    onClick={() => {
+                      setStatus('idle')
+                      setForm({ name:'', phone:'', email:'', travelDate:'', groupSize:'', tripType:'', packageId:'', hotelId:'', vehicleId:'', message:'', _hp:'' })
+                    }}
                   >
                     Send Another Enquiry
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} noValidate aria-label="Trip enquiry">
+                  {/* Anti-spam honeypot (invisible to humans) */}
+                  <div style={{ display: 'none' }} aria-hidden="true">
+                    <input
+                      type="text"
+                      name="_hp"
+                      value={form._hp}
+                      onChange={e => update('_hp', e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  {serverError && (
+                    <div style={{
+                      padding: '0.75rem 1rem',
+                      background: 'rgba(239,68,68,0.12)',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      borderRadius: '8px',
+                      color: '#FCA5A5',
+                      fontSize: '0.8rem',
+                      marginBottom: '1.25rem',
+                    }}>
+                      <FiAlertCircle style={{ marginRight: 6, display: 'inline' }} /> {serverError}
+                    </div>
+                  )}
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
                     <Field id="name" label="Full Name" required error={errors.name}>
                       <input id="name" type="text" value={form.name} onChange={e => update('name', e.target.value)}
@@ -206,6 +324,10 @@ export default function Enquiry({ id }) {
                     <Field id="phone" label="Phone / WhatsApp" required error={errors.phone}>
                       <input id="phone" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)}
                         placeholder="+91 9999 000000" className="form-input" required aria-required="true" />
+                    </Field>
+                    <Field id="email" label="Email Address">
+                      <input id="email" type="email" value={form.email} onChange={e => update('email', e.target.value)}
+                        placeholder="rahul@example.com" className="form-input" />
                     </Field>
                     <Field id="travelDate" label="Travel Date" required error={errors.travelDate}>
                       <input id="travelDate" type="date" value={form.travelDate} onChange={e => update('travelDate', e.target.value)}
@@ -224,11 +346,27 @@ export default function Enquiry({ id }) {
                         {TRIP_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </Field>
-                    <Field id="package" label="Preferred Package">
-                      <select id="package" value={form.package} onChange={e => update('package', e.target.value)}
+                    <Field id="packageId" label="Preferred Package">
+                      <select id="packageId" value={form.packageId} onChange={e => update('packageId', e.target.value)}
                         className="form-input">
                         <option value="">Any / Not sure</option>
-                        {packages.map(p => <option key={p.id} value={p.title}>{p.title}</option>)}
+                        {catalogPackages.map(p => <option key={p.id} value={p.id}>{p.name || p.title}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                    <Field id="hotelId" label="Preferred Stay">
+                      <select id="hotelId" value={form.hotelId} onChange={e => update('hotelId', e.target.value)}
+                        className="form-input">
+                        <option value="">Any / Not sure</option>
+                        {catalogHotels.map(h => <option key={h.id} value={h.id}>{h.name}{h.location ? ` — ${h.location}` : ''}</option>)}
+                      </select>
+                    </Field>
+                    <Field id="vehicleId" label="Preferred Vehicle">
+                      <select id="vehicleId" value={form.vehicleId} onChange={e => update('vehicleId', e.target.value)}
+                        className="form-input">
+                        <option value="">Any / Not sure</option>
+                        {catalogVehicles.map(v => <option key={v.id} value={v.id}>{v.name} ({v.type} · {v.capacity} seats)</option>)}
                       </select>
                     </Field>
                   </div>
@@ -251,7 +389,7 @@ export default function Enquiry({ id }) {
                         Sending…
                       </>
                     ) : (
-                      <>Send Enquiry →</>
+                      <>Send Enquiry <FiArrowRight style={{ marginLeft: '6px' }} /></>
                     )}
                   </button>
 
@@ -267,13 +405,6 @@ export default function Enquiry({ id }) {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 900px) {
-          #contact > div > div { grid-template-columns: 1fr !important; }
-          #contact > div > div > div:last-child > div > form > div:first-child { grid-template-columns: 1fr !important; }
-        }
-        @media (max-width: 600px) {
-          #contact > div > div > div:last-child > div > form > div:first-child { grid-template-columns: 1fr !important; }
-        }
       `}</style>
     </section>
   )

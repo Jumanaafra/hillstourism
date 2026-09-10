@@ -1,29 +1,33 @@
-import React, { useRef, useEffect } from 'react'
+'use client'
 
+import React, { useRef, useEffect } from 'react'
+import Link from 'next/link'
+import { FiMap, FiWind, FiPhoneCall } from 'react-icons/fi'
+import { FaHandshake } from 'react-icons/fa'
 const PILLARS = [
   {
     num:   '01',
     title: 'Local Expertise',
     body:  'We know every road, every season, every hidden viewpoint. Our team has been guiding travelers through these hills for years. This isn\'t knowledge from a guidebook — it\'s lived experience.',
-    icon:  '🗺️',
+    icon:  <FiMap />,
   },
   {
     num:   '02',
     title: 'Nature First',
     body:  'Every journey is designed around the landscape. We don\'t bring the mountains to you — we take you to the mountains. No crowds, no rush, no compromise on the natural experience.',
-    icon:  '🌿',
+    icon:  <FiWind />,
   },
   {
     num:   '03',
     title: 'Local Partners',
     body:  'We work exclusively with trusted local homestays, guides, and experience hosts. Every rupee stays in the community. Every meal is cooked by a local family.',
-    icon:  '🤝',
+    icon:  <FaHandshake />,
   },
   {
     num:   '04',
     title: 'Human Support',
     body:  'A real person is reachable before, during, and after your trip. Not a chatbot, not a call center. Someone who knows your itinerary, your preferences, and how to help.',
-    icon:  '📞',
+    icon:  <FiPhoneCall />,
   },
 ]
 
@@ -179,6 +183,45 @@ export default function WhyChooseUs({ id }) {
           >
             Chat with HillGuide
           </button>
+        </div>
+
+        {/* Legal Trust Links */}
+        <div style={{
+          marginTop: '2rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1.25rem',
+          flexWrap: 'wrap',
+          fontSize: '0.8rem',
+          color: 'rgba(255,255,255,0.45)',
+        }}>
+          <span>Official Documents:</span>
+          <Link
+            href="/privacy-policy"
+            style={{
+              color: 'rgba(255,255,255,0.7)',
+              textDecoration: 'none',
+              transition: 'color 0.2s ease',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#ffffff'}
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+          >
+            Privacy Policy
+          </Link>
+          <span style={{ color: 'rgba(255,255,255,0.2)' }}>•</span>
+          <Link
+            href="/terms-and-conditions"
+            style={{
+              color: 'rgba(255,255,255,0.7)',
+              textDecoration: 'none',
+              transition: 'color 0.2s ease',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = '#ffffff'}
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+          >
+            Terms &amp; Conditions
+          </Link>
         </div>
       </div>
     </section>
