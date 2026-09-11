@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { verifyAdminAuth } from '@/lib/auth/adminAuth'
+import { verifyAdminAuth, adminJsonResponse } from '@/lib/auth/adminAuth'
+
+export const dynamic = 'force-dynamic'
+
 import {
   getGalleryPhotos,
   createGalleryPhoto,
@@ -50,17 +53,17 @@ function buildGalleryUpdatePayload(body: Record<string, any>) {
 export async function GET(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   const photos = await getGalleryPhotos(false)
-  return NextResponse.json({ success: true, data: photos })
+  return adminJsonResponse({ success: true, data: photos })
 }
 
 export async function POST(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
@@ -68,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     const srcCheck = validateImageSrc(body.src)
     if (!srcCheck.valid) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: srcCheck.error } },
         { status: 400 }
       )
@@ -87,9 +90,9 @@ export async function POST(req: NextRequest) {
     })
 
     safeRevalidate()
-    return NextResponse.json({ success: true, data: photo }, { status: 201 })
+    return adminJsonResponse({ success: true, data: photo }, { status: 201 })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to create gallery photo.' } },
       { status: 500 }
     )
@@ -99,14 +102,14 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const body = await req.json()
     const { id } = body
     if (!id || typeof id !== 'string') {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Photo ID is required.' } },
         { status: 400 }
       )
@@ -116,7 +119,7 @@ export async function PATCH(req: NextRequest) {
     if (body.src !== undefined) {
       const srcCheck = validateImageSrc(body.src)
       if (!srcCheck.valid) {
-        return NextResponse.json(
+        return adminJsonResponse(
           { success: false, error: { code: 'VALIDATION_ERROR', message: srcCheck.error } },
           { status: 400 }
         )
@@ -126,7 +129,7 @@ export async function PATCH(req: NextRequest) {
     // Verify existence
     const existing = await getGalleryPhotoById(id)
     if (!existing) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'NOT_FOUND', message: `Gallery photo ${id} not found.` } },
         { status: 404 }
       )
@@ -136,9 +139,9 @@ export async function PATCH(req: NextRequest) {
     const updated = await updateGalleryPhoto(id, updates)
 
     safeRevalidate()
-    return NextResponse.json({ success: true, data: updated })
+    return adminJsonResponse({ success: true, data: updated })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to update gallery photo.' } },
       { status: 500 }
     )
@@ -148,14 +151,14 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
     if (!id) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Photo ID is required.' } },
         { status: 400 }
       )
@@ -163,7 +166,7 @@ export async function DELETE(req: NextRequest) {
 
     const existing = await getGalleryPhotoById(id)
     if (!existing) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'NOT_FOUND', message: `Gallery photo ${id} not found.` } },
         { status: 404 }
       )
@@ -171,9 +174,9 @@ export async function DELETE(req: NextRequest) {
 
     await deleteGalleryPhoto(id)
     safeRevalidate()
-    return NextResponse.json({ success: true, data: { deleted: true, id } })
+    return adminJsonResponse({ success: true, data: { deleted: true, id } })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to delete gallery photo.' } },
       { status: 500 }
     )

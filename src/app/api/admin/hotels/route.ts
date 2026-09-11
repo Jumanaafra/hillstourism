@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { verifyAdminAuth } from '@/lib/auth/adminAuth'
+import { verifyAdminAuth, adminJsonResponse } from '@/lib/auth/adminAuth'
+
+export const dynamic = 'force-dynamic'
+
 import { createHotel, updateHotel, deleteHotel, getHotels, getHotelById } from '@/lib/repositories/hotels.repo'
 
 /**
@@ -53,23 +56,23 @@ function buildHotelUpdatePayload(body: Record<string, any>) {
 export async function GET(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   const hotels = await getHotels(false)
-  return NextResponse.json({ success: true, data: hotels })
+  return adminJsonResponse({ success: true, data: hotels })
 }
 
 export async function POST(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const body = await req.json()
     if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Hotel name is required.' } },
         { status: 400 }
       )
@@ -89,10 +92,10 @@ export async function POST(req: NextRequest) {
     })
 
     safeRevalidate(hotel.slug)
-    return NextResponse.json({ success: true, data: hotel }, { status: 201 })
+    return adminJsonResponse({ success: true, data: hotel }, { status: 201 })
   } catch (err: any) {
     const isConflict = err?.message?.includes('already exists')
-    return NextResponse.json(
+    return adminJsonResponse(
       {
         success: false,
         error: {
@@ -108,14 +111,14 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const body = await req.json()
     const { id } = body
     if (!id || typeof id !== 'string') {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Hotel ID is required.' } },
         { status: 400 }
       )
@@ -124,7 +127,7 @@ export async function PATCH(req: NextRequest) {
     // Fetch current record to capture old slug BEFORE updating
     const existing = await getHotelById(id)
     if (!existing) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'NOT_FOUND', message: `Hotel ${id} not found.` } },
         { status: 404 }
       )
@@ -138,10 +141,10 @@ export async function PATCH(req: NextRequest) {
 
     // Revalidate both old and new slug if slug changed
     safeRevalidate(updated.slug, oldSlug)
-    return NextResponse.json({ success: true, data: updated })
+    return adminJsonResponse({ success: true, data: updated })
   } catch (err: any) {
     const isConflict = err?.message?.includes('already exists')
-    return NextResponse.json(
+    return adminJsonResponse(
       {
         success: false,
         error: {
@@ -157,14 +160,14 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
     if (!id) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Hotel ID is required.' } },
         { status: 400 }
       )
@@ -173,7 +176,7 @@ export async function DELETE(req: NextRequest) {
     // Fetch before delete to capture slug for revalidation
     const existing = await getHotelById(id)
     if (!existing) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'NOT_FOUND', message: `Hotel ${id} not found.` } },
         { status: 404 }
       )
@@ -181,9 +184,9 @@ export async function DELETE(req: NextRequest) {
 
     await deleteHotel(id)
     safeRevalidate(existing.slug)
-    return NextResponse.json({ success: true, data: { deleted: true, id } })
+    return adminJsonResponse({ success: true, data: { deleted: true, id } })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to delete hotel.' } },
       { status: 500 }
     )

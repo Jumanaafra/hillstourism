@@ -1,12 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminAuth } from '@/lib/auth/adminAuth'
+import { NextRequest } from 'next/server'
+import { verifyAdminAuth, adminJsonResponse } from '@/lib/auth/adminAuth'
 import { uploadImageBuffer, isCloudinaryConfigured, validateImageFile } from '@/lib/cloudinary'
+
+export const dynamic = 'force-dynamic'
+
 
 export async function POST(req: NextRequest) {
   // 1. Strict admin authentication check
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'UNAUTHORIZED', message: auth.error || 'Admin authentication required.' } },
       { status: 401 }
     )
@@ -19,7 +22,7 @@ export async function POST(req: NextRequest) {
     const alt = (formData.get('alt') as string) || ''
 
     if (!file) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'MISSING_FILE', message: 'No image file was provided in the upload.' } },
         { status: 400 }
       )
@@ -32,7 +35,7 @@ export async function POST(req: NextRequest) {
     // 2. Validate file integrity and size
     const validation = validateImageFile(buffer, mimeType)
     if (!validation.valid) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: validation.error } },
         { status: 400 }
       )
@@ -40,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Check if Cloudinary is configured
     if (!isCloudinaryConfigured()) {
-      return NextResponse.json(
+      return adminJsonResponse(
         {
           success: false,
           error: {
@@ -58,13 +61,13 @@ export async function POST(req: NextRequest) {
       alt,
     })
 
-    return NextResponse.json({
+    return adminJsonResponse({
       success: true,
       data: result,
     })
   } catch (err: any) {
     console.error('[Admin Upload API] Error uploading file:', err)
-    return NextResponse.json(
+    return adminJsonResponse(
       {
         success: false,
         error: {

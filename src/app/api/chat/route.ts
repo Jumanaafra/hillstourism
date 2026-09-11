@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/security/rateLimit'
 import { generateChatbotReply } from '@/lib/services/gemini.service'
+import { NO_CACHE_HEADERS } from '@/lib/auth/adminAuth'
+
+export const dynamic = 'force-dynamic'
+
+function chatResponse(data: any, init?: ResponseInit) {
+  const headers = new Headers(init?.headers)
+  for (const [k, v] of Object.entries(NO_CACHE_HEADERS)) {
+    headers.set(k, v)
+  }
+  return NextResponse.json(data, { ...init, headers })
+}
 
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
     const rateCheck = checkRateLimit(`chat_${ip}`, { intervalMs: 60000, maxRequests: 12 })
     if (!rateCheck.allowed) {
-      return NextResponse.json(
+      return chatResponse(
         {
           success: false,
           error: {
@@ -23,7 +34,7 @@ export async function POST(req: NextRequest) {
     try {
       body = await req.json()
     } catch {
-      return NextResponse.json(
+      return chatResponse(
         {
           success: false,
           error: {
@@ -37,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     const message = body?.message
     if (!message || typeof message !== 'string' || !message.trim()) {
-      return NextResponse.json(
+      return chatResponse(
         {
           success: false,
           error: {
@@ -50,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (message.length > 800) {
-      return NextResponse.json(
+      return chatResponse(
         {
           success: false,
           error: {
@@ -66,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     // Conversation length limit (spec §39)
     if (Array.isArray(body?.history) && body.history.length > 50) {
-      return NextResponse.json(
+      return chatResponse(
         {
           success: false,
           error: {
@@ -80,13 +91,13 @@ export async function POST(req: NextRequest) {
 
     const response = await generateChatbotReply(message.trim(), history)
 
-    return NextResponse.json({
+    return chatResponse({
       success: true,
       data: response,
     })
   } catch (err: any) {
     console.error('[Chat API] Internal chat failure:', err)
-    return NextResponse.json(
+    return chatResponse(
       {
         success: false,
         error: {

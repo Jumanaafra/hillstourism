@@ -88,7 +88,10 @@ export default function AdminDashboardPage() {
   const [seoList, setSeoList] = useState<PageSEO[]>([])
   const [editingSEO, setEditingSEO] = useState<PageSEO | null>(null)
 
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
 
   const fetchAllData = async () => {
     setLoading(true)
@@ -968,7 +971,10 @@ export default function AdminDashboardPage() {
               View Website <FiArrowRight />
             </a>
             <button
-              onClick={() => {
+              onClick={async () => {
+                try {
+                  await fetch('/api/admin/auth', { method: 'DELETE' })
+                } catch {}
                 document.cookie = 'admin_token=; path=/; max-age=0'
                 window.location.href = '/admin/login'
               }}

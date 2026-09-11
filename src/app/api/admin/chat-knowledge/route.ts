@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminAuth } from '@/lib/auth/adminAuth'
+import { NextRequest } from 'next/server'
+import { verifyAdminAuth, adminJsonResponse } from '@/lib/auth/adminAuth'
+
+export const dynamic = 'force-dynamic'
 import {
   getChatKnowledge,
   createChatKnowledge,
@@ -33,14 +35,14 @@ function buildKnowledgePayload(data: Record<string, any>): Omit<ChatKnowledge, '
 export async function GET(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const knowledge = await getChatKnowledge(false) // Include inactive for admin
-    return NextResponse.json({ success: true, data: knowledge })
+    return adminJsonResponse({ success: true, data: knowledge })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'FETCH_ERROR', message: 'Failed to retrieve chat knowledge.' } },
       { status: 500 }
     )
@@ -53,29 +55,29 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const body = await req.json()
 
     if (!body.title || typeof body.title !== 'string' || !body.title.trim()) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Title is required.' } },
         { status: 400 }
       )
     }
     if (!body.content || typeof body.content !== 'string' || !body.content.trim()) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Content is required.' } },
         { status: 400 }
       )
     }
 
     const item = await createChatKnowledge(buildKnowledgePayload(body))
-    return NextResponse.json({ success: true, data: item }, { status: 201 })
+    return adminJsonResponse({ success: true, data: item }, { status: 201 })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to create knowledge entry.' } },
       { status: 500 }
     )
@@ -88,14 +90,14 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const body = await req.json()
     const { id } = body
     if (!id || typeof id !== 'string') {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Knowledge entry ID is required.' } },
         { status: 400 }
       )
@@ -114,10 +116,10 @@ export async function PATCH(req: NextRequest) {
     if (body.active !== undefined) updates.active = Boolean(body.active)
 
     const updated = await updateChatKnowledge(id, updates)
-    return NextResponse.json({ success: true, data: updated })
+    return adminJsonResponse({ success: true, data: updated })
   } catch (err: any) {
     const isNotFound = err?.message?.includes('not found')
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: isNotFound ? 'NOT_FOUND' : 'OPERATION_FAILED', message: err?.message || 'Failed to update knowledge entry.' } },
       { status: isNotFound ? 404 : 500 }
     )
@@ -130,7 +132,7 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
@@ -147,17 +149,17 @@ export async function DELETE(req: NextRequest) {
     }
 
     if (!id) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Knowledge entry ID is required.' } },
         { status: 400 }
       )
     }
 
     await deleteChatKnowledge(id)
-    return NextResponse.json({ success: true, data: { deleted: true, id } })
+    return adminJsonResponse({ success: true, data: { deleted: true, id } })
   } catch (err: any) {
     const isNotFound = err?.message?.includes('not found')
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: isNotFound ? 'NOT_FOUND' : 'OPERATION_FAILED', message: err?.message || 'Failed to delete knowledge entry.' } },
       { status: isNotFound ? 404 : 500 }
     )

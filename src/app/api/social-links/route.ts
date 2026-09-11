@@ -21,7 +21,12 @@ export async function GET() {
     console.error('[Public Social Links API] Error:', err)
     return NextResponse.json(
       { success: false, error: { code: 'FETCH_ERROR', message: 'Failed to fetch social links.' } },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
     )
   }
 }

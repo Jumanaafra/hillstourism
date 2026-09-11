@@ -1,12 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminAuth } from '@/lib/auth/adminAuth'
+import { NextRequest } from 'next/server'
+import { verifyAdminAuth, adminJsonResponse } from '@/lib/auth/adminAuth'
 import { deleteCloudinaryAsset, isCloudinaryConfigured } from '@/lib/cloudinary'
+
+export const dynamic = 'force-dynamic'
+
 
 export async function POST(req: NextRequest) {
   // 1. Strict admin authentication check
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'UNAUTHORIZED', message: auth.error || 'Admin authentication required.' } },
       { status: 401 }
     )
@@ -17,14 +20,14 @@ export async function POST(req: NextRequest) {
     const publicId = body?.publicId
 
     if (!publicId || typeof publicId !== 'string') {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'A valid publicId string is required.' } },
         { status: 400 }
       )
     }
 
     if (!isCloudinaryConfigured()) {
-      return NextResponse.json(
+      return adminJsonResponse(
         {
           success: false,
           error: {
@@ -39,7 +42,7 @@ export async function POST(req: NextRequest) {
     const deleteResult = await deleteCloudinaryAsset(publicId)
 
     if (!deleteResult.success) {
-      return NextResponse.json(
+      return adminJsonResponse(
         {
           success: false,
           error: {
@@ -51,13 +54,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    return NextResponse.json({
+    return adminJsonResponse({
       success: true,
       data: deleteResult,
     })
   } catch (err: any) {
     console.error('[Admin Cloudinary Delete API] Error:', err)
-    return NextResponse.json(
+    return adminJsonResponse(
       {
         success: false,
         error: {

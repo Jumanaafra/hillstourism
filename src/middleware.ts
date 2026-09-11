@@ -1,39 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
- * Next.js Middleware — protects /admin routes.
- * Checks for an admin_token cookie set during login.
- * The login page itself is excluded so users can authenticate.
- * Admin API routes are separately protected by verifyAdminAuth().
+ * Next.js Middleware — protects /admin routes and enforces strict no-cache/no-index
+ * headers across administrative pages, sensitive APIs, chat, and enquiries.
  */
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // Only protect admin page routes (not API routes — those have their own auth)
+  // 1. Admin Page Routes (/admin/*)
   if (pathname.startsWith('/admin')) {
-    // Always set no-cache and no-index headers for admin pages
-    const headers = new Headers()
-    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
-    headers.set('X-Robots-Tag', 'noindex, nofollow')
+    const adminToken = req.cookies.get('admin_token')?.value
 
-    // Allow the login page without authentication
+    // If already logged in and visiting login page, redirect to dashboard
     if (pathname === '/admin/login') {
+      if (adminToken) {
+        return NextResponse.redirect(new URL('/admin/dashboard', req.url))
+      }
       const response = NextResponse.next()
-      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+      response.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate')
       response.headers.set('X-Robots-Tag', 'noindex, nofollow')
       return response
     }
 
-    // Check for admin_token cookie
-    const adminToken = req.cookies.get('admin_token')?.value
+    // Unauthenticated access to admin pages -> redirect to login
     if (!adminToken) {
-      // Redirect to login page
       const loginUrl = new URL('/admin/login', req.url)
       return NextResponse.redirect(loginUrl)
     }
 
     const response = NextResponse.next()
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+    response.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate')
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    return response
+  }
+
+  // 2. Sensitive / Mutation / Private API Routes
+  if (
+    pathname.startsWith('/api/admin') ||
+    pathname === '/api/chat' ||
+    pathname.startsWith('/api/enquiries') ||
+    pathname === '/api/revalidate'
+  ) {
+    const response = NextResponse.next()
+    response.headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow')
     return response
   }
@@ -42,5 +51,12 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: [
+    '/admin/:path*',
+    '/api/admin/:path*',
+    '/api/chat',
+    '/api/enquiries/:path*',
+    '/api/revalidate',
+  ],
 }
+

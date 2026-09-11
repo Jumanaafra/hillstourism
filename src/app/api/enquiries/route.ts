@@ -17,13 +17,22 @@ import { sendEnquiryEmails } from '@/lib/services/email.service'
 import { syncEnquiryToGoogleSheets } from '@/lib/services/sheets.service'
 import type { EnquiryStatus } from '@/types/domain'
 
+export const dynamic = 'force-dynamic'
+
+function enquiryResponse(data: any, init?: ResponseInit) {
+  const headers = new Headers(init?.headers)
+  headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate')
+  headers.set('X-Robots-Tag', 'noindex, nofollow')
+  return NextResponse.json(data, { ...init, headers })
+}
+
 export async function POST(req: NextRequest) {
   try {
     // 1. Rate Limiting (per client IP or forwarded header)
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
     const rateCheck = checkRateLimit(`enquiry_${ip}`, { intervalMs: 60000, maxRequests: 5 })
     if (!rateCheck.allowed) {
-      return NextResponse.json(
+      return enquiryResponse(
         {
           success: false,
           error: {
@@ -40,7 +49,7 @@ export async function POST(req: NextRequest) {
     try {
       body = await req.json()
     } catch {
-      return NextResponse.json(
+      return enquiryResponse(
         {
           success: false,
           error: {
@@ -55,7 +64,7 @@ export async function POST(req: NextRequest) {
     const parseResult = EnquiryInputSchema.safeParse(body)
     if (!parseResult.success) {
       const firstError = parseResult.error.errors[0]?.message || 'Validation error'
-      return NextResponse.json(
+      return enquiryResponse(
         {
           success: false,
           error: {
@@ -74,7 +83,7 @@ export async function POST(req: NextRequest) {
     // Return mock success to fool bots (spec §18)
     if (data._hp && data._hp.length > 0) {
       console.warn(`[Anti-Spam] Bot submission blocked from IP: ${ip}`)
-      return NextResponse.json(
+      return enquiryResponse(
         {
           success: true,
           data: {
@@ -89,7 +98,7 @@ export async function POST(req: NextRequest) {
     // 4. Idempotency / Duplicate Check
     const isDuplicate = await isRecentDuplicateEnquiry(data.phone, data.name, 60)
     if (isDuplicate) {
-      return NextResponse.json(
+      return enquiryResponse(
         {
           success: true,
           data: {
@@ -106,13 +115,13 @@ export async function POST(req: NextRequest) {
     if (data.packageId) {
       const pkg = await getPackageById(data.packageId)
       if (!pkg) {
-        return NextResponse.json(
+        return enquiryResponse(
           { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected package not found.' } },
           { status: 400 }
         )
       }
       if (!pkg.active) {
-        return NextResponse.json(
+        return enquiryResponse(
           { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected package is no longer available.' } },
           { status: 400 }
         )
@@ -124,13 +133,13 @@ export async function POST(req: NextRequest) {
     if (data.hotelId) {
       const hotel = await getHotelById(data.hotelId)
       if (!hotel) {
-        return NextResponse.json(
+        return enquiryResponse(
           { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected hotel not found.' } },
           { status: 400 }
         )
       }
       if (!hotel.active) {
-        return NextResponse.json(
+        return enquiryResponse(
           { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected hotel is no longer available.' } },
           { status: 400 }
         )
@@ -142,13 +151,13 @@ export async function POST(req: NextRequest) {
     if (data.vehicleId) {
       const vehicle = await getVehicleById(data.vehicleId)
       if (!vehicle) {
-        return NextResponse.json(
+        return enquiryResponse(
           { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected vehicle not found.' } },
           { status: 400 }
         )
       }
       if (!vehicle.active) {
-        return NextResponse.json(
+        return enquiryResponse(
           { success: false, error: { code: 'VALIDATION_ERROR', message: 'Selected vehicle is no longer available.' } },
           { status: 400 }
         )
@@ -216,7 +225,7 @@ export async function POST(req: NextRequest) {
     // Await background tasks without blocking customer on unexpected network hangs
     await Promise.allSettled([emailPromise, sheetsPromise])
 
-    return NextResponse.json(
+    return enquiryResponse(
       {
         success: true,
         data: {
@@ -228,7 +237,7 @@ export async function POST(req: NextRequest) {
     )
   } catch (err: any) {
     console.error('[Enquiry API] Unexpected internal error:', err)
-    return NextResponse.json(
+    return enquiryResponse(
       {
         success: false,
         error: {
@@ -248,7 +257,7 @@ export async function GET(req: NextRequest) {
   // Require admin auth to read enquiries (spec §27 — every protected API independently verifies)
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json(
+    return enquiryResponse(
       { success: false, error: { code: 'UNAUTHORIZED', message: auth.error } },
       { status: 401 }
     )
@@ -261,12 +270,12 @@ export async function GET(req: NextRequest) {
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50
 
     const list = await getEnquiries({ status, search, limit })
-    return NextResponse.json({
+    return enquiryResponse({
       success: true,
       data: list,
     })
   } catch (err: any) {
-    return NextResponse.json(
+    return enquiryResponse(
       {
         success: false,
         error: {
@@ -286,7 +295,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json(
+    return enquiryResponse(
       { success: false, error: { code: 'UNAUTHORIZED', message: auth.error } },
       { status: 401 }
     )
@@ -297,7 +306,7 @@ export async function PATCH(req: NextRequest) {
     const { id, ...updates } = body
 
     if (!id) {
-      return NextResponse.json(
+      return enquiryResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Enquiry ID is required.' } },
         { status: 400 }
       )
@@ -306,7 +315,7 @@ export async function PATCH(req: NextRequest) {
     // Validate status if provided
     const validStatuses: EnquiryStatus[] = ['new', 'contacted', 'in_progress', 'closed', 'spam']
     if (updates.status && !validStatuses.includes(updates.status)) {
-      return NextResponse.json(
+      return enquiryResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` } },
         { status: 400 }
       )
@@ -314,7 +323,7 @@ export async function PATCH(req: NextRequest) {
 
     const existing = await getEnquiryById(id)
     if (!existing) {
-      return NextResponse.json(
+      return enquiryResponse(
         { success: false, error: { code: 'NOT_FOUND', message: `Enquiry ${id} not found.` } },
         { status: 404 }
       )
@@ -326,9 +335,9 @@ export async function PATCH(req: NextRequest) {
     if (updates.notes !== undefined) safeUpdates.notes = updates.notes
 
     const updated = await updateEnquiry(id, safeUpdates)
-    return NextResponse.json({ success: true, data: updated })
+    return enquiryResponse({ success: true, data: updated })
   } catch (err: any) {
-    return NextResponse.json(
+    return enquiryResponse(
       { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to update enquiry.' } },
       { status: 500 }
     )
@@ -342,7 +351,7 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json(
+    return enquiryResponse(
       { success: false, error: { code: 'UNAUTHORIZED', message: auth.error } },
       { status: 401 }
     )
@@ -351,7 +360,7 @@ export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   if (!id) {
-    return NextResponse.json(
+    return enquiryResponse(
       { success: false, error: { code: 'VALIDATION_ERROR', message: 'Enquiry ID is required.' } },
       { status: 400 }
     )
@@ -359,7 +368,7 @@ export async function DELETE(req: NextRequest) {
 
   const existing = await getEnquiryById(id)
   if (!existing) {
-    return NextResponse.json(
+    return enquiryResponse(
       { success: false, error: { code: 'NOT_FOUND', message: `Enquiry ${id} not found.` } },
       { status: 404 }
     )
@@ -367,5 +376,5 @@ export async function DELETE(req: NextRequest) {
 
   // Soft-delete by marking status as 'spam' / archived
   await updateEnquiry(id, { status: 'spam' })
-  return NextResponse.json({ success: true, data: { archived: true } })
+  return enquiryResponse({ success: true, data: { archived: true } })
 }

@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminAuth } from '@/lib/auth/adminAuth'
+import { NextRequest } from 'next/server'
+import { verifyAdminAuth, adminJsonResponse } from '@/lib/auth/adminAuth'
+
+export const dynamic = 'force-dynamic'
+
 import {
   getCategories,
   createCategory,
@@ -86,7 +89,7 @@ function buildSettingsPayload(data: Record<string, any>): Partial<SiteSettings> 
 export async function GET(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
@@ -97,12 +100,12 @@ export async function GET(req: NextRequest) {
       getSiteSettings(),
     ])
 
-    return NextResponse.json({
+    return adminJsonResponse({
       success: true,
       data: { categories, testimonials, experiences, settings },
     })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'FETCH_ERROR', message: 'Failed to retrieve content.' } },
       { status: 500 }
     )
@@ -115,7 +118,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
@@ -123,7 +126,7 @@ export async function POST(req: NextRequest) {
     const { type, data } = body
 
     if (!type || !data || typeof data !== 'object') {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Type and data payload are required.' } },
         { status: 400 }
       )
@@ -131,47 +134,47 @@ export async function POST(req: NextRequest) {
 
     if (type === 'category') {
       if (!data.title?.trim()) {
-        return NextResponse.json(
+        return adminJsonResponse(
           { success: false, error: { code: 'VALIDATION_ERROR', message: 'Category title is required.' } },
           { status: 400 }
         )
       }
       const created = await createCategory(buildCategoryPayload(data))
       triggerTargetedRevalidation('content')
-      return NextResponse.json({ success: true, data: created }, { status: 201 })
+      return adminJsonResponse({ success: true, data: created }, { status: 201 })
     }
 
     if (type === 'experience') {
       if (!data.title?.trim() || !data.description?.trim()) {
-        return NextResponse.json(
+        return adminJsonResponse(
           { success: false, error: { code: 'VALIDATION_ERROR', message: 'Experience title and description are required.' } },
           { status: 400 }
         )
       }
       const created = await createExperience(buildExperiencePayload(data))
       triggerTargetedRevalidation('content')
-      return NextResponse.json({ success: true, data: created }, { status: 201 })
+      return adminJsonResponse({ success: true, data: created }, { status: 201 })
     }
 
     if (type === 'testimonial') {
       if (!data.name?.trim() || !data.review?.trim()) {
-        return NextResponse.json(
+        return adminJsonResponse(
           { success: false, error: { code: 'VALIDATION_ERROR', message: 'Testimonial author name and review are required.' } },
           { status: 400 }
         )
       }
       const created = await createTestimonial(buildTestimonialPayload(data))
       triggerTargetedRevalidation('content')
-      return NextResponse.json({ success: true, data: created }, { status: 201 })
+      return adminJsonResponse({ success: true, data: created }, { status: 201 })
     }
 
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'VALIDATION_ERROR', message: `Unknown content type: "${type}". Allowed: category, experience, testimonial` } },
       { status: 400 }
     )
   } catch (err: any) {
     console.error('[Admin Content POST] Error:', err)
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to create item.' } },
       { status: 500 }
     )
@@ -192,7 +195,7 @@ export async function PATCH(req: NextRequest) {
 async function handleUpdate(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
@@ -204,11 +207,11 @@ async function handleUpdate(req: NextRequest) {
       const updates = buildSettingsPayload(data && typeof data === 'object' ? data : body)
       const updated = await updateSiteSettings(updates)
       triggerTargetedRevalidation('settings')
-      return NextResponse.json({ success: true, data: updated })
+      return adminJsonResponse({ success: true, data: updated })
     }
 
     if (!type || !id || typeof id !== 'string') {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Type and id are required for update.' } },
         { status: 400 }
       )
@@ -219,28 +222,28 @@ async function handleUpdate(req: NextRequest) {
     if (type === 'category') {
       const updated = await updateCategory(id, buildCategoryPayload(payload))
       triggerTargetedRevalidation('content')
-      return NextResponse.json({ success: true, data: updated })
+      return adminJsonResponse({ success: true, data: updated })
     }
 
     if (type === 'experience') {
       const updated = await updateExperience(id, buildExperiencePayload(payload))
       triggerTargetedRevalidation('content')
-      return NextResponse.json({ success: true, data: updated })
+      return adminJsonResponse({ success: true, data: updated })
     }
 
     if (type === 'testimonial') {
       const updated = await updateTestimonial(id, buildTestimonialPayload(payload))
       triggerTargetedRevalidation('content')
-      return NextResponse.json({ success: true, data: updated })
+      return adminJsonResponse({ success: true, data: updated })
     }
 
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'VALIDATION_ERROR', message: `Unknown content type: "${type}". Allowed: category, experience, testimonial, settings` } },
       { status: 400 }
     )
   } catch (err: any) {
     console.error('[Admin Content Update] Error:', err)
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to update content.' } },
       { status: 500 }
     )
@@ -253,7 +256,7 @@ async function handleUpdate(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
@@ -272,7 +275,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     if (!type || !id) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Both "type" and "id" are required to delete content.' } },
         { status: 400 }
       )
@@ -280,7 +283,7 @@ export async function DELETE(req: NextRequest) {
 
     const ALLOWED_DELETE_TYPES = ['category', 'experience', 'testimonial']
     if (!ALLOWED_DELETE_TYPES.includes(type)) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: `Cannot delete item of type: "${type}". Allowed: ${ALLOWED_DELETE_TYPES.join(', ')}` } },
         { status: 400 }
       )
@@ -296,10 +299,10 @@ export async function DELETE(req: NextRequest) {
     }
 
     triggerTargetedRevalidation('content')
-    return NextResponse.json({ success: true, data: { id, type, deleted } })
+    return adminJsonResponse({ success: true, data: { id, type, deleted } })
   } catch (err: any) {
     console.error('[Admin Content DELETE] Error:', err)
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to delete item.' } },
       { status: 500 }
     )

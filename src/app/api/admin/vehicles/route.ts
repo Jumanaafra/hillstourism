@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { verifyAdminAuth } from '@/lib/auth/adminAuth'
+import { verifyAdminAuth, adminJsonResponse } from '@/lib/auth/adminAuth'
+
+export const dynamic = 'force-dynamic'
+
 import { createVehicle, updateVehicle, deleteVehicle, getVehicles, getVehicleById } from '@/lib/repositories/vehicles.repo'
 
 function safeRevalidate() {
@@ -39,29 +42,29 @@ function buildVehicleUpdatePayload(body: Record<string, any>) {
 export async function GET(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   const vehicles = await getVehicles(false)
-  return NextResponse.json({ success: true, data: vehicles })
+  return adminJsonResponse({ success: true, data: vehicles })
 }
 
 export async function POST(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const body = await req.json()
     if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Vehicle name is required.' } },
         { status: 400 }
       )
     }
     if (!body.numberPlate || typeof body.numberPlate !== 'string' || !body.numberPlate.trim()) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Vehicle number plate is required.' } },
         { status: 400 }
       )
@@ -85,10 +88,10 @@ export async function POST(req: NextRequest) {
     })
 
     safeRevalidate()
-    return NextResponse.json({ success: true, data: vehicle }, { status: 201 })
+    return adminJsonResponse({ success: true, data: vehicle }, { status: 201 })
   } catch (err: any) {
     const isConflict = err?.message?.includes('already exists')
-    return NextResponse.json(
+    return adminJsonResponse(
       {
         success: false,
         error: {
@@ -104,14 +107,14 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const body = await req.json()
     const { id } = body
     if (!id || typeof id !== 'string') {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Vehicle ID is required.' } },
         { status: 400 }
       )
@@ -120,7 +123,7 @@ export async function PATCH(req: NextRequest) {
     // Verify existence before update
     const existing = await getVehicleById(id)
     if (!existing) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'NOT_FOUND', message: `Vehicle ${id} not found.` } },
         { status: 404 }
       )
@@ -130,10 +133,10 @@ export async function PATCH(req: NextRequest) {
     const updated = await updateVehicle(id, updates)
 
     safeRevalidate()
-    return NextResponse.json({ success: true, data: updated })
+    return adminJsonResponse({ success: true, data: updated })
   } catch (err: any) {
     const isConflict = err?.message?.includes('already exists')
-    return NextResponse.json(
+    return adminJsonResponse(
       {
         success: false,
         error: {
@@ -149,14 +152,14 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
     if (!id) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Vehicle ID is required.' } },
         { status: 400 }
       )
@@ -164,7 +167,7 @@ export async function DELETE(req: NextRequest) {
 
     const existing = await getVehicleById(id)
     if (!existing) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'NOT_FOUND', message: `Vehicle ${id} not found.` } },
         { status: 404 }
       )
@@ -172,9 +175,9 @@ export async function DELETE(req: NextRequest) {
 
     await deleteVehicle(id)
     safeRevalidate()
-    return NextResponse.json({ success: true, data: { deleted: true, id } })
+    return adminJsonResponse({ success: true, data: { deleted: true, id } })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'OPERATION_FAILED', message: err?.message || 'Failed to delete vehicle.' } },
       { status: 500 }
     )

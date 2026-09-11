@@ -24,6 +24,8 @@ const defaultMeta: Metadata = {
   },
 }
 
+export const revalidate = 3600 // ISR: CDN-cached; regenerates hourly or on admin mutation
+
 export async function generateMetadata(): Promise<Metadata> {
   return resolvePageMetadata('/about', defaultMeta)
 }
