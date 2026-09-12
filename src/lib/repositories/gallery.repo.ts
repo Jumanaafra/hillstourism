@@ -1,4 +1,4 @@
-import { getFirestoreDB } from '../firebase/admin'
+import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 
 export interface GalleryPhoto {
   id: string
@@ -12,7 +12,7 @@ export interface GalleryPhoto {
 }
 
 // Seed data matching the current hardcoded values in Gallery.jsx
-const seedGalleryPhotos: GalleryPhoto[] = [
+export const seedGalleryPhotos: GalleryPhoto[] = [
   { id: 'g1', src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=80&auto=format', alt: 'Majestic mountain range at golden hour', category: 'Mountains', displayOrder: 1, active: true },
   { id: 'g2', src: 'https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=700&q=80&auto=format', alt: 'Campfire by the lakeside at dusk', category: 'Experiences', displayOrder: 2, active: true },
   { id: 'g3', src: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=700&q=80&auto=format', alt: 'Sunrise over Himalayan peaks', category: 'Mountains', displayOrder: 3, active: true },
@@ -33,15 +33,20 @@ export async function getGalleryPhotos(onlyActive = true): Promise<GalleryPhoto[
       if (onlyActive) {
         query = query.where('active', '==', true)
       }
-      const snapshot = await query.get()
-      if (!snapshot.empty) {
-        const photos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GalleryPhoto))
-        return photos.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
-      }
+      const snapshot = await withFirestoreTimeout(query.get(), 15000, 'gallery.get')
+      const photos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GalleryPhoto))
+      memoryPhotos = [...photos]
+      return photos.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
     } catch (err) {
-      console.warn('[Gallery Repo] Firestore fetch failed, falling back to memory store:', err)
+      console.error('[Gallery Repo] Firestore fetch failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
+
   const photos = onlyActive ? memoryPhotos.filter(p => p.active) : [...memoryPhotos]
   return photos.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
 }
@@ -50,14 +55,21 @@ export async function getGalleryPhotoById(id: string): Promise<GalleryPhoto | nu
   const db = getFirestoreDB()
   if (db) {
     try {
-      const doc = await db.collection('gallery').doc(id).get()
+      const doc = await withFirestoreTimeout(db.collection('gallery').doc(id).get(), 15000, `gallery.getById:${id}`)
       if (doc.exists) {
         return { id: doc.id, ...doc.data() } as GalleryPhoto
       }
+      return null
     } catch (err) {
-      console.warn(`[Gallery Repo] Firestore getById failed for ${id}:`, err)
+      console.error(`[Gallery Repo] Firestore getById failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
+
   return memoryPhotos.find(p => p.id === id) || null
 }
 
@@ -73,10 +85,15 @@ export async function createGalleryPhoto(data: Omit<GalleryPhoto, 'id' | 'create
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('gallery').doc(newPhoto.id).set(newPhoto)
+      await withFirestoreTimeout(db.collection('gallery').doc(newPhoto.id).set(newPhoto), 15000, 'gallery.create')
     } catch (err) {
-      console.warn('[Gallery Repo] Firestore save failed, saving to memory:', err)
+      console.error('[Gallery Repo] Firestore save failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   memoryPhotos.push(newPhoto)
@@ -98,10 +115,15 @@ export async function updateGalleryPhoto(id: string, data: Partial<GalleryPhoto>
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('gallery').doc(id).set(updated, { merge: true })
+      await withFirestoreTimeout(db.collection('gallery').doc(id).set(updated, { merge: true }), 15000, `gallery.update:${id}`)
     } catch (err) {
-      console.warn(`[Gallery Repo] Firestore update failed for ${id}:`, err)
+      console.error(`[Gallery Repo] Firestore update failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   const idx = memoryPhotos.findIndex(p => p.id === id)
@@ -116,10 +138,15 @@ export async function deleteGalleryPhoto(id: string): Promise<boolean> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('gallery').doc(id).delete()
+      await withFirestoreTimeout(db.collection('gallery').doc(id).delete(), 15000, `gallery.delete:${id}`)
     } catch (err) {
-      console.warn(`[Gallery Repo] Firestore delete failed for ${id}:`, err)
+      console.error(`[Gallery Repo] Firestore delete failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   memoryPhotos = memoryPhotos.filter(p => p.id !== id)
@@ -129,3 +156,4 @@ export async function deleteGalleryPhoto(id: string): Promise<boolean> {
 export function _resetMemoryGallery(seed = seedGalleryPhotos) {
   memoryPhotos = [...seed]
 }
+

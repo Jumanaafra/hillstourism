@@ -86,3 +86,27 @@ export function generateResponsiveSrcSet(
     .map(w => `${buildOptimizedUrl(urlOrPublicId, { width: w })} ${w}w`)
     .join(', ')
 }
+
+/**
+ * Universal image URL optimizer.
+ * Handles Cloudinary transformations (f_auto, q_auto, width scaling)
+ * and Unsplash query parameter optimization (auto=format, q=75, w=width).
+ */
+export function getOptimizedImageUrl(url: string, width: number = 600): string {
+  if (!url) return ''
+  if (url.includes('res.cloudinary.com')) {
+    return buildOptimizedUrl(url, { width, quality: 'auto', format: 'auto' })
+  }
+  if (url.includes('images.unsplash.com')) {
+    try {
+      const u = new URL(url)
+      u.searchParams.set('w', String(width))
+      u.searchParams.set('q', '75')
+      u.searchParams.set('auto', 'format')
+      return u.toString()
+    } catch {
+      return url
+    }
+  }
+  return url
+}

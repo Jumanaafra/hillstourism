@@ -1,4 +1,4 @@
-import { getFirestoreDB } from '../firebase/admin'
+import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 import type { PageSEO } from '../../types/domain'
 
 export const defaultPageSEOList: PageSEO[] = [
@@ -185,19 +185,25 @@ export async function getAllPageSEO(): Promise<PageSEO[]> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const snapshot = await db.collection('seo_pages').get()
-      if (!snapshot.empty) {
-        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PageSEO))
-        // Merge with defaults to ensure all routes exist
-        const map = new Map<string, PageSEO>()
-        defaultPageSEOList.forEach(def => map.set(def.route, def))
-        list.forEach(item => map.set(item.route, item))
-        return Array.from(map.values())
-      }
+      const snapshot = await withFirestoreTimeout(db.collection('seo_pages').get(), 15000, 'getAllPageSEO')
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PageSEO))
+      // Merge with defaults to ensure all routes exist
+      const map = new Map<string, PageSEO>()
+      defaultPageSEOList.forEach(def => map.set(def.route, def))
+      list.forEach(item => map.set(item.route, item))
+      const merged = Array.from(map.values())
+      memoryPageSEO = [...merged]
+      return merged
     } catch (err) {
-      console.warn('[SEO Repo] Firestore fetch error:', err)
+      console.error('[SEO Repo] Firestore fetch error:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
+
   return [...memoryPageSEO]
 }
 
@@ -209,14 +215,23 @@ export async function getSeoByRoute(route: string): Promise<PageSEO | null> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const snapshot = await db.collection('seo_pages').where('route', '==', normalizedRoute).limit(1).get()
+      const snapshot = await withFirestoreTimeout(
+        db.collection('seo_pages').where('route', '==', normalizedRoute).limit(1).get(),
+        15000,
+        `getSeoByRoute:${normalizedRoute}`
+      )
       if (!snapshot.empty) {
         const doc = snapshot.docs[0]
         return { id: doc.id, ...doc.data() } as PageSEO
       }
     } catch (err) {
-      console.warn(`[SEO Repo] Fetch error for route ${normalizedRoute}:`, err)
+      console.error(`[SEO Repo] Fetch error for route ${normalizedRoute}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   return (
@@ -262,10 +277,15 @@ export async function savePageSEO(data: Partial<PageSEO> & { route: string }): P
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('seo_pages').doc(item.id).set(item, { merge: true })
+      await withFirestoreTimeout(db.collection('seo_pages').doc(item.id).set(item, { merge: true }), 15000, 'seo.save')
     } catch (err) {
-      console.warn('[SEO Repo] Save error:', err)
+      console.error('[SEO Repo] Save error:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   const idx = memoryPageSEO.findIndex(s => s.route === normalizedRoute || s.id === item.id)
@@ -293,10 +313,15 @@ export async function resetPageSEO(routeOrId: string): Promise<PageSEO> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('seo_pages').doc(defaultEntry.id).delete()
+      await withFirestoreTimeout(db.collection('seo_pages').doc(defaultEntry.id).delete(), 15000, 'seo.reset')
     } catch (err) {
-      console.warn(`[SEO Repo] Reset error for ${defaultEntry.id}:`, err)
+      console.error(`[SEO Repo] Reset error for ${defaultEntry.id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   const idx = memoryPageSEO.findIndex(s => s.id === defaultEntry.id || s.route === defaultEntry.route)

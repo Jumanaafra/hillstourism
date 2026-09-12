@@ -1,4 +1,4 @@
-import { getFirestoreDB } from '../firebase/admin'
+import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 import type { SocialLink } from '../../types/domain'
 
 export const ALLOWED_SOCIAL_PLATFORMS = ['whatsapp', 'facebook', 'instagram', 'youtube', 'twitter'] as const
@@ -93,14 +93,18 @@ export async function getSocialLinks(onlyActive = true): Promise<SocialLink[]> {
       if (onlyActive) {
         query = query.where('active', '==', true)
       }
-      const snapshot = await query.get()
-      if (!snapshot.empty) {
-        const links = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SocialLink))
-        return links.sort((a, b) => (a.order || 0) - (b.order || 0))
-      }
+      const snapshot = await withFirestoreTimeout(query.get(), 15000, 'social.get')
+      const links = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SocialLink))
+      memorySocialLinks = [...links]
+      return links.sort((a, b) => (a.order || 0) - (b.order || 0))
     } catch (err) {
-      console.warn('[Social Repo] Firestore fetch error:', err)
+      console.error('[Social Repo] Firestore fetch error:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   const links = onlyActive
@@ -116,12 +120,19 @@ export async function getSocialLinkById(id: string): Promise<SocialLink | null> 
   const db = getFirestoreDB()
   if (db) {
     try {
-      const doc = await db.collection('social_links').doc(id).get()
+      const doc = await withFirestoreTimeout(db.collection('social_links').doc(id).get(), 15000, `social.getById:${id}`)
       if (doc.exists) return { id: doc.id, ...doc.data() } as SocialLink
+      return null
     } catch (err) {
-      console.warn(`[Social Repo] getSocialLinkById error for ${id}:`, err)
+      console.error(`[Social Repo] getSocialLinkById error for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
+
   return memorySocialLinks.find(s => s.id === id) || null
 }
 
@@ -147,10 +158,15 @@ export async function createSocialLink(data: Omit<SocialLink, 'id'> & { id?: str
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('social_links').doc(item.id).set(item)
+      await withFirestoreTimeout(db.collection('social_links').doc(item.id).set(item), 15000, 'social.create')
     } catch (err) {
-      console.warn('[Social Repo] Save error:', err)
+      console.error('[Social Repo] Save error:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   memorySocialLinks.push(item)
@@ -189,10 +205,15 @@ export async function updateSocialLink(id: string, updates: Partial<SocialLink>)
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('social_links').doc(id).set(updated, { merge: true })
+      await withFirestoreTimeout(db.collection('social_links').doc(id).set(updated, { merge: true }), 15000, `social.update:${id}`)
     } catch (err) {
-      console.warn(`[Social Repo] Update error for ${id}:`, err)
+      console.error(`[Social Repo] Update error for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   const idx = memorySocialLinks.findIndex(s => s.id === id)
@@ -208,10 +229,15 @@ export async function deleteSocialLink(id: string): Promise<boolean> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      await db.collection('social_links').doc(id).delete()
+      await withFirestoreTimeout(db.collection('social_links').doc(id).delete(), 15000, `social.delete:${id}`)
     } catch (err) {
-      console.warn(`[Social Repo] Delete error for ${id}:`, err)
+      console.error(`[Social Repo] Delete error for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
     }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
   }
 
   memorySocialLinks = memorySocialLinks.filter(s => s.id !== id)

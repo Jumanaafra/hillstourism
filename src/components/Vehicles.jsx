@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import { cachedFetch } from '../lib/cache/clientCache'
+import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
 import { vehicles } from '../data/vehicles'
 import { FiUsers, FiBriefcase, FiMap, FiMapPin } from 'react-icons/fi'
 import { FaCarSide } from 'react-icons/fa'
@@ -11,8 +13,7 @@ export default function Vehicles({ id }) {
   const sectionRef = useRef(null)
 
   useEffect(() => {
-    fetch('/api/vehicles')
-      .then(res => res.json())
+    cachedFetch('/api/vehicles')
       .then(data => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
           setVehicleList(data.data)
@@ -91,15 +92,16 @@ export default function Vehicles({ id }) {
                 background:   'var(--hill-surface)',
               }}>
                 <img
-                  src={v.image}
+                  src={getOptimizedImageUrl(v.image, 600)}
                   alt={v.name}
                   loading="lazy"
+                  decoding="async"
                   style={{ width:'100%', height:'100%', objectFit:'cover', transition:'transform 0.5s ease' }}
                   onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
                   onMouseLeave={e => e.target.style.transform = 'scale(1)'}
                   onError={e => {
                     e.currentTarget.onerror = null
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&q=80&auto=format'
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&q=75&auto=format'
                   }}
                 />
               </div>

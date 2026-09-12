@@ -105,23 +105,46 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
   }, [canvasRef, renderFrame])
 
   /* ── Progressive frame loading ───────────────────── */
+  const inFlightRef = useRef(new Set())
+
+  const loadSingle = useCallback(async (i) => {
+    if (i < 0 || i >= TOTAL_FRAMES) return null
+    if (loadedRef.current[i]) return imagesRef.current[i]
+    if (inFlightRef.current.has(i)) return null
+    inFlightRef.current.add(i)
+
+    try {
+      const img = await loadImage(getFramePath(i), 12000)
+      if (img) {
+        imagesRef.current[i] = img
+        loadedRef.current[i] = true
+        // Re-render if this matches or is adjacent to current frame
+        if (Math.abs(i - curFrameRef.current) <= 1) {
+          renderFrame(curFrameRef.current)
+        }
+      }
+      return img
+    } finally {
+      inFlightRef.current.delete(i)
+    }
+  }, [renderFrame])
+
+  // Preload a window of frames around a target index (lookahead)
+  const preloadWindow = useCallback((centerIndex, windowSize = 12) => {
+    const start = Math.max(0, centerIndex - 2)
+    const end = Math.min(TOTAL_FRAMES, centerIndex + windowSize)
+    for (let i = start; i < end; i++) {
+      if (!loadedRef.current[i] && !inFlightRef.current.has(i)) {
+        loadSingle(i)
+      }
+    }
+  }, [loadSingle])
+
   useEffect(() => {
     if (!enabled) return
     let isMounted = true
 
-    const loadSingle = async (i) => {
-      if (loadedRef.current[i]) return imagesRef.current[i]
-      const img = await loadImage(getFramePath(i), 12000)
-      if (img && isMounted) {
-        imagesRef.current[i] = img
-        loadedRef.current[i] = true
-        // Re-render if this matches current frame
-        if (i === curFrameRef.current) renderFrame(i)
-      }
-      return img
-    }
-
-    const loadAll = async () => {
+    const initializeHeroFrames = async () => {
       // 1. Immediately load frame 0 and display
       await loadSingle(0)
       if (isMounted) {
@@ -129,31 +152,58 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
         renderFrame(0)
       }
 
-      // 2. High priority: first 40 frames for instant scroll readiness
-      const priority = []
-      for (let i = 1; i < Math.min(40, TOTAL_FRAMES); i++) {
-        priority.push(loadSingle(i))
+      // 2. Load immediate initial buffer (frames 1–7) so initial scrub starts with zero lag
+      const initialBuffer = []
+      for (let i = 1; i < Math.min(8, TOTAL_FRAMES); i++) {
+        initialBuffer.push(loadSingle(i))
       }
-      await Promise.all(priority)
+      await Promise.all(initialBuffer)
 
-      // 3. Load remaining frames in batches
-      const BATCH = 30
-      for (let i = 40; i < TOTAL_FRAMES; i += BATCH) {
-        if (!isMounted) break
-        const batch = []
-        for (let j = i; j < Math.min(i + BATCH, TOTAL_FRAMES); j++) {
-          batch.push(loadSingle(j))
+      // 3. Gentle background idle preloading for subsequent frames
+      // Uses requestIdleCallback where available to avoid competing with main-thread work
+      const scheduleIdleBatch = (startIndex) => {
+        if (!isMounted || startIndex >= TOTAL_FRAMES) return
+
+        const runBatch = () => {
+          if (!isMounted) return
+          const BATCH_SIZE = 6
+          const nextIndex = Math.min(startIndex + BATCH_SIZE, TOTAL_FRAMES)
+          const promises = []
+          for (let i = startIndex; i < nextIndex; i++) {
+            if (!loadedRef.current[i]) {
+              promises.push(loadSingle(i))
+            }
+          }
+          Promise.all(promises).then(() => {
+            if (isMounted && nextIndex < TOTAL_FRAMES) {
+              // Yield 80ms before next batch to ensure smooth 60fps scrolling
+              setTimeout(() => {
+                if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+                  window.requestIdleCallback(() => scheduleIdleBatch(nextIndex), { timeout: 1000 })
+                } else {
+                  scheduleIdleBatch(nextIndex)
+                }
+              }, 80)
+            }
+          })
         }
-        await Promise.all(batch)
-        await new Promise((r) => setTimeout(r, 10))
+
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+          window.requestIdleCallback(runBatch, { timeout: 1500 })
+        } else {
+          setTimeout(runBatch, 100)
+        }
       }
+
+      // Start background idle queue after initial buffer settles
+      setTimeout(() => scheduleIdleBatch(8), 200)
     }
 
-    loadAll()
+    initializeHeroFrames()
     return () => {
       isMounted = false
     }
-  }, [enabled, resizeCanvas, renderFrame])
+  }, [enabled, resizeCanvas, renderFrame, loadSingle])
 
   /* ── GSAP ScrollTrigger Pin & Scrub Setup ────────── */
   useEffect(() => {
@@ -181,6 +231,7 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
           const progress = Math.max(0, Math.min(1, self.progress))
           const frameIndex = Math.min(TOTAL_FRAMES - 1, Math.floor(progress * TOTAL_FRAMES))
           renderFrame(frameIndex)
+          preloadWindow(frameIndex, 14)
           onProgressRef.current?.(frameIndex, progress)
         },
       })
@@ -197,7 +248,7 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
       ctx.revert()
       stRef.current?.kill()
     }
-  }, [enabled, containerRef, pinRef, resizeCanvas, renderFrame])
+  }, [enabled, containerRef, pinRef, resizeCanvas, renderFrame, preloadWindow])
 }
 
 /**
