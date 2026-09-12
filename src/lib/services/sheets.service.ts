@@ -63,24 +63,80 @@ export async function syncEnquiryToGoogleSheets(enquiry: Enquiry): Promise<Sheet
       'synced',
     ]
 
-    const range = process.env.GOOGLE_SHEETS_RANGE || 'Enquiries!A:P'
+    // Normalize range with single-quoted sheet name to support spaces and special characters
+    const rawRange = (process.env.GOOGLE_SHEETS_RANGE || 'Enquiries!A:P').trim().replace(/^["']|["']$/g, '')
+    let sheetTitle = 'Enquiries'
+    let cellRange = 'A:P'
+    const bangIdx = rawRange.indexOf('!')
+    if (bangIdx !== -1) {
+      sheetTitle = rawRange.slice(0, bangIdx).replace(/^'|'$/g, '').trim() || 'Enquiries'
+      cellRange = rawRange.slice(bangIdx + 1).trim() || 'A:P'
+    } else {
+      sheetTitle = rawRange.replace(/^'|'$/g, '').trim() || 'Enquiries'
+    }
 
-    const res = await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range,
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: {
-        values: [rowValues],
-      },
-    })
+    let targetRange = `'${sheetTitle}'!${cellRange}`
+    const maskedId = spreadsheetId.length > 8
+      ? `${spreadsheetId.slice(0, 4)}...${spreadsheetId.slice(-4)}`
+      : '***'
+
+    let res: any
+    try {
+      res = await sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: targetRange,
+        valueInputOption: 'USER_ENTERED',
+        insertDataOption: 'INSERT_ROWS',
+        requestBody: {
+          values: [rowValues],
+        },
+      })
+    } catch (appendErr: any) {
+      const errMsg = appendErr?.message || String(appendErr)
+      // If range cannot be parsed, automatically discover available tabs and retry
+      if (errMsg.includes('Unable to parse range')) {
+        console.warn(`[Google Sheets] Range "${targetRange}" not found in spreadsheet (${maskedId}). Discovering available tabs...`)
+        const meta = await sheets.spreadsheets.get({
+          spreadsheetId,
+          fields: 'sheets.properties.title',
+        })
+        const availableTabs = (meta.data.sheets || [])
+          .map(s => s.properties?.title)
+          .filter((t): t is string => Boolean(t))
+
+        // Match case-insensitively, or partial 'enquir', or fallback to the first tab
+        const matchedTab = availableTabs.find(t => t.toLowerCase() === sheetTitle.toLowerCase()) ||
+          availableTabs.find(t => t.toLowerCase().includes('enquir')) ||
+          availableTabs[0]
+
+        if (matchedTab) {
+          targetRange = `'${matchedTab}'!${cellRange}`
+          console.log(`[Google Sheets] Retrying append using discovered tab: ${targetRange}`)
+          res = await sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range: targetRange,
+            valueInputOption: 'USER_ENTERED',
+            insertDataOption: 'INSERT_ROWS',
+            requestBody: {
+              values: [rowValues],
+            },
+          })
+        } else {
+          throw appendErr
+        }
+      } else {
+        throw appendErr
+      }
+    }
+
+    console.log(`[Google Sheets] Successfully appended enquiry ${enquiry.id} to range ${res.data.updates?.updatedRange || targetRange}`)
 
     return {
       success: true,
-      updatedRange: res.data.updates?.updatedRange || 'appended',
+      updatedRange: res.data.updates?.updatedRange || targetRange,
     }
   } catch (err: any) {
-    console.error('[Google Sheets] Failed to sync enquiry row:', err)
+    console.error('[Google Sheets] Failed to sync enquiry row:', err?.message || err)
     return {
       success: false,
       error: err?.message || String(err),
