@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
-import { cachedFetch } from '../lib/cache/clientCache'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
@@ -15,7 +14,7 @@ const NAV_LINKS = [
   { label: 'About',       href: '/about' },
 ]
 
-export default function Navbar() {
+export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -24,18 +23,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(!isHomePage)
   const [menuOpen,    setMenuOpen]    = useState(false)
   const [menuMounted, setMenuMounted] = useState(false)
-  const [whatsappUrl, setWhatsappUrl] = useState("https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip.")
-
-  useEffect(() => {
-    cachedFetch('/api/social-links')
-      .then(res => {
-        if (res.success && Array.isArray(res.data)) {
-          const wa = res.data.find(s => s.platform === 'whatsapp' && s.active)
-          if (wa && wa.url) setWhatsappUrl(wa.url)
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const whatsappUrl = customWhatsappUrl || "https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip."
 
   /* Scroll listener — on homepage only toggles; on other pages always stays dark */
   useEffect(() => {
@@ -68,54 +56,67 @@ export default function Navbar() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
+  /* Close on pathname change (back/forward or route change) */
+  useEffect(() => {
+    setMenuOpen(false)
+    document.body.style.overflow = ''
+  }, [pathname])
+
   const handleNavClick = (href) => {
     setMenuOpen(false)
-    const delay = menuOpen ? 450 : 0
-    setTimeout(() => {
-      // Pure hash anchor (e.g. #contact) → smooth-scroll within current page
-      if (href.startsWith('#')) {
-        const el = document.querySelector(href)
-        if (el) el.scrollIntoView({ behavior: 'smooth' })
-        return
-      }
-      // Hash anchor on home (e.g. /#contact) from homepage → smooth-scroll
-      if (href.startsWith('/#') && pathname === '/') {
-        const id = href.slice(1) // becomes #contact
-        const el = document.querySelector(id)
-        if (el) el.scrollIntoView({ behavior: 'smooth' })
-        return
-      }
-      // All other links → client-side route navigation
-      router.push(href)
-    }, delay)
+    document.body.style.overflow = ''
+    // Pure hash anchor (e.g. #contact) → smooth-scroll within current page
+    if (href.startsWith('#')) {
+      const el = document.querySelector(href)
+      if (el) el.scrollIntoView({ behavior: 'smooth' })
+      return
+    }
+    // Hash anchor on home (e.g. /#contact) from homepage → smooth-scroll
+    if (href.startsWith('/#') && pathname === '/') {
+      const id = href.slice(1) // becomes #contact
+      const el = document.querySelector(id)
+      if (el) el.scrollIntoView({ behavior: 'smooth' })
+      return
+    }
+    // All other links → client-side route navigation
+    router.push(href)
   }
 
   // Determine if a nav link is active
   const isActive = (href) => {
     if (href === '/') return pathname === '/'
+    if (href.startsWith('/#')) return false
     return pathname.startsWith(href)
   }
+
+  const allMobileLinks = [
+    ...NAV_LINKS,
+    { label: 'Contact', href: '/#contact' },
+  ]
 
   return (
     <>
       <nav
-        className={`navbar ${scrolled ? 'scrolled' : ''}`}
+        className={`navbar ${scrolled ? 'scrolled' : ''} ${menuOpen ? 'menu-open' : ''}`}
         role="navigation"
         aria-label="Main navigation"
-        style={!isHomePage && !scrolled ? { background: 'rgba(0,9,31,0.95)', backdropFilter: 'blur(24px)' } : undefined}
+        style={!isHomePage && !scrolled && !menuOpen ? { background: 'rgba(0,9,31,0.95)', backdropFilter: 'blur(24px)' } : undefined}
       >
-        <div style={{
-          display:        'flex',
-          alignItems:     'center',
-          justifyContent: 'space-between',
-          padding:        scrolled
-            ? 'clamp(0.6rem,1.5vw,0.85rem) clamp(1.25rem,4vw,3rem)'
-            : 'clamp(0.85rem,2vw,1.15rem) clamp(1.25rem,4vw,3rem)',
-          maxWidth:       '1600px',
-          margin:         '0 auto',
-          width:          '100%',
-          transition:     'padding 0.4s cubic-bezier(0.25,0.46,0.45,0.94)',
-        }}>
+        <div
+          className="navbar-container"
+          style={{
+            display:        'flex',
+            alignItems:     'center',
+            justifyContent: 'space-between',
+            padding:        scrolled
+              ? 'clamp(0.6rem,1.5vw,0.85rem) clamp(1.25rem,4vw,3rem)'
+              : 'clamp(0.85rem,2vw,1.15rem) clamp(1.25rem,4vw,3rem)',
+            maxWidth:       '1600px',
+            margin:         '0 auto',
+            width:          '100%',
+            transition:     'padding 0.4s cubic-bezier(0.25,0.46,0.45,0.94)',
+          }}
+        >
           {/* Logo */}
           <a
             href="/"
@@ -130,6 +131,7 @@ export default function Navbar() {
                 alt="Hillstourism"
                 width={150}
                 height={100}
+                className="navbar-brand-logo"
                 style={{
                   height:      'clamp(34px, 4vw, 48px)',
                   width:       'auto',
@@ -211,38 +213,17 @@ export default function Navbar() {
               </svg>
             </a>
 
-            {/* Hamburger */}
+            {/* Hamburger Button with fluid 3-bar morph */}
             <button
-              className="hamburger-btn"
+              className={`hamburger-btn ${menuOpen ? 'active' : ''}`}
               onClick={() => setMenuOpen(!menuOpen)}
               aria-expanded={menuOpen}
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              style={{
-                display:       'none',
-                flexDirection: 'column',
-                gap:           '5px',
-                padding:       '6px',
-                background:    'transparent',
-                border:        'none',
-                cursor:        'pointer',
-              }}
+              aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              type="button"
             >
-              {[0,1,2].map(i => (
-                <span key={i} style={{
-                  display:      'block',
-                  width:        '22px',
-                  height:       '1.5px',
-                  background:   '#ffffff',
-                  borderRadius: '1px',
-                  transition:   'transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease',
-                  transform:
-                    menuOpen && i === 0 ? 'translateY(6.5px) rotate(45deg)' :
-                    menuOpen && i === 1 ? 'scaleX(0)' :
-                    menuOpen && i === 2 ? 'translateY(-6.5px) rotate(-45deg)' :
-                    'none',
-                  opacity: menuOpen && i === 1 ? 0 : 1,
-                }} />
-              ))}
+              <span className="hamburger-bar top-bar" />
+              <span className="hamburger-bar mid-bar" />
+              <span className="hamburger-bar bot-bar" />
             </button>
           </div>
         </div>
@@ -257,7 +238,7 @@ export default function Navbar() {
         `}</style>
       </nav>
 
-      {/* Mobile full-screen menu */}
+      {/* Mobile fluid navigation overlay */}
       {menuMounted && (
         <div
           className={`mobile-menu ${menuOpen ? 'open' : ''}`}
@@ -265,77 +246,38 @@ export default function Navbar() {
           aria-modal="true"
           aria-label="Mobile navigation"
         >
-          {/* Decorative accent */}
-          <div style={{
-            position:    'absolute',
-            top:         '50%', left: '50%',
-            transform:   'translate(-50%,-50%)',
-            width:       '500px', height: '500px',
-            borderRadius: '50%',
-            background:  'radial-gradient(ellipse, rgba(8,120,255,0.06), transparent 70%)',
-            pointerEvents: 'none',
-          }} />
+          {/* Ambient fluid decorative orbs */}
+          <div className="mobile-menu-glow-1" aria-hidden="true" />
+          <div className="mobile-menu-glow-2" aria-hidden="true" />
 
-          {/* Close button */}
-          <button
-            onClick={() => setMenuOpen(false)}
-            aria-label="Close navigation menu"
-            style={{
-              position:   'absolute',
-              top:        '1.5rem',
-              right:      'clamp(1.25rem,4vw,3rem)',
-              background: 'transparent',
-              border:     '1px solid rgba(255,255,255,0.15)',
-              color:      'rgba(255,255,255,0.7)',
-              width:      '40px',
-              height:     '40px',
-              borderRadius: '50%',
-              fontSize:   '1.4rem',
-              cursor:     'pointer',
-              display:    'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              lineHeight: 1,
-              padding:    0,
-              transition: 'border-color 0.2s ease, color 0.2s ease',
-            }}
-          >
-            ×
-          </button>
-
-          <nav>
-            <ul style={{ listStyle: 'none', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-              {[...NAV_LINKS, { label: 'Contact', href: '/#contact' }].map((link, i) => (
-                <li key={link.href} style={{
-                  opacity:    menuOpen ? 1 : 0,
-                  transform:  menuOpen ? 'translateY(0)' : 'translateY(20px)',
-                  transition: `opacity 0.5s ease ${i * 0.055}s, transform 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.055}s`,
-                }}>
-                  <a
-                    href={link.href}
-                    className="mobile-nav-link"
-                    onClick={(e) => { e.preventDefault(); handleNavClick(link.href) }}
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+          <nav className="mobile-menu-nav" aria-label="Mobile menu links">
+            <ul className="mobile-menu-list">
+              {allMobileLinks.map((link) => {
+                const active = isActive(link.href)
+                return (
+                  <li key={link.href} className="mobile-nav-item">
+                    <a
+                      href={link.href}
+                      className={`mobile-nav-link ${active ? 'active' : ''}`}
+                      onClick={(e) => { e.preventDefault(); handleNavClick(link.href) }}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      {active && (
+                        <span className="mobile-nav-pill-dot" aria-hidden="true" />
+                      )}
+                      <span>{link.label}</span>
+                    </a>
+                  </li>
+                )
+              })}
             </ul>
           </nav>
 
-          <div style={{
-            marginTop:  '2.5rem',
-            opacity:    menuOpen ? 1 : 0,
-            transform:  menuOpen ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'opacity 0.5s ease 0.45s, transform 0.5s cubic-bezier(0.16,1,0.3,1) 0.45s',
-            display:    'flex',
-            gap:        '1rem',
-            flexWrap:   'wrap',
-            justifyContent: 'center',
-          }}>
+          {/* Quick CTA Actions */}
+          <div className="mobile-nav-actions">
             <a
               href="/#contact"
-              className="btn-primary"
+              className="btn-primary mobile-cta-btn"
               onClick={(e) => { e.preventDefault(); handleNavClick('/#contact') }}
             >
               Plan My Trip
@@ -344,7 +286,7 @@ export default function Navbar() {
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-outline-white"
+              className="btn-outline-white mobile-cta-btn"
             >
               WhatsApp Us
             </a>

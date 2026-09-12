@@ -1,3 +1,4 @@
+import 'server-only'
 import { cloudinary, isCloudinaryConfigured } from './config'
 import type { UploadApiResponse } from 'cloudinary'
 

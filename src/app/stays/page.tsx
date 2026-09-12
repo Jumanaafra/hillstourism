@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import HillGuide from '@/components/HillGuide'
+import LazyHillGuide from '@/components/LazyHillGuide'
 import Stays from '@/components/Stays'
 import SmartStayMatcher from '@/components/SmartStayMatcher'
 import { getCanonicalUrl } from '@/lib/seo/siteUrl'
@@ -44,7 +44,7 @@ export default async function StaysPage() {
         <SmartStayMatcher id="smart-stay" initialHotels={hotels} />
       </main>
       <Footer id="footer" />
-      <HillGuide />
+      <LazyHillGuide />
     </>
   )
 }

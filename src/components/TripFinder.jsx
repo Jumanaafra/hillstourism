@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { cachedFetch } from '../lib/cache/clientCache'
 import { packages } from '../data/packages'
 import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 
@@ -36,21 +35,7 @@ export default function TripFinder({ id, initialPackages }) {
   const [tripType, setTripType] = useState(null)
   const [results,  setResults]  = useState([])
   const [searched, setSearched] = useState(false)
-  const [pkgList,  setPkgList]  = useState(
-    Array.isArray(initialPackages) && initialPackages.length > 0 ? initialPackages : packages
-  )
-
-  useEffect(() => {
-    // Skip fetch when real data was already provided server-side
-    if (Array.isArray(initialPackages) && initialPackages.length > 0) return
-    cachedFetch('/api/packages')
-      .then(data => {
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setPkgList(data.data)
-        }
-      })
-      .catch(() => {})
-  }, [initialPackages])
+  const pkgList = Array.isArray(initialPackages) && initialPackages.length > 0 ? initialPackages : packages
 
   // Scroll reveal
   useEffect(() => {

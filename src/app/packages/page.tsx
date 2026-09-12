@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import HillGuide from '@/components/HillGuide'
+import LazyHillGuide from '@/components/LazyHillGuide'
 import TripCategoryCarousel from '@/components/TripCategoryCarousel'
 import FeaturedTrips from '@/components/FeaturedTrips'
 import TripFinder from '@/components/TripFinder'
@@ -45,7 +45,7 @@ export default async function PackagesPage() {
         <TripFinder id="trip-finder" initialPackages={packages} />
       </main>
       <Footer id="footer" />
-      <HillGuide />
+      <LazyHillGuide />
     </>
   )
 }

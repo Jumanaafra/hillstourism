@@ -1,3 +1,4 @@
+import 'server-only'
 import type { Enquiry } from '../../types/domain'
 
 export interface SendEmailResult {

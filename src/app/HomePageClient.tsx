@@ -1,15 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import dynamic from 'next/dynamic'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import type { Package } from '@/types/domain'
-import type { Hotel } from '@/types/domain'
-import type { Vehicle } from '@/types/domain'
+import type { Package, Hotel, Vehicle } from '@/types/domain'
 import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
 
-// Critical Above-The-Fold & Layout components
+// Layout & Section components
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import Hero from '@/components/Hero'
@@ -31,10 +27,6 @@ const HillGuide = dynamic(() => import('@/components/HillGuide'), { ssr: false }
 const SmartStayMatcher = dynamic(() => import('@/components/SmartStayMatcher'), { ssr: true })
 const Enquiry = dynamic(() => import('@/components/Enquiry'), { ssr: true })
 
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger)
-}
-
 interface HomePageClientProps {
   initialPackages?: Package[]
   initialHotels?: Hotel[]
@@ -51,7 +43,7 @@ export default function HomePageClient({
   const [showLoader, setShowLoader] = useState(true)
 
   // Use isomorphic layout effect to avoid a flash of the loading screen on return visits
-  const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+  const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect
 
   useIsomorphicLayoutEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('ht_loaded') === '1') {
@@ -65,15 +57,6 @@ export default function HomePageClient({
     }
     setShowLoader(false)
   }
-
-  // GSAP ScrollTrigger refresh on resize
-  useEffect(() => {
-    const handleResize = () => {
-      ScrollTrigger.refresh()
-    }
-    window.addEventListener('resize', handleResize, { passive: true })
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
 
   return (
     <>
@@ -123,7 +106,12 @@ export default function HomePageClient({
         <Vehicles id="vehicles" initialVehicles={initialVehicles} />
 
         {/* 14. Trip Enquiry */}
-        <Enquiry id="contact" />
+        <Enquiry
+          id="contact"
+          initialPackages={initialPackages}
+          initialHotels={initialHotels}
+          initialVehicles={initialVehicles}
+        />
       </main>
 
       {/* Footer */}

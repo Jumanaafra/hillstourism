@@ -1,3 +1,4 @@
+import 'server-only'
 import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 
 export interface GalleryPhoto {

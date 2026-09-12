@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useRef, useState, useEffect } from 'react'
-import { cachedFetch } from '../lib/cache/clientCache'
 import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { FiArrowRight } from 'react-icons/fi'
 
@@ -20,21 +19,7 @@ export default function Gallery({ id, initialPhotos }) {
   const sectionRef = useRef(null)
   const headerRef = useRef(null)
   const [headerVisible, setHeaderVisible] = useState(false)
-  const [items, setItems] = useState(
-    Array.isArray(initialPhotos) && initialPhotos.length > 0 ? initialPhotos : GALLERY_ITEMS
-  )
-
-  // Fetch active photos from API (only when no server-side data provided)
-  useEffect(() => {
-    if (Array.isArray(initialPhotos) && initialPhotos.length > 0) return
-    cachedFetch('/api/gallery')
-      .then(data => {
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setItems(data.data)
-        }
-      })
-      .catch(() => {})
-  }, [initialPhotos])
+  const items = Array.isArray(initialPhotos) && initialPhotos.length > 0 ? initialPhotos : GALLERY_ITEMS
 
   // Scroll reveal for header content
   useEffect(() => {

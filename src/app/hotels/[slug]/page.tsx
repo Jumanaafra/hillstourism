@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { getHotels } from '@/lib/repositories/hotels.repo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import HillGuide from '@/components/HillGuide'
+import LazyHillGuide from '@/components/LazyHillGuide'
 import Enquiry from '@/components/Enquiry'
 import { FaStar } from 'react-icons/fa'
 import { FiMapPin, FiHome } from 'react-icons/fi'
@@ -198,7 +198,7 @@ export default async function HotelDetailPage({ params }: Props) {
       </main>
 
       <Footer id="footer" />
-      <HillGuide />
+      <LazyHillGuide />
     </>
   )
 }

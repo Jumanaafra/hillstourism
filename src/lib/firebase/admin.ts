@@ -77,6 +77,9 @@ export function allowMemoryFallback(): boolean {
   if (process.env.NODE_ENV === 'test') {
     return true
   }
+  if (process.env.ENABLE_BUILD_MEMORY_FALLBACK === 'true' || process.env.NEXT_PHASE === 'phase-production-build') {
+    return true
+  }
   if (process.env.NODE_ENV === 'production') {
     return false
   }
@@ -126,6 +129,8 @@ export async function withFirestoreTimeout<T>(
   }
 }
 
+let firestoreSettingsConfigured = false
+
 export function getFirestoreDB() {
   if (process.env.DISABLE_FIRESTORE === 'true') {
     return null
@@ -133,7 +138,17 @@ export function getFirestoreDB() {
 
   const adminApp = getFirebaseAdmin()
   if (adminApp) {
-    return adminApp.firestore()
+    const db = adminApp.firestore()
+    if (!firestoreSettingsConfigured) {
+      try {
+        db.settings({ ignoreUndefinedProperties: true })
+        firestoreSettingsConfigured = true
+      } catch {
+        // Settings already applied
+        firestoreSettingsConfigured = true
+      }
+    }
+    return db
   }
   return null
 }

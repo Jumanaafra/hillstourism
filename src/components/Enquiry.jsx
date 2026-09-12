@@ -4,9 +4,33 @@ import React, { useState, useRef, useEffect } from 'react'
 import { trackEnquiryStart, trackEnquirySubmit } from '../lib/analytics/events'
 import { FiZap, FiMapPin, FiLock, FiCheckCircle, FiCheck, FiAlertCircle, FiArrowRight } from 'react-icons/fi'
 
+import { packages as defaultPackages } from '../data/packages'
+import { stays as defaultHotels } from '../data/stays'
+import { vehicles as defaultVehicles } from '../data/vehicles'
+
 const TRIP_TYPES = ['Honeymoon', 'Couple Getaway', 'Family Trip', 'Friends Group', 'Corporate Retreat', 'Solo Journey']
 
-export default function Enquiry({ id, initialPackageId = '', initialHotelId = '', initialVehicleId = '', packageLocked = false }) {
+/**
+ * @param {object} [props]
+ * @param {string} [props.id]
+ * @param {string} [props.initialPackageId]
+ * @param {string} [props.initialHotelId]
+ * @param {string} [props.initialVehicleId]
+ * @param {boolean} [props.packageLocked]
+ * @param {any[]} [props.initialPackages]
+ * @param {any[]} [props.initialHotels]
+ * @param {any[]} [props.initialVehicles]
+ */
+export default function Enquiry({
+  id = '',
+  initialPackageId = '',
+  initialHotelId = '',
+  initialVehicleId = '',
+  packageLocked = false,
+  initialPackages = /** @type {any[]} */ ([]),
+  initialHotels = /** @type {any[]} */ ([]),
+  initialVehicles = /** @type {any[]} */ ([]),
+} = {}) {
   const sectionRef = useRef(null)
   const [form, setForm] = useState({
     name: '',
@@ -36,23 +60,10 @@ export default function Enquiry({ id, initialPackageId = '', initialHotelId = ''
   const [status, setStatus] = useState('idle') // idle | sending | success | error
   const [enquiryRef, setEnquiryRef] = useState('')
 
-  // Fetched catalog data (replaces static imports)
-  const [catalogPackages, setCatalogPackages] = useState([])
-  const [catalogHotels, setCatalogHotels] = useState([])
-  const [catalogVehicles, setCatalogVehicles] = useState([])
-
-  // Fetch packages/hotels/vehicles from API on mount
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/packages').then(r => r.json()).catch(() => ({ success: false })),
-      fetch('/api/hotels').then(r => r.json()).catch(() => ({ success: false })),
-      fetch('/api/vehicles').then(r => r.json()).catch(() => ({ success: false })),
-    ]).then(([pkgRes, hotelRes, vehRes]) => {
-      if (pkgRes.success) setCatalogPackages(pkgRes.data || [])
-      if (hotelRes.success) setCatalogHotels(hotelRes.data || [])
-      if (vehRes.success) setCatalogVehicles(vehRes.data || [])
-    })
-  }, [])
+  // Catalog data from server props or static fallback (eliminates 3 client-side API requests)
+  const catalogPackages = Array.isArray(initialPackages) && initialPackages.length > 0 ? initialPackages : defaultPackages
+  const catalogHotels   = Array.isArray(initialHotels) && initialHotels.length > 0 ? initialHotels : defaultHotels
+  const catalogVehicles = Array.isArray(initialVehicles) && initialVehicles.length > 0 ? initialVehicles : defaultVehicles
 
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []
@@ -144,7 +155,7 @@ export default function Enquiry({ id, initialPackageId = '', initialHotelId = ''
       </label>
       {children}
       {error && (
-        <p role="alert" style={{ fontSize: '0.7rem', color: '#EF4444', marginTop: '0.4rem', fontFamily: 'var(--font-body)' }}>
+        <p id={`${fid}-error`} role="alert" style={{ fontSize: '0.7rem', color: '#EF4444', marginTop: '0.4rem', fontFamily: 'var(--font-body)' }}>
           {error}
         </p>
       )}
@@ -319,11 +330,14 @@ export default function Enquiry({ id, initialPackageId = '', initialHotelId = ''
                     <Field id="name" label="Full Name" required error={errors.name}>
                       <input id="name" type="text" value={form.name} onChange={e => update('name', e.target.value)}
                         placeholder="Rahul Mehta" className="form-input" required aria-required="true"
+                        aria-invalid={errors.name ? 'true' : 'false'}
                         aria-describedby={errors.name ? 'name-error' : undefined} />
                     </Field>
                     <Field id="phone" label="Phone / WhatsApp" required error={errors.phone}>
                       <input id="phone" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)}
-                        placeholder="+91 9999 000000" className="form-input" required aria-required="true" />
+                        placeholder="+91 9999 000000" className="form-input" required aria-required="true"
+                        aria-invalid={errors.phone ? 'true' : 'false'}
+                        aria-describedby={errors.phone ? 'phone-error' : undefined} />
                     </Field>
                     <Field id="email" label="Email Address">
                       <input id="email" type="email" value={form.email} onChange={e => update('email', e.target.value)}
@@ -332,23 +346,28 @@ export default function Enquiry({ id, initialPackageId = '', initialHotelId = ''
                     <Field id="travelDate" label="Travel Date" required error={errors.travelDate}>
                       <input id="travelDate" type="date" value={form.travelDate} onChange={e => update('travelDate', e.target.value)}
                         className="form-input" required aria-required="true"
-                        min={new Date().toISOString().split('T')[0]}
-                        style={{ colorScheme: 'dark' }} />
+                        aria-invalid={errors.travelDate ? 'true' : 'false'}
+                        aria-describedby={errors.travelDate ? 'travelDate-error' : undefined}
+                        min={new Date().toISOString().split('T')[0]} />
                     </Field>
                     <Field id="groupSize" label="Group Size" required error={errors.groupSize}>
                       <input id="groupSize" type="number" value={form.groupSize} onChange={e => update('groupSize', e.target.value)}
-                        placeholder="2" min="1" max="50" className="form-input" required aria-required="true" />
+                        placeholder="2" min="1" max="50" className="form-input" required aria-required="true"
+                        aria-invalid={errors.groupSize ? 'true' : 'false'}
+                        aria-describedby={errors.groupSize ? 'groupSize-error' : undefined} />
                     </Field>
                     <Field id="tripType" label="Trip Type" required error={errors.tripType}>
                       <select id="tripType" value={form.tripType} onChange={e => update('tripType', e.target.value)}
-                        className="form-input" required aria-required="true">
+                        className="form-input" required aria-required="true"
+                        aria-invalid={errors.tripType ? 'true' : 'false'}
+                        aria-describedby={errors.tripType ? 'tripType-error' : undefined}>
                         <option value="">Select type…</option>
                         {TRIP_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </Field>
                     <Field id="packageId" label="Preferred Package">
                       <select id="packageId" value={form.packageId} onChange={e => update('packageId', e.target.value)}
-                        className="form-input">
+                        className="form-input" disabled={packageLocked}>
                         <option value="">Any / Not sure</option>
                         {catalogPackages.map(p => <option key={p.id} value={p.id}>{p.name || p.title}</option>)}
                       </select>

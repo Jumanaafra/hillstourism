@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { cachedFetch } from '../lib/cache/clientCache'
 import { stays } from '../data/stays'
 import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
 import { FiCheck, FiMapPin } from 'react-icons/fi'
@@ -25,22 +24,8 @@ export default function SmartStayMatcher({ id, initialHotels }) {
   const [groupSize, setGroupSize] = useState(null)
   const [comfort,   setComfort]   = useState(null)
   const [result,    setResult]    = useState(null)
-  const [stayList,  setStayList]  = useState(
-    Array.isArray(initialHotels) && initialHotels.length > 0 ? initialHotels : stays
-  )
+  const stayList = Array.isArray(initialHotels) && initialHotels.length > 0 ? initialHotels : stays
   const sectionRef = useRef(null)
-
-  useEffect(() => {
-    // Skip fetch when real data was already provided server-side
-    if (Array.isArray(initialHotels) && initialHotels.length > 0) return
-    cachedFetch('/api/hotels')
-      .then(data => {
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setStayList(data.data)
-        }
-      })
-      .catch(() => {})
-  }, [initialHotels])
 
   useEffect(() => {
     const reveals = sectionRef.current?.querySelectorAll('.reveal') || []

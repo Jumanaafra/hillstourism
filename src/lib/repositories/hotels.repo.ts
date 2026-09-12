@@ -1,3 +1,4 @@
+import 'server-only'
 import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 import { seedHotels } from './seed'
 import { normalizeHotelName } from '../normalization/hotel'

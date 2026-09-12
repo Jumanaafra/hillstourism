@@ -1,9 +1,8 @@
-'use client'
-
-import React, { useRef, useEffect } from 'react'
+import React from 'react'
 import Link from 'next/link'
 import { FiMap, FiWind, FiPhoneCall } from 'react-icons/fi'
 import { FaHandshake } from 'react-icons/fa'
+
 const PILLARS = [
   {
     num:   '01',
@@ -32,24 +31,9 @@ const PILLARS = [
 ]
 
 export default function WhyChooseUs({ id }) {
-  const sectionRef = useRef(null)
-
-  useEffect(() => {
-    const reveals = sectionRef.current?.querySelectorAll('.reveal, .reveal-left') || []
-    const observer = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) }
-      }),
-      { threshold: 0.1 }
-    )
-    reveals.forEach(el => observer.observe(el))
-    return () => observer.disconnect()
-  }, [])
-
   return (
     <section
       id={id}
-      ref={sectionRef}
       aria-label="Why Hillstourism"
       style={{
         background: 'var(--hill-navy)',
@@ -83,7 +67,7 @@ export default function WhyChooseUs({ id }) {
       <div style={{ maxWidth: 'var(--container-w)', margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
         {/* Header */}
-        <div className="reveal" style={{ marginBottom: 'clamp(3rem,6vw,5rem)', maxWidth: '640px' }}>
+        <div className="reveal visible" style={{ marginBottom: 'clamp(3rem,6vw,5rem)', maxWidth: '640px' }}>
           <p className="eyebrow-light" style={{ marginBottom: '1rem' }}>Our Promise</p>
           <h2 className="heading-xl" style={{ color: '#ffffff', marginBottom: '1rem' }}>
             Travel the hills<br />like a local.
@@ -103,29 +87,22 @@ export default function WhyChooseUs({ id }) {
           {PILLARS.map((pillar, i) => (
             <div
               key={pillar.num}
-              className="reveal"
+              className="reveal visible"
               style={{ transitionDelay: `${i * 0.1}s` }}
             >
-              <div style={{
-                padding:      '2.5rem',
-                borderRadius: '12px',
-                border:       '1px solid rgba(255,255,255,0.07)',
-                background:   'rgba(255,255,255,0.03)',
-                height:       '100%',
-                display:      'flex',
-                flexDirection: 'column',
-                gap:          '1.25rem',
-                transition:   'border-color 0.3s ease, background 0.3s ease',
-                cursor:       'default',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'rgba(8,120,255,0.25)'
-                e.currentTarget.style.background  = 'rgba(8,120,255,0.04)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
-                e.currentTarget.style.background  = 'rgba(255,255,255,0.03)'
-              }}
+              <div
+                className="pillar-card"
+                style={{
+                  padding:      '2.5rem',
+                  borderRadius: '12px',
+                  border:       '1px solid rgba(255,255,255,0.07)',
+                  background:   'rgba(255,255,255,0.03)',
+                  height:       '100%',
+                  display:      'flex',
+                  flexDirection: 'column',
+                  gap:          '1.25rem',
+                  cursor:       'default',
+                }}
               >
                 {/* Number + icon row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between' }}>
@@ -162,7 +139,7 @@ export default function WhyChooseUs({ id }) {
         </div>
 
         {/* CTA row */}
-        <div className="reveal" style={{
+        <div className="reveal visible" style={{
           marginTop:      'clamp(3rem,5vw,4rem)',
           display:        'flex',
           alignItems:     'center',
@@ -171,18 +148,20 @@ export default function WhyChooseUs({ id }) {
           flexWrap:       'wrap',
           transitionDelay: '0.4s',
         }}>
-          <button
+          <a
+            href="#contact"
             className="btn-primary"
-            onClick={() => document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' })}
+            style={{ display: 'inline-block', textDecoration: 'none' }}
           >
             Start Your Journey
-          </button>
-          <button
+          </a>
+          <a
+            href="#contact"
             className="btn-outline-white"
-            onClick={() => document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' })}
+            style={{ display: 'inline-block', textDecoration: 'none' }}
           >
             Chat with HillGuide
-          </button>
+          </a>
         </div>
 
         {/* Legal Trust Links */}
@@ -199,31 +178,37 @@ export default function WhyChooseUs({ id }) {
           <span>Official Documents:</span>
           <Link
             href="/privacy-policy"
-            style={{
-              color: 'rgba(255,255,255,0.7)',
-              textDecoration: 'none',
-              transition: 'color 0.2s ease',
-            }}
-            onMouseEnter={e => e.currentTarget.style.color = '#ffffff'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+            className="legal-trust-link"
           >
             Privacy Policy
           </Link>
           <span style={{ color: 'rgba(255,255,255,0.2)' }}>•</span>
           <Link
             href="/terms-and-conditions"
-            style={{
-              color: 'rgba(255,255,255,0.7)',
-              textDecoration: 'none',
-              transition: 'color 0.2s ease',
-            }}
-            onMouseEnter={e => e.currentTarget.style.color = '#ffffff'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+            className="legal-trust-link"
           >
             Terms &amp; Conditions
           </Link>
         </div>
       </div>
+
+      <style>{`
+        .pillar-card {
+          transition: border-color 0.3s ease, background 0.3s ease;
+        }
+        .pillar-card:hover {
+          border-color: rgba(8,120,255,0.25) !important;
+          background: rgba(8,120,255,0.04) !important;
+        }
+        .legal-trust-link {
+          color: rgba(255,255,255,0.7);
+          text-decoration: none;
+          transition: color 0.2s ease;
+        }
+        .legal-trust-link:hover {
+          color: #ffffff;
+        }
+      `}</style>
     </section>
   )
 }

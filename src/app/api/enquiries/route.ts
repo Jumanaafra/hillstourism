@@ -18,10 +18,16 @@ import { syncEnquiryToGoogleSheets } from '@/lib/services/sheets.service'
 import type { EnquiryStatus } from '@/types/domain'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
 
 function enquiryResponse(data: any, init?: ResponseInit) {
   const headers = new Headers(init?.headers)
-  headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate')
+  headers.set('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0')
+  headers.set('CDN-Cache-Control', 'no-store')
+  headers.set('Surrogate-Control', 'no-store')
+  headers.set('Pragma', 'no-cache')
+  headers.set('Expires', '0')
   headers.set('X-Robots-Tag', 'noindex, nofollow')
   return NextResponse.json(data, { ...init, headers })
 }
@@ -147,7 +153,7 @@ export async function POST(req: NextRequest) {
       hotelSnapshot = { id: hotel.id, nameSnapshot: hotel.name }
     }
 
-    let vehicleSnapshot: { id: string; numberPlateSnapshot?: string } | undefined
+    let vehicleSnapshot: { id: string; nameSnapshot?: string; numberPlateSnapshot?: string } | undefined
     if (data.vehicleId) {
       const vehicle = await getVehicleById(data.vehicleId)
       if (!vehicle) {
@@ -162,7 +168,7 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         )
       }
-      vehicleSnapshot = { id: vehicle.id, numberPlateSnapshot: vehicle.numberPlate }
+      vehicleSnapshot = { id: vehicle.id, nameSnapshot: vehicle.name, numberPlateSnapshot: vehicle.numberPlate }
     }
 
     // 6. Create Firestore Enquiry Record (Primary Source of Truth)

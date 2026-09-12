@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { cachedFetch } from '../lib/cache/clientCache'
 import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { stays } from '../data/stays'
 import { FiStar, FiMapPin, FiArrowRight } from 'react-icons/fi'
@@ -10,23 +9,9 @@ const FILTERS = ['All', 'Normal', 'Premium', '5 Star']
 
 export default function Stays({ id, initialHotels }) {
   const [activeFilter, setActiveFilter] = useState('All')
-  const [stayList, setStayList] = useState(
-    Array.isArray(initialHotels) && initialHotels.length > 0 ? initialHotels : stays
-  )
+  const stayList = Array.isArray(initialHotels) && initialHotels.length > 0 ? initialHotels : stays
   const [sectionRevealed, setSectionRevealed] = useState(false)
   const sectionRef = useRef(null)
-
-  useEffect(() => {
-    // Skip fetch when real data was already provided server-side
-    if (Array.isArray(initialHotels) && initialHotels.length > 0) return
-    cachedFetch('/api/hotels')
-      .then(data => {
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setStayList(data.data)
-        }
-      })
-      .catch(() => {})
-  }, [initialHotels])
 
   const filtered = useMemo(() => {
     if (!activeFilter || activeFilter.toLowerCase().trim() === 'all') {

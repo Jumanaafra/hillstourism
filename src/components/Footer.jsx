@@ -1,10 +1,7 @@
-'use client'
-
-import React, { useState, useEffect } from 'react'
-import { cachedFetch } from '../lib/cache/clientCache'
+import React from 'react'
 import Link from 'next/link'
 import { FaHeart, FaWhatsapp, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from 'react-icons/fa'
-import { FiCheck } from 'react-icons/fi'
+import NewsletterForm from './NewsletterForm'
 
 const FOOTER_LINKS = {
   Journeys:    ['Munnar Escape', 'Coorg Trails', 'Ooty Highlands', 'Shimla Serenity', 'Darjeeling Dawn', 'Manali Adventure'],
@@ -36,30 +33,8 @@ const DEFAULT_FOOTER_SOCIALS = [
   { id: 'social-whatsapp', platform: 'whatsapp', url: "https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism." },
 ]
 
-export default function Footer({ id }) {
-  const [email, setEmail] = useState('')
-  const [subscribed, setSubscribed] = useState(false)
-  const [socialLinks, setSocialLinks] = useState(DEFAULT_FOOTER_SOCIALS)
-  const [whatsappUrl, setWhatsappUrl] = useState("https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism.")
-
-  useEffect(() => {
-    cachedFetch('/api/social-links')
-      .then(res => {
-        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-          setSocialLinks(res.data)
-          const wa = res.data.find(s => s.platform === 'whatsapp' && s.active)
-          if (wa && wa.url) {
-            setWhatsappUrl(wa.url)
-          }
-        }
-      })
-      .catch(() => {})
-  }, [])
-
-  const handleSubscribe = (e) => {
-    e.preventDefault()
-    if (email.trim()) { setSubscribed(true); setEmail('') }
-  }
+export default function Footer({ id, socialLinks = DEFAULT_FOOTER_SOCIALS, whatsappUrl = "https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism." }) {
+  const activeSocials = Array.isArray(socialLinks) && socialLinks.length > 0 ? socialLinks : DEFAULT_FOOTER_SOCIALS
 
   return (
     <footer id={id} style={{ background: 'var(--hill-navy-deep)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -77,8 +52,7 @@ export default function Footer({ id }) {
         {/* Brand column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Logo */}
-          <a href="#home" aria-label="Hillstourism — go to top" style={{ display: 'inline-block' }}
-            onClick={e => { e.preventDefault(); document.querySelector('#home')?.scrollIntoView({ behavior: 'smooth' }) }}>
+          <a href="#home" aria-label="Hillstourism — go to top" style={{ display: 'inline-block' }}>
             <picture>
               <source srcSet="/logo.webp" type="image/webp" />
               <img
@@ -93,13 +67,6 @@ export default function Footer({ id }) {
                   objectFit:   'contain',
                   filter:      'brightness(1.1)',
                 }}
-                onError={e => {
-                  e.target.style.display = 'none'
-                  const s = document.createElement('span')
-                  s.style.cssText = 'font-family:"Sora",sans-serif;font-size:1.2rem;color:#ffffff;font-weight:700;letter-spacing:-0.02em;'
-                  s.textContent = 'HILLSTOURISM'
-                  e.target.parentNode.appendChild(s)
-                }}
               />
             </picture>
           </a>
@@ -110,7 +77,7 @@ export default function Footer({ id }) {
 
           {/* Social icons */}
           <div style={{ display: 'flex', gap: '0.6rem' }}>
-            {socialLinks.map(s => {
+            {activeSocials.map(s => {
               const icon = getSocialIcon(s.platform)
               if (!icon) return null
               return (
@@ -120,6 +87,7 @@ export default function Footer({ id }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Follow Hillstourism on ${s.platform}`}
+                  className="footer-social-btn"
                   style={{
                     width:          '36px', height: '36px',
                     display:        'flex', alignItems: 'center', justifyContent: 'center',
@@ -127,15 +95,6 @@ export default function Footer({ id }) {
                     border:         '1px solid rgba(255,255,255,0.12)',
                     background:     'rgba(255,255,255,0.05)',
                     color:          '#ffffff',
-                    transition:     'border-color 0.2s ease, background 0.2s ease',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = 'rgba(8,120,255,0.5)'
-                    e.currentTarget.style.background  = 'rgba(8,120,255,0.12)'
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
-                    e.currentTarget.style.background  = 'rgba(255,255,255,0.05)'
                   }}
                 >
                   {icon}
@@ -180,9 +139,9 @@ export default function Footer({ id }) {
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {links.map(link => (
                   <li key={link}>
-                    <a href="#" className="footer-link" onClick={e => e.preventDefault()}>
+                    <span className="footer-link">
                       {link}
-                    </a>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -214,35 +173,7 @@ export default function Footer({ id }) {
               Travel ideas, exclusive offers, and hill stories — delivered occasionally.
             </p>
           </div>
-          {subscribed ? (
-            <p style={{ color: 'var(--hill-blue-bright)', fontSize: '0.85rem', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FiCheck style={{ fontSize: '1rem', flexShrink: 0 }} /> You're on the list. Adventures ahead!
-            </p>
-          ) : (
-            <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }} aria-label="Newsletter signup">
-              <input
-                type="email" value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com" required aria-label="Email address for newsletter"
-                style={{
-                  padding:      '0.75rem 1rem',
-                  background:   'rgba(255,255,255,0.06)',
-                  border:       '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: '6px',
-                  color:        '#ffffff',
-                  fontSize:     '0.85rem',
-                  outline:      'none',
-                  minWidth:     '220px',
-                  fontFamily:   'var(--font-body)',
-                  transition:   'border-color 0.2s ease',
-                }}
-                onFocus={e  => e.target.style.borderColor = 'var(--hill-blue-bright)'}
-                onBlur={e   => e.target.style.borderColor = 'rgba(255,255,255,0.12)'}
-              />
-              <button type="submit" className="btn-primary" style={{ padding: '0.75rem 1.4rem', fontSize: '0.75rem' }}>
-                Subscribe
-              </button>
-            </form>
-          )}
+          <NewsletterForm />
         </div>
       </div>
 
@@ -273,7 +204,15 @@ export default function Footer({ id }) {
         </p>
       </div>
 
-
+      <style>{`
+        .footer-social-btn {
+          transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .footer-social-btn:hover {
+          border-color: rgba(8,120,255,0.5) !important;
+          background: rgba(8,120,255,0.12) !important;
+        }
+      `}</style>
     </footer>
   )
 }

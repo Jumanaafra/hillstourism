@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { cachedFetch } from '../lib/cache/clientCache'
 import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { packages } from '../data/packages'
 import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
@@ -11,23 +10,9 @@ const FILTERS = ['All', 'Couple', 'Family', 'Friends', 'Honeymoon']
 
 export default function FeaturedTrips({ id, initialPackages }) {
   const [activeFilter, setActiveFilter] = useState('All')
-  const [pkgList, setPkgList] = useState(
-    Array.isArray(initialPackages) && initialPackages.length > 0 ? initialPackages : packages
-  )
+  const pkgList = Array.isArray(initialPackages) && initialPackages.length > 0 ? initialPackages : packages
   const [sectionRevealed, setSectionRevealed] = useState(false)
   const sectionRef = useRef(null)
-
-  useEffect(() => {
-    // Skip fetch when real data was already provided server-side
-    if (Array.isArray(initialPackages) && initialPackages.length > 0) return
-    cachedFetch('/api/packages')
-      .then(data => {
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setPkgList(data.data)
-        }
-      })
-      .catch(() => {})
-  }, [initialPackages])
 
   const filtered = useMemo(() => {
     if (!activeFilter || activeFilter.toLowerCase().trim() === 'all') {

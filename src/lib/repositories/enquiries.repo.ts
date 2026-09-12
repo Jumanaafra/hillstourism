@@ -1,7 +1,31 @@
+import 'server-only'
 import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 import type { Enquiry, EnquiryStatus } from '../../types/domain'
 
 let memoryEnquiries: Enquiry[] = []
+
+/**
+ * Recursively strips undefined keys from objects before sending to Firestore.
+ * Prevents "Cannot use undefined as a Firestore value" errors.
+ */
+function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return null as any
+  }
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeForFirestore(item)) as any
+  }
+  if (typeof data === 'object' && !(data instanceof Date)) {
+    const cleaned: Record<string, any> = {}
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) {
+        cleaned[key] = sanitizeForFirestore(value)
+      }
+    }
+    return cleaned as any
+  }
+  return data
+}
 
 export async function createEnquiry(data: Omit<Enquiry, 'id' | 'createdAt' | 'updatedAt'>): Promise<Enquiry> {
   const newEnquiry: Enquiry = {
@@ -19,7 +43,8 @@ export async function createEnquiry(data: Omit<Enquiry, 'id' | 'createdAt' | 'up
   const db = getFirestoreDB()
   if (db) {
     try {
-      await withFirestoreTimeout(db.collection('enquiries').doc(newEnquiry.id).set(newEnquiry), 15000, 'enquiries.create')
+      const sanitized = sanitizeForFirestore(newEnquiry)
+      await withFirestoreTimeout(db.collection('enquiries').doc(newEnquiry.id).set(sanitized), 15000, 'enquiries.create')
     } catch (err) {
       console.error('[Enquiries Repo] Firestore save failed:', err)
       if (!allowMemoryFallback()) {
@@ -64,22 +89,28 @@ export async function getEnquiries(filters?: {
   const db = getFirestoreDB()
   if (db) {
     try {
-      let query: FirebaseFirestore.Query = db.collection('enquiries').orderBy('createdAt', 'desc')
-      if (filters?.status) {
-        query = query.where('status', '==', filters.status)
-      }
-      if (filters?.limit) {
-        query = query.limit(filters.limit)
-      }
+      // Order by createdAt desc without requiring composite indexes
+      const query: FirebaseFirestore.Query = db.collection('enquiries').orderBy('createdAt', 'desc')
       const snapshot = await withFirestoreTimeout(query.get(), 15000, 'enquiries.get')
       let results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Enquiry))
+      
+      // Ensure strict descending sort by timestamp
+      results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+      if (filters?.status) {
+        results = results.filter(e => e.status === filters.status)
+      }
       if (filters?.search) {
         const q = filters.search.toLowerCase()
         results = results.filter(e =>
-          e.customer.name.toLowerCase().includes(q) ||
-          e.customer.phone.includes(q) ||
-          (e.customer.email && e.customer.email.toLowerCase().includes(q))
+          e.customer?.name?.toLowerCase().includes(q) ||
+          e.customer?.phone?.includes(q) ||
+          (e.customer?.email && e.customer.email.toLowerCase().includes(q)) ||
+          e.id?.toLowerCase().includes(q)
         )
+      }
+      if (filters?.limit) {
+        results = results.slice(0, filters.limit)
       }
       memoryEnquiries = [...results]
       return results
@@ -94,15 +125,17 @@ export async function getEnquiries(filters?: {
   }
 
   let list = [...memoryEnquiries]
+  list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   if (filters?.status) {
     list = list.filter(e => e.status === filters.status)
   }
   if (filters?.search) {
     const q = filters.search.toLowerCase()
     list = list.filter(e =>
-      e.customer.name.toLowerCase().includes(q) ||
-      e.customer.phone.includes(q) ||
-      (e.customer.email && e.customer.email.toLowerCase().includes(q))
+      e.customer?.name?.toLowerCase().includes(q) ||
+      e.customer?.phone?.includes(q) ||
+      (e.customer?.email && e.customer.email.toLowerCase().includes(q)) ||
+      e.id?.toLowerCase().includes(q)
     )
   }
   if (filters?.limit) {
@@ -126,7 +159,8 @@ export async function updateEnquiry(id: string, data: Partial<Enquiry>): Promise
   const db = getFirestoreDB()
   if (db) {
     try {
-      await withFirestoreTimeout(db.collection('enquiries').doc(id).set(updated, { merge: true }), 15000, `enquiries.update:${id}`)
+      const sanitized = sanitizeForFirestore(updated)
+      await withFirestoreTimeout(db.collection('enquiries').doc(id).set(sanitized, { merge: true }), 15000, `enquiries.update:${id}`)
     } catch (err) {
       console.error(`[Enquiries Repo] Firestore update failed for ${id}:`, err)
       if (!allowMemoryFallback()) {
