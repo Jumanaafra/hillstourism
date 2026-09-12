@@ -1,3 +1,4 @@
+import 'server-only'
 import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 import { seedPackages } from './seed'
 import type { Package } from '../../types/domain'
@@ -104,11 +105,55 @@ export async function getPackageBySlug(slug: string): Promise<Package | null> {
   return found ? normalizePackage(found) : null
 }
 
+/**
+ * Checks whether a package slug already exists.
+ * Returns the conflicting package if found.
+ * Pass excludeId to allow a package to be updated without conflicting with itself.
+ */
+export async function findPackageBySlug(slug: string, excludeId?: string): Promise<Package | null> {
+  const db = getFirestoreDB()
+  if (db) {
+    try {
+      const snapshot = await withFirestoreTimeout(
+        db.collection('packages').where('slug', '==', slug).limit(1).get(),
+        15000,
+        `findPackageBySlug:${slug}`
+      )
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0]
+        if (!excludeId || doc.id !== excludeId) {
+          return normalizePackage({ id: doc.id, ...doc.data() } as Package)
+        }
+      }
+      return null
+    } catch (err) {
+      console.error('[Packages Repo] Firestore slug uniqueness check failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
+    }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
+  }
+
+  // Memory fallback check
+  const found = memoryPackages.find(p => p.slug === slug && (!excludeId || p.id !== excludeId))
+  return found ? normalizePackage(found) : null
+}
+
 export async function createPackage(data: Omit<Package, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<Package> {
+  const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+
+  // Server-side slug uniqueness enforcement
+  const existing = await findPackageBySlug(slug)
+  if (existing) {
+    throw new Error(`A package with the slug "${slug}" already exists. Please use a unique slug.`)
+  }
+
   const newPackage: Package = {
     ...data,
     id: data.id || `pkg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-    slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    slug,
     active: data.active !== undefined ? data.active : true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -137,6 +182,14 @@ export async function updatePackage(id: string, data: Partial<Package>): Promise
   const current = await getPackageById(id)
   if (!current) {
     throw new Error(`Package with ID ${id} not found`)
+  }
+
+  // If slug is being changed, enforce uniqueness excluding this package's own ID
+  if (data.slug && data.slug !== current.slug) {
+    const conflict = await findPackageBySlug(data.slug, id)
+    if (conflict) {
+      throw new Error(`A package with the slug "${data.slug}" already exists. Please use a unique slug.`)
+    }
   }
 
   const updated: Package = {

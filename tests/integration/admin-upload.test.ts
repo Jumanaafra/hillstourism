@@ -1,4 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('server-only', () => ({}))
+
 import { POST as handleUpload } from '../../src/app/api/admin/upload/route'
 
 describe('Admin Image Upload API Route', () => {

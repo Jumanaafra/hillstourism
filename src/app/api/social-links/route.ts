@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSocialLinks } from '@/lib/repositories/social.repo'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/social-links — Public endpoint to retrieve active social links for Navbar, Footer, etc.
  */
@@ -19,7 +21,12 @@ export async function GET() {
     console.error('[Public Social Links API] Error:', err)
     return NextResponse.json(
       { success: false, error: { code: 'FETCH_ERROR', message: 'Failed to fetch social links.' } },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
     )
   }
 }

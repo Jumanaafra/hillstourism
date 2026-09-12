@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getHotels } from '@/lib/repositories/hotels.repo'
 
+export const dynamic = 'force-dynamic'
+
+
 export async function GET() {
   try {
     const hotels = await getHotels(true)
@@ -24,7 +27,12 @@ export async function GET() {
           message: 'Unable to fetch hotels.',
         },
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
     )
   }
 }

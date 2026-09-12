@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { testimonials } from '../data/testimonials'
+import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
 import { FaStar } from 'react-icons/fa'
 
 function StarRating({ rating }) {
@@ -103,8 +104,12 @@ export default function Testimonials({ id }) {
                 overflow:     'hidden', border: '2px solid var(--hill-border-blue)', flexShrink: 0,
               }}>
                 <img
-                  src={current.avatar}
+                  src={getOptimizedImageUrl(current.avatar, { width: 96, height: 96, crop: 'fill', gravity: 'face' })}
                   alt={current.name}
+                  width={48}
+                  height={48}
+                  loading="lazy"
+                  decoding="async"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={e => {
                     e.target.style.display = 'none'
@@ -154,9 +159,13 @@ export default function Testimonials({ id }) {
                   flexShrink: 0, background: 'var(--hill-surface)',
                 }}>
                   <img
-                    src={t.avatar} alt={t.name}
+                    src={getOptimizedImageUrl(t.avatar, { width: 80, height: 80, crop: 'fill', gravity: 'face' })}
+                    alt={t.name}
+                    width={40}
+                    height={40}
                     style={{ width:'100%', height:'100%', objectFit:'cover' }}
                     loading="lazy"
+                    decoding="async"
                     onError={e => {
                       e.target.style.display = 'none'
                       const parent = e.target.parentNode

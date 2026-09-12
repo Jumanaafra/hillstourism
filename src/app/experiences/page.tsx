@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import HillGuide from '@/components/HillGuide'
+import LazyHillGuide from '@/components/LazyHillGuide'
 import Experiences from '@/components/Experiences'
 import { getCanonicalUrl } from '@/lib/seo/siteUrl'
 import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
@@ -23,6 +23,8 @@ const defaultMeta: Metadata = {
   },
 }
 
+export const revalidate = 3600 // ISR: CDN-cached; regenerates hourly or on admin mutation
+
 export async function generateMetadata(): Promise<Metadata> {
   return resolvePageMetadata('/experiences', defaultMeta)
 }
@@ -35,7 +37,7 @@ export default function ExperiencesPage() {
         <Experiences id="experiences" />
       </main>
       <Footer id="footer" />
-      <HillGuide />
+      <LazyHillGuide />
     </>
   )
 }

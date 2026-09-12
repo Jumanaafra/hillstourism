@@ -3,6 +3,8 @@ import { NextRequest } from 'next/server'
 import { POST, PATCH, DELETE, GET } from '../../src/app/api/admin/packages/route'
 import { _resetMemoryPackages, getPackageById } from '../../src/lib/repositories/packages.repo'
 
+vi.mock('server-only', () => ({}))
+
 // Mock next/cache revalidatePath so it doesn't fail in node environment
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),

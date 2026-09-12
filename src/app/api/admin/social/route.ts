@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminAuth } from '@/lib/auth/adminAuth'
+import { NextRequest } from 'next/server'
+import { verifyAdminAuth, adminJsonResponse } from '@/lib/auth/adminAuth'
+
 import {
   getSocialLinks,
   createSocialLink,
@@ -17,14 +18,14 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const links = await getSocialLinks(false)
-    return NextResponse.json({ success: true, data: links, allowedPlatforms: ALLOWED_SOCIAL_PLATFORMS })
+    return adminJsonResponse({ success: true, data: links, allowedPlatforms: ALLOWED_SOCIAL_PLATFORMS })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'FETCH_ERROR', message: err?.message || 'Failed to fetch social links.' } },
       { status: 500 }
     )
@@ -37,16 +38,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const body = await req.json()
     const created = await createSocialLink(body)
     triggerTargetedRevalidation('social')
-    return NextResponse.json({ success: true, data: created }, { status: 201 })
+    return adminJsonResponse({ success: true, data: created }, { status: 201 })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'VALIDATION_ERROR', message: err?.message || 'Failed to create social link.' } },
       { status: 400 }
     )
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
@@ -67,7 +68,7 @@ export async function PUT(req: NextRequest) {
     const { id, ...updates } = body
 
     if (!id) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Social link ID is required.' } },
         { status: 400 }
       )
@@ -75,9 +76,9 @@ export async function PUT(req: NextRequest) {
 
     const updated = await updateSocialLink(id, updates)
     triggerTargetedRevalidation('social')
-    return NextResponse.json({ success: true, data: updated })
+    return adminJsonResponse({ success: true, data: updated })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'UPDATE_ERROR', message: err?.message || 'Failed to update social link.' } },
       { status: 400 }
     )
@@ -90,7 +91,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
@@ -107,7 +108,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     if (!id) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'ID is required to delete social link.' } },
         { status: 400 }
       )
@@ -115,9 +116,9 @@ export async function DELETE(req: NextRequest) {
 
     const deleted = await deleteSocialLink(id)
     triggerTargetedRevalidation('social')
-    return NextResponse.json({ success: true, data: { id, deleted } })
+    return adminJsonResponse({ success: true, data: { id, deleted } })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'DELETE_ERROR', message: err?.message || 'Failed to delete social link.' } },
       { status: 500 }
     )

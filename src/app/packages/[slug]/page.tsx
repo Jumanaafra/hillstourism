@@ -6,7 +6,7 @@ import { getVehicles } from '@/lib/repositories/vehicles.repo'
 import type { Hotel, Vehicle } from '@/types/domain'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import HillGuide from '@/components/HillGuide'
+import LazyHillGuide from '@/components/LazyHillGuide'
 import PackageItineraryView from '@/components/PackageItineraryView'
 import { getSiteUrl, getCanonicalUrl } from '@/lib/seo/siteUrl'
 
@@ -175,7 +175,7 @@ export default async function PackageDetailPage({ params }: Props) {
         />
       </main>
       <Footer id="footer" />
-      <HillGuide />
+      <LazyHillGuide />
     </>
   )
 }

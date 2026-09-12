@@ -16,19 +16,18 @@ export default function AdminLoginPage() {
     setLoading(true)
 
     try {
-      // Verify the token by making a test API call
-      const res = await fetch('/api/admin/packages', {
-        headers: { Authorization: `Bearer ${token}` },
+      // Authenticate via server endpoint which validates credentials and sets a hardened HttpOnly cookie
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token.trim() }),
       })
       const data = await res.json()
 
       if (data.success) {
-        // Set the auth cookie (httpOnly would require a server action, but for this
-        // client-side approach we use a JS-accessible cookie checked by middleware)
-        document.cookie = `admin_token=${encodeURIComponent(token)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`
         router.push('/admin/dashboard')
       } else {
-        setError(data.error?.message || 'Invalid admin credentials.')
+        setError(data.error?.message || data.error || 'Invalid admin credentials.')
       }
     } catch (err) {
       setError('Network error. Please check your connection.')

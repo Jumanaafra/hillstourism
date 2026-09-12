@@ -18,6 +18,7 @@ export function triggerTargetedRevalidation(
         break
       case 'hotel':
         revalidatePath('/stays')
+        revalidatePath('/')
         if (slugOrId) revalidatePath(`/hotels/${slugOrId}`)
         break
       case 'vehicle':
@@ -29,6 +30,7 @@ export function triggerTargetedRevalidation(
       case 'content':
         revalidatePath('/experiences')
         revalidatePath('/about')
+        revalidatePath('/') // testimonials & categories displayed on homepage
         break
       case 'settings':
       case 'social':

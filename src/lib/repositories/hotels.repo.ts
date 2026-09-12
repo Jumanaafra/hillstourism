@@ -1,3 +1,4 @@
+import 'server-only'
 import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
 import { seedHotels } from './seed'
 import { normalizeHotelName } from '../normalization/hotel'
@@ -106,6 +107,42 @@ export async function findHotelByNormalizedName(normalizedName: string, excludeI
 }
 
 /**
+ * Checks whether a hotel slug already exists.
+ * Returns the conflicting hotel if found.
+ * Pass excludeId to allow a hotel to be updated without conflicting with itself.
+ */
+export async function findHotelBySlug(slug: string, excludeId?: string): Promise<Hotel | null> {
+  const db = getFirestoreDB()
+  if (db) {
+    try {
+      const snapshot = await withFirestoreTimeout(
+        db.collection('hotels').where('slug', '==', slug).limit(1).get(),
+        15000,
+        `findHotelBySlug:${slug}`
+      )
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0]
+        if (!excludeId || doc.id !== excludeId) {
+          return { id: doc.id, ...doc.data() } as Hotel
+        }
+      }
+      return null
+    } catch (err) {
+      console.error('[Hotels Repo] Firestore slug uniqueness check failed:', err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
+    }
+  } else if (!allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
+  }
+
+  // Memory fallback check
+  const found = memoryHotels.find(h => h.slug === slug && (!excludeId || h.id !== excludeId))
+  return found || null
+}
+
+/**
  * Creates a new hotel with server-side uniqueness enforcement.
  */
 export async function createHotel(data: Omit<Hotel, 'id' | 'normalizedName' | 'createdAt' | 'updatedAt' | 'slug'> & { id?: string; slug?: string }): Promise<Hotel> {
@@ -114,16 +151,24 @@ export async function createHotel(data: Omit<Hotel, 'id' | 'normalizedName' | 'c
     throw new Error('Hotel name is required')
   }
 
-  // Uniqueness enforcement (Server-side)
-  const existing = await findHotelByNormalizedName(normalizedName)
-  if (existing) {
+  // Uniqueness: name (existing)
+  const existingByName = await findHotelByNormalizedName(normalizedName)
+  if (existingByName) {
     throw new Error(`A hotel with the name "${data.name}" (or equivalent identity) already exists.`)
+  }
+
+  const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+
+  // Uniqueness: slug (new)
+  const existingBySlug = await findHotelBySlug(slug)
+  if (existingBySlug) {
+    throw new Error(`A hotel with the slug "${slug}" already exists. Please use a unique slug.`)
   }
 
   const newHotel: Hotel = {
     ...data,
     id: data.id || `hotel-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-    slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+    slug,
     normalizedName,
     active: data.active !== undefined ? data.active : true,
     createdAt: new Date().toISOString(),
@@ -164,6 +209,14 @@ export async function updateHotel(id: string, data: Partial<Hotel>): Promise<Hot
     const existing = await findHotelByNormalizedName(normalizedName, id)
     if (existing) {
       throw new Error(`Cannot rename hotel: another hotel with name "${data.name}" already exists.`)
+    }
+  }
+
+  // If slug is being changed, enforce slug uniqueness excluding this hotel's own ID
+  if (data.slug && data.slug !== current.slug) {
+    const slugConflict = await findHotelBySlug(data.slug, id)
+    if (slugConflict) {
+      throw new Error(`A hotel with the slug "${data.slug}" already exists. Please use a unique slug.`)
     }
   }
 

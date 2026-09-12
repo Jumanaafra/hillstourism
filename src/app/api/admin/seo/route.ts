@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminAuth } from '@/lib/auth/adminAuth'
+import { NextRequest } from 'next/server'
+import { verifyAdminAuth, adminJsonResponse } from '@/lib/auth/adminAuth'
+
 import {
   getAllPageSEO,
   getSeoByRoute,
@@ -16,7 +17,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
@@ -25,13 +26,13 @@ export async function GET(req: NextRequest) {
 
     if (route) {
       const pageSeo = await getSeoByRoute(route)
-      return NextResponse.json({ success: true, data: pageSeo })
+      return adminJsonResponse({ success: true, data: pageSeo })
     }
 
     const allSeo = await getAllPageSEO()
-    return NextResponse.json({ success: true, data: allSeo })
+    return adminJsonResponse({ success: true, data: allSeo })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'FETCH_ERROR', message: err?.message || 'Failed to fetch SEO data.' } },
       { status: 500 }
     )
@@ -52,13 +53,13 @@ export async function PUT(req: NextRequest) {
 async function handleSaveSEO(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
     const body = await req.json()
     if (!body.route) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Route is required to configure SEO.' } },
         { status: 400 }
       )
@@ -66,9 +67,9 @@ async function handleSaveSEO(req: NextRequest) {
 
     const saved = await savePageSEO(body)
     triggerTargetedRevalidation('seo', saved.route)
-    return NextResponse.json({ success: true, data: saved })
+    return adminJsonResponse({ success: true, data: saved })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'VALIDATION_ERROR', message: err?.message || 'Failed to save SEO.' } },
       { status: 400 }
     )
@@ -81,7 +82,7 @@ async function handleSaveSEO(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await verifyAdminAuth(req)
   if (!auth.authenticated) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
+    return adminJsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }, { status: 401 })
   }
 
   try {
@@ -98,7 +99,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     if (!route) {
-      return NextResponse.json(
+      return adminJsonResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Route or ID is required to reset SEO.' } },
         { status: 400 }
       )
@@ -106,9 +107,9 @@ export async function DELETE(req: NextRequest) {
 
     const reset = await resetPageSEO(route)
     triggerTargetedRevalidation('seo', reset.route)
-    return NextResponse.json({ success: true, data: reset })
+    return adminJsonResponse({ success: true, data: reset })
   } catch (err: any) {
-    return NextResponse.json(
+    return adminJsonResponse(
       { success: false, error: { code: 'RESET_ERROR', message: err?.message || 'Failed to reset SEO.' } },
       { status: 400 }
     )

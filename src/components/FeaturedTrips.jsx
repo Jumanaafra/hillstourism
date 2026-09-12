@@ -2,28 +2,17 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { cachedFetch } from '../lib/cache/clientCache'
-import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
+import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { packages } from '../data/packages'
 import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 
 const FILTERS = ['All', 'Couple', 'Family', 'Friends', 'Honeymoon']
 
-export default function FeaturedTrips({ id }) {
+export default function FeaturedTrips({ id, initialPackages }) {
   const [activeFilter, setActiveFilter] = useState('All')
-  const [pkgList, setPkgList] = useState(packages)
+  const pkgList = Array.isArray(initialPackages) && initialPackages.length > 0 ? initialPackages : packages
   const [sectionRevealed, setSectionRevealed] = useState(false)
   const sectionRef = useRef(null)
-
-  useEffect(() => {
-    cachedFetch('/api/packages')
-      .then(data => {
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setPkgList(data.data)
-        }
-      })
-      .catch(() => {})
-  }, [])
 
   const filtered = useMemo(() => {
     if (!activeFilter || activeFilter.toLowerCase().trim() === 'all') {
@@ -118,13 +107,17 @@ export default function FeaturedTrips({ id }) {
               <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ display: 'block', textDecoration: 'none' }} tabIndex={-1}>
                 <div className="package-card-img">
                   <img
-                    src={getOptimizedImageUrl(pkg.image, 600)}
+                    src={getOptimizedImageUrl(pkg.image, { width: 640, crop: 'fill' })}
+                    srcSet={generateResponsiveSrcSet(pkg.image, [360, 480, 640, 768], { crop: 'fill' })}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
                     alt={`${pkg.title} — ${pkg.destination}`}
+                    width={640}
+                    height={480}
                     loading="lazy"
                     decoding="async"
                     onError={e => {
                       e.currentTarget.onerror = null
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&q=75&auto=format'
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=640&q=75&auto=format'
                     }}
                   />
                   {/* Tag badge */}

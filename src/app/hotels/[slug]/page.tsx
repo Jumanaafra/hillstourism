@@ -3,16 +3,20 @@ import { notFound } from 'next/navigation'
 import { getHotels } from '@/lib/repositories/hotels.repo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import HillGuide from '@/components/HillGuide'
+import LazyHillGuide from '@/components/LazyHillGuide'
 import Enquiry from '@/components/Enquiry'
 import { FaStar } from 'react-icons/fa'
 import { FiMapPin, FiHome } from 'react-icons/fi'
+import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
 
 import { getSiteUrl, getCanonicalUrl } from '@/lib/seo/siteUrl'
+
+export const revalidate = 3600 // ISR: regenerate at most hourly or on-demand from admin
 
 interface Props {
   params: { slug: string }
 }
+
 
 export async function generateStaticParams() {
   const hotels = await getHotels(true)
@@ -136,7 +140,7 @@ export default async function HotelDetailPage({ params }: Props) {
             <div style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: `url(${hotel.image})`,
+              backgroundImage: `url(${getOptimizedImageUrl(hotel.image, { width: 1600, quality: 'auto' })})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               opacity: 0.25,
@@ -194,7 +198,7 @@ export default async function HotelDetailPage({ params }: Props) {
       </main>
 
       <Footer id="footer" />
-      <HillGuide />
+      <LazyHillGuide />
     </>
   )
 }

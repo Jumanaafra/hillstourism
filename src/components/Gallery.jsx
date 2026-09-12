@@ -1,8 +1,7 @@
 'use client'
 
 import React, { useRef, useState, useEffect } from 'react'
-import { cachedFetch } from '../lib/cache/clientCache'
-import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
+import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { FiArrowRight } from 'react-icons/fi'
 
 const GALLERY_ITEMS = [
@@ -16,22 +15,11 @@ const GALLERY_ITEMS = [
   { id: 'g8', src: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=700&q=80&auto=format', alt: 'Peaceful mountain lake reflection' },
 ]
 
-export default function Gallery({ id }) {
+export default function Gallery({ id, initialPhotos }) {
   const sectionRef = useRef(null)
   const headerRef = useRef(null)
   const [headerVisible, setHeaderVisible] = useState(false)
-  const [items, setItems] = useState(GALLERY_ITEMS)
-
-  // Fetch active photos from API
-  useEffect(() => {
-    cachedFetch('/api/gallery')
-      .then(data => {
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setItems(data.data)
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const items = Array.isArray(initialPhotos) && initialPhotos.length > 0 ? initialPhotos : GALLERY_ITEMS
 
   // Scroll reveal for header content
   useEffect(() => {
@@ -220,13 +208,17 @@ export default function Gallery({ id }) {
               aria-label={item.alt}
             >
               <img
-                src={getOptimizedImageUrl(item.src, 700)}
+                src={getOptimizedImageUrl(item.src, { width: 768, crop: 'fill' })}
+                srcSet={generateResponsiveSrcSet(item.src, [360, 540, 768, 1024], { crop: 'fill' })}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 alt={item.alt}
+                width={768}
+                height={512}
                 loading="lazy"
                 decoding="async"
                 onError={e => {
                   e.currentTarget.onerror = null
-                  e.currentTarget.src = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=700&q=75&auto=format'
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=768&q=75&auto=format'
                 }}
               />
               <div className="gallery-item-overlay" />

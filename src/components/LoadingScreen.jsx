@@ -105,28 +105,34 @@ export default function LoadingScreen({ onComplete }) {
           marginBottom: '2.5rem',
         }}
       >
-        <img
-          src="/logo.png"
-          alt="HillsTourism"
-          style={{
-            height:     'clamp(60px, 10vw, 96px)',
-            width:      'auto',
-            maxWidth:   '320px',
-            objectFit:  'contain',
-            filter:     'brightness(1.08) drop-shadow(0 0 20px rgba(201,168,76,0.2))',
-          }}
-          onError={(e) => {
-            /* Fallback text logo if image fails */
-            e.target.style.display = 'none'
-            const fb = document.createElement('div')
-            fb.innerHTML = `
-              <div style="text-align:center">
-                <div style="font-family:'Sora',sans-serif;font-size:clamp(1.8rem,5vw,3rem);color:#0878FF;letter-spacing:-0.02em;font-weight:800;">HILLS</div>
-                <div style="font-family:'Sora',sans-serif;font-size:clamp(1.8rem,5vw,3rem);color:#ffffff;letter-spacing:-0.01em;font-weight:400;">TOURISM</div>
-              </div>`
-            e.target.parentNode.appendChild(fb)
-          }}
-        />
+        <picture>
+          <source srcSet="/logo.webp" type="image/webp" />
+          <img
+            src="/logo.png"
+            alt="HillsTourism"
+            width={150}
+            height={100}
+            style={{
+              height:      'clamp(60px, 10vw, 96px)',
+              width:       'auto',
+              aspectRatio: '1536 / 1024',
+              maxWidth:    '320px',
+              objectFit:   'contain',
+              filter:      'brightness(1.08) drop-shadow(0 0 20px rgba(201,168,76,0.2))',
+            }}
+            onError={(e) => {
+              /* Fallback text logo if image fails */
+              e.target.style.display = 'none'
+              const fb = document.createElement('div')
+              fb.innerHTML = `
+                <div style="text-align:center">
+                  <div style="font-family:'Sora',sans-serif;font-size:clamp(1.8rem,5vw,3rem);color:#0878FF;letter-spacing:-0.02em;font-weight:800;">HILLS</div>
+                  <div style="font-family:'Sora',sans-serif;font-size:clamp(1.8rem,5vw,3rem);color:#ffffff;letter-spacing:-0.01em;font-weight:400;">TOURISM</div>
+                </div>`
+              e.target.parentNode.appendChild(fb)
+            }}
+          />
+        </picture>
       </div>
 
       {/* Tagline */}

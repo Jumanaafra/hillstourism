@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import HillGuide from '@/components/HillGuide'
+import LazyHillGuide from '@/components/LazyHillGuide'
 import { getCanonicalUrl } from '@/lib/seo/siteUrl'
 import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
 
@@ -21,6 +21,8 @@ const defaultMeta: Metadata = {
     type: 'website',
   },
 }
+
+export const revalidate = 3600 // ISR: CDN-cached; regenerates hourly or on admin mutation
 
 export async function generateMetadata(): Promise<Metadata> {
   return resolvePageMetadata('/terms-and-conditions', defaultMeta)
@@ -225,7 +227,7 @@ export default function TermsAndConditionsPage() {
       </main>
 
       <Footer id="footer" />
-      <HillGuide />
+      <LazyHillGuide />
     </>
   )
 }

@@ -1,28 +1,17 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { cachedFetch } from '../lib/cache/clientCache'
-import { getOptimizedImageUrl } from '../lib/cloudinary/transform'
+import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { stays } from '../data/stays'
 import { FiStar, FiMapPin, FiArrowRight } from 'react-icons/fi'
 
 const FILTERS = ['All', 'Normal', 'Premium', '5 Star']
 
-export default function Stays({ id }) {
+export default function Stays({ id, initialHotels }) {
   const [activeFilter, setActiveFilter] = useState('All')
-  const [stayList, setStayList] = useState(stays)
+  const stayList = Array.isArray(initialHotels) && initialHotels.length > 0 ? initialHotels : stays
   const [sectionRevealed, setSectionRevealed] = useState(false)
   const sectionRef = useRef(null)
-
-  useEffect(() => {
-    cachedFetch('/api/hotels')
-      .then(data => {
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          setStayList(data.data)
-        }
-      })
-      .catch(() => {})
-  }, [])
 
   const filtered = useMemo(() => {
     if (!activeFilter || activeFilter.toLowerCase().trim() === 'all') {
@@ -114,13 +103,17 @@ export default function Stays({ id }) {
               {/* Image */}
               <div className="stay-card-img">
                 <img
-                  src={getOptimizedImageUrl(stay.image, 600)}
+                  src={getOptimizedImageUrl(stay.image, { width: 640, crop: 'fill' })}
+                  srcSet={generateResponsiveSrcSet(stay.image, [360, 480, 640, 768], { crop: 'fill' })}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
                   alt={stay.name}
+                  width={640}
+                  height={480}
                   loading="lazy"
                   decoding="async"
                   onError={e => {
                     e.currentTarget.onerror = null
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=75&auto=format'
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=640&q=75&auto=format'
                   }}
                 />
                 {/* Category badge */}
