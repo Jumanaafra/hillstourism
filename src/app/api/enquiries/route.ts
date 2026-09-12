@@ -197,39 +197,41 @@ export async function POST(req: NextRequest) {
 
     // 7. Resilient External Integrations (Failure Rule Guarantee)
     // Email and Sheets failures MUST NOT delete or report failure to customer!
-    const emailPromise = sendEnquiryEmails(createdEnquiry)
-      .then(result => {
-        const isOverallSuccess = result.internal.success
-        return updateEnquiryIntegrations(createdEnquiry.id, {
-          emailStatus: isOverallSuccess ? 'sent' : 'failed',
-          emailError: !isOverallSuccess ? (result.internal.error || 'Failed to send') : undefined,
-        })
-      })
-      .catch(err => {
-        console.error('[Enquiry API] Email integration error:', err)
-        return updateEnquiryIntegrations(createdEnquiry.id, {
-          emailStatus: 'failed',
-          emailError: err?.message || String(err),
-        })
-      })
+    // 7. Background Tasks: Google Sheets & Resend Email Integration
+    let sheetsStatus: 'synced' | 'failed' = 'failed'
+    let sheetsError: string | undefined = undefined
+    try {
+      const sheetsResult = await syncEnquiryToGoogleSheets(createdEnquiry)
+      sheetsStatus = sheetsResult.success ? 'synced' : 'failed'
+      sheetsError = !sheetsResult.success ? sheetsResult.error : undefined
+    } catch (err: any) {
+      console.error('[Enquiry API] Sheets integration error:', err)
+      sheetsStatus = 'failed'
+      sheetsError = err?.message || String(err)
+    }
 
-    const sheetsPromise = syncEnquiryToGoogleSheets(createdEnquiry)
-      .then(result => {
-        return updateEnquiryIntegrations(createdEnquiry.id, {
-          sheetsStatus: result.success ? 'synced' : 'failed',
-          sheetsError: !result.success ? result.error : undefined,
-        })
-      })
-      .catch(err => {
-        console.error('[Enquiry API] Sheets integration error:', err)
-        return updateEnquiryIntegrations(createdEnquiry.id, {
-          sheetsStatus: 'failed',
-          sheetsError: err?.message || String(err),
-        })
-      })
+    let emailStatus: 'sent' | 'failed' = 'failed'
+    let emailError: string | undefined = undefined
+    try {
+      const emailResult = await sendEnquiryEmails(createdEnquiry)
+      const isOverallSuccess = emailResult.internal.success
+      emailStatus = isOverallSuccess ? 'sent' : 'failed'
+      emailError = !isOverallSuccess ? (emailResult.internal.error || 'Failed to send') : undefined
+    } catch (err: any) {
+      console.error('[Enquiry API] Email integration error:', err)
+      emailStatus = 'failed'
+      emailError = err?.message || String(err)
+    }
 
-    // Await background tasks without blocking customer on unexpected network hangs
-    await Promise.allSettled([emailPromise, sheetsPromise])
+    // Persist final integration statuses to Firestore
+    await updateEnquiryIntegrations(createdEnquiry.id, {
+      emailStatus,
+      emailError,
+      sheetsStatus,
+      sheetsError,
+    }).catch(err => {
+      console.error('[Enquiry API] Failed to update integration status:', err)
+    })
 
     return enquiryResponse(
       {

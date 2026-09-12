@@ -33,18 +33,28 @@ export async function syncEnquiryToGoogleSheets(enquiry: Enquiry): Promise<Sheet
 
     const sheets = google.sheets({ version: 'v4', auth })
 
+    // Format phone to prevent Google Sheets from interpreting "+" as a formula operator
+    const formattedPhone = enquiry.customer.phone
+      ? (enquiry.customer.phone.startsWith('+') ? `'${enquiry.customer.phone}` : enquiry.customer.phone)
+      : ''
+
+    // Format travel date to prevent conversion into a serial integer
+    const formattedDate = enquiry.travel.date
+      ? (enquiry.travel.date.match(/^\d{4}-\d{2}-\d{2}$/) ? `'${enquiry.travel.date}` : enquiry.travel.date)
+      : ''
+
     // Columns defined by spec.md Section 22
     const rowValues = [
       enquiry.id,
       new Date(enquiry.createdAt).toISOString(),
       enquiry.customer.name,
-      enquiry.customer.phone,
+      formattedPhone,
       enquiry.customer.email || '',
       enquiry.package?.nameSnapshot || '',
       enquiry.hotel?.nameSnapshot || '',
       enquiry.vehicle?.id || '',
       enquiry.vehicle?.numberPlateSnapshot || '',
-      enquiry.travel.date || '',
+      formattedDate,
       enquiry.travel.groupSize?.toString() || '',
       enquiry.message || '',
       enquiry.source || 'website',

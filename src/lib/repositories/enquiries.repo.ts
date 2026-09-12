@@ -193,7 +193,44 @@ export async function updateEnquiryIntegrations(
     ...integrations,
   }
 
-  return updateEnquiry(id, { integrations: updatedIntegrations })
+  const db = getFirestoreDB()
+  if (db) {
+    try {
+      const updateData: Record<string, any> = {
+        updatedAt: new Date().toISOString(),
+      }
+      for (const [key, val] of Object.entries(integrations)) {
+        if (val !== undefined) {
+          updateData[`integrations.${key}`] = val
+        }
+      }
+      await withFirestoreTimeout(
+        db.collection('enquiries').doc(id).update(updateData),
+        15000,
+        `enquiries.updateIntegrations:${id}`
+      )
+    } catch (err) {
+      console.error(`[Enquiries Repo] Firestore updateIntegrations failed for ${id}:`, err)
+      if (!allowMemoryFallback()) {
+        throw err
+      }
+    }
+  } else if (!db && !allowMemoryFallback()) {
+    throw new Error('Database is required in production but Firestore is not configured.')
+  }
+
+  const updated: Enquiry = {
+    ...current,
+    integrations: updatedIntegrations,
+    updatedAt: new Date().toISOString(),
+  }
+
+  const idx = memoryEnquiries.findIndex(e => e.id === id)
+  if (idx !== -1) {
+    memoryEnquiries[idx] = updated
+  }
+
+  return updated
 }
 
 /**
