@@ -32,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContactPage() {
-  const settings = await getSiteSettings().catch(() => null)
+  const settings = await getSiteSettings()
   const contactPhone = settings?.contactPhone || '+91 99990 00000'
   const cleanPhone = contactPhone.replace(/[^0-9+]/g, '')
   const whatsappUrl = settings?.whatsappNumber
@@ -41,7 +41,7 @@ export default async function ContactPage() {
 
   return (
     <>
-      <Navbar />
+      <Navbar whatsappUrl={whatsappUrl} />
       <main style={{ background: 'var(--hill-navy-deep)', minHeight: '100vh', paddingTop: 'clamp(70px, 10vw, 90px)' }}>
         
         {/* Contact Hero Header */}
@@ -122,7 +122,7 @@ export default async function ContactPage() {
         </section>
 
         {/* The Main Enquiry Form Component */}
-        <Enquiry id="contact-form" />
+        <Enquiry id="contact-form" whatsappNumber={settings.whatsappNumber} />
 
         {/* Trust Badges */}
         <section style={{

@@ -4270,10 +4270,10 @@ function AdminDashboardContent() {
                         </label>
                         <input
                           type="text"
-                          value={contentData.settings.businessHours ?? ''}
+                          value={contentData.settings.operationalHours ?? ''}
                           onChange={e => setContentData({
                             ...contentData,
-                            settings: { ...contentData.settings, businessHours: e.target.value },
+                            settings: { ...contentData.settings, operationalHours: e.target.value },
                           })}
                           style={inputStyle}
                           placeholder="Mon - Sun: 8:00 AM - 9:00 PM"
@@ -4339,7 +4339,7 @@ function AdminDashboardContent() {
                   {/* Additional Dynamic Settings */}
                   {Object.entries(contentData.settings).filter(([k]) => ![
                     'theme', 'siteName', 'tagline', 'contactPhone', 'phone', 'contactEmail',
-                    'email', 'whatsappNumber', 'whatsapp', 'address', 'businessHours',
+                    'email', 'whatsappNumber', 'whatsapp', 'address', 'businessHours', 'operationalHours',
                     'instagram', 'facebook', 'updatedAt', 'createdAt', 'id'
                   ].includes(k)).length > 0 && (
                     <div style={{ marginBottom: '1.5rem', borderTop: '1px solid var(--admin-card-border, rgba(255,255,255,0.08))', paddingTop: '1.25rem' }}>
@@ -4350,7 +4350,7 @@ function AdminDashboardContent() {
                         {Object.entries(contentData.settings)
                           .filter(([k]) => ![
                             'theme', 'siteName', 'tagline', 'contactPhone', 'phone', 'contactEmail',
-                            'email', 'whatsappNumber', 'whatsapp', 'address', 'businessHours',
+                            'email', 'whatsappNumber', 'whatsapp', 'address', 'businessHours', 'operationalHours',
                             'instagram', 'facebook', 'updatedAt', 'createdAt', 'id'
                           ].includes(k))
                           .map(([key, val]) => (

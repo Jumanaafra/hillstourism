@@ -77,13 +77,15 @@ export default function Footer({
     : whatsappUrl
 
   const baseSocials = Array.isArray(socialLinks) && socialLinks.length > 0 ? socialLinks : DEFAULT_FOOTER_SOCIALS
-  const activeSocials = [...baseSocials]
-  if (settings?.instagram && !activeSocials.some(s => s.platform === 'instagram')) {
-    activeSocials.push({ id: 'social-instagram', platform: 'instagram', url: settings.instagram, label: '@hillstourism' })
-  }
-  if (settings?.facebook && !activeSocials.some(s => s.platform === 'facebook')) {
-    activeSocials.push({ id: 'social-facebook', platform: 'facebook', url: settings.facebook, label: 'facebook.com/hillstourism' })
-  }
+  const activeSocials = baseSocials.map(s => ({
+    ...s,
+    url: s.platform === 'instagram' ? (settings?.instagram || s.url)
+      : s.platform === 'facebook' ? (settings?.facebook || s.url)
+      : s.platform === 'whatsapp' ? computedWhatsappUrl : s.url,
+    label: s.platform === 'whatsapp' ? displayPhone : s.label,
+  }))
+  if (settings?.instagram && !activeSocials.some(s => s.platform === 'instagram')) activeSocials.push({ id: 'social-instagram', platform: 'instagram', url: settings.instagram, label: '@hillstourism' })
+  if (settings?.facebook && !activeSocials.some(s => s.platform === 'facebook')) activeSocials.push({ id: 'social-facebook', platform: 'facebook', url: settings.facebook, label: 'facebook.com/hillstourism' })
 
   const [openSection, setOpenSection] = useState(null)
 
@@ -267,7 +269,7 @@ export default function Footer({
               Curating elevated hill station getaways, luxury cottages, and seamless road journeys across India’s finest ranges.
             </p>
             <a
-              href={whatsappUrl}
+              href={computedWhatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary"
@@ -477,7 +479,7 @@ export default function Footer({
         gap:            '1rem',
       }}>
         <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)' }}>
-          © {new Date().getFullYear()} Hillstourism. All rights reserved.
+          © {new Date().getFullYear()} {settings?.siteName || 'Hillstourism'}. All rights reserved.
         </p>
         <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
           <Link href="/privacy-policy" className="footer-link" style={{ fontSize: '0.72rem' }}>

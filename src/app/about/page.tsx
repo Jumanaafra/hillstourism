@@ -6,6 +6,7 @@ import WhyChooseUs from '@/components/WhyChooseUs'
 import Testimonials from '@/components/Testimonials'
 import { getCanonicalUrl } from '@/lib/seo/siteUrl'
 import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
+import { getSiteSettings, getTestimonials } from '@/lib/repositories/content.repo'
 
 const defaultMeta: Metadata = {
   title: 'About Hills Tourism — Local Mountain Travel Specialists',
@@ -30,15 +31,16 @@ export async function generateMetadata(): Promise<Metadata> {
   return resolvePageMetadata('/about', defaultMeta)
 }
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const [settings, testimonials] = await Promise.all([getSiteSettings(), getTestimonials(true)])
   return (
     <>
-      <Navbar />
+      <Navbar whatsappUrl={settings.whatsappNumber ? `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}` : undefined} />
       <main style={{ paddingTop: '80px' }}>
         <WhyChooseUs id="about" />
-        <Testimonials id="testimonials" />
+        <Testimonials id="testimonials" initialTestimonials={testimonials} />
       </main>
-      <Footer id="footer" />
+      <Footer id="footer" settings={settings} />
       <LazyHillGuide />
     </>
   )

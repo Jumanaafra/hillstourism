@@ -20,6 +20,7 @@ const TRIP_TYPES = ['Honeymoon', 'Couple Getaway', 'Family Trip', 'Friends Group
  * @param {any[]} [props.initialPackages]
  * @param {any[]} [props.initialHotels]
  * @param {any[]} [props.initialVehicles]
+ * @param {string} [props.whatsappNumber]
  */
 const Field = ({ id: fid, label, required, error, children }) => (
   <div className={`form-field-wrapper ${error ? 'has-error' : ''}`}>
@@ -48,6 +49,7 @@ export default function Enquiry({
   initialPackages = /** @type {any[]} */ ([]),
   initialHotels = /** @type {any[]} */ ([]),
   initialVehicles = /** @type {any[]} */ ([]),
+  whatsappNumber = '',
 } = {}) {
   const sectionRef = useRef(null)
   const [form, setForm] = useState({
@@ -249,7 +251,7 @@ export default function Enquiry({
 
             {/* WhatsApp direct */}
             <a
-              href={`https://wa.me/919999000000?text=${whatsappText}`}
+              href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '919999000000'}?text=${whatsappText}`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-outline-white"

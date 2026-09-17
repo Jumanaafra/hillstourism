@@ -5,11 +5,15 @@ import { experiences } from '../data/experiences'
 import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 
-export default function Experiences({ id }) {
+/**
+ * @param {{ id?: string; initialExperiences?: any[] }} props
+ */
+export default function Experiences({ id, initialExperiences }) {
+  const experienceList = initialExperiences ?? experiences
   const [activeIdx, setActiveIdx] = useState(0)
   const [imgKey,    setImgKey]    = useState(0)
   const sectionRef = useRef(null)
-  const active     = experiences[activeIdx]
+  const active     = experienceList[activeIdx] ?? experienceList[0]
 
   // Scroll reveal
   useEffect(() => {
@@ -29,6 +33,8 @@ export default function Experiences({ id }) {
     setImgKey(k => k + 1)
     setActiveIdx(idx)
   }
+
+  if (!active) return null
 
   return (
     <section
@@ -184,7 +190,7 @@ export default function Experiences({ id }) {
               Select an experience
             </p>
 
-            {experiences.map((exp, idx) => (
+            {experienceList.map((exp, idx) => (
               <button
                 key={exp.id}
                 className={`experience-list-item ${idx === activeIdx ? 'active' : ''}`}

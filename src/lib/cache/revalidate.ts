@@ -8,10 +8,9 @@ export function triggerTargetedRevalidation(
   entityType: 'package' | 'hotel' | 'vehicle' | 'gallery' | 'content' | 'settings' | 'social' | 'seo',
   slugOrId?: string
 ) {
-  try {
-    revalidatePath('/')
+  revalidatePath('/')
 
-    switch (entityType) {
+  switch (entityType) {
       case 'package':
         revalidatePath('/packages')
         if (slugOrId) revalidatePath(`/packages/${slugOrId}`)
@@ -48,9 +47,5 @@ export function triggerTargetedRevalidation(
           revalidatePath(path)
         }
         break
-    }
-  } catch (err) {
-    // Non-fatal if invoked in non-request contexts or tests
-    console.warn('[Cache Revalidation] Revalidation notice:', err)
   }
 }

@@ -1,4 +1,4 @@
-import type { Package, Hotel, Vehicle, SiteSettings } from '@/types/domain'
+import type { Package, Hotel, Vehicle, SiteSettings, Category, Experience, Testimonial } from '@/types/domain'
 import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
 // Layout & Section components — static imports to preserve full SSR document height
 import Navbar from '@/components/Navbar'
@@ -25,6 +25,9 @@ interface HomePageClientProps {
   initialVehicles?: Vehicle[]
   initialGalleryPhotos?: GalleryPhoto[]
   initialSettings?: SiteSettings
+  initialCategories?: Category[]
+  initialExperiences?: Experience[]
+  initialTestimonials?: Testimonial[]
 }
 
 export default function HomePageClient({
@@ -33,12 +36,15 @@ export default function HomePageClient({
   initialVehicles,
   initialGalleryPhotos,
   initialSettings,
+  initialCategories,
+  initialExperiences,
+  initialTestimonials,
 }: HomePageClientProps) {
   return (
     <>
 
       {/* Navigation */}
-      <Navbar />
+      <Navbar whatsappUrl={initialSettings?.whatsappNumber ? `https://wa.me/${initialSettings.whatsappNumber.replace(/[^0-9]/g, '')}` : undefined} />
 
       <main id="home" tabIndex={-1}>
         {/* 1. Hero — 100-frame cinematic scroll sequence */}
@@ -51,16 +57,16 @@ export default function HomePageClient({
         <TripFinder id="trip-finder" initialPackages={initialPackages} />
 
         {/* 4. Statistics strip */}
-        <StatsStrip id="stats-strip" />
+        <StatsStrip id="stats-strip" settings={initialSettings} />
 
         {/* 5. Trip Types — 3D carousel */}
-        <TripCategoryCarousel id="journeys" />
+        <TripCategoryCarousel id="journeys" initialCategories={initialCategories} />
 
         {/* 6. Featured Packages */}
         <FeaturedTrips id="packages" initialPackages={initialPackages} />
 
         {/* 7. Experiences — editorial layout */}
-        <Experiences id="experiences" />
+        <Experiences id="experiences" initialExperiences={initialExperiences} />
 
         {/* 8. Gallery — asymmetric masonry */}
         <Gallery id="gallery" initialPhotos={initialGalleryPhotos} />
@@ -69,7 +75,7 @@ export default function HomePageClient({
         <WhyChooseUs id="about" />
 
         {/* 10. Testimonials */}
-        <Testimonials id="testimonials" />
+        <Testimonials id="testimonials" initialTestimonials={initialTestimonials} />
 
         {/* 11. Stays */}
         <Stays id="stays" initialHotels={initialHotels} />
@@ -86,6 +92,7 @@ export default function HomePageClient({
           initialPackages={initialPackages}
           initialHotels={initialHotels}
           initialVehicles={initialVehicles}
+          whatsappNumber={initialSettings?.whatsappNumber}
         />
       </main>
 

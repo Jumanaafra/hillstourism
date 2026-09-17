@@ -15,10 +15,14 @@ function StarRating({ rating }) {
   )
 }
 
-export default function Testimonials({ id }) {
+/**
+ * @param {{ id?: string; initialTestimonials?: any[] }} props
+ */
+export default function Testimonials({ id, initialTestimonials }) {
+  const testimonialList = initialTestimonials ?? testimonials
   const sectionRef = useRef(null)
   const [active, setActive] = useState(0)
-  const current = testimonials[active]
+  const current = testimonialList[active] ?? testimonialList[0]
 
   // Scroll reveal
   useEffect(() => {
@@ -32,6 +36,8 @@ export default function Testimonials({ id }) {
     reveals.forEach(el => observer.observe(el))
     return () => observer.disconnect()
   }, [])
+
+  if (!current) return null
 
   return (
     <section
@@ -134,7 +140,7 @@ export default function Testimonials({ id }) {
           gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))',
           gap:                 '1rem',
         }}>
-          {testimonials.map((t, i) => (
+          {testimonialList.map((t, i) => (
             <article
               key={t.id}
               className={`testimonial-card reveal ${i === active ? 'active-testimonial' : ''}`}

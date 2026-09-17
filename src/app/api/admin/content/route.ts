@@ -83,7 +83,8 @@ function buildSettingsPayload(data: Record<string, any>): Partial<SiteSettings> 
   if (whatsapp !== undefined)                     allowed.whatsappNumber = String(whatsapp).trim()
   
   if (data.address !== undefined)                allowed.address = String(data.address).trim()
-  if (data.operationalHours !== undefined)       allowed.operationalHours = String(data.operationalHours).trim()
+  const operationalHours = data.operationalHours !== undefined ? data.operationalHours : data.businessHours
+  if (operationalHours !== undefined)             allowed.operationalHours = String(operationalHours).trim()
   if (data.totalTravelersMetric !== undefined)   allowed.totalTravelersMetric = String(data.totalTravelersMetric).trim()
   if (data.routesCountMetric !== undefined)      allowed.routesCountMetric = String(data.routesCountMetric).trim()
   if (data.averageRatingMetric !== undefined)    allowed.averageRatingMetric = String(data.averageRatingMetric).trim()

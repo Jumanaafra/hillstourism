@@ -80,7 +80,21 @@ function StatItem({ stat, isVisible }) {
   )
 }
 
-export default function StatsStrip({ id }) {
+function metric(raw, fallback, suffix) {
+  const value = Number(String(raw ?? '').replace(/,/g, '').match(/\d+(?:\.\d+)?/)?.[0])
+  return { value: Number.isFinite(value) && value > 0 ? value : fallback, suffix: String(raw ?? '').includes('+') ? '+' : suffix }
+}
+
+export default function StatsStrip({ id, settings }) {
+  const travelers = metric(settings?.totalTravelersMetric, 2500, '+')
+  const routes = metric(settings?.routesCountMetric, 120, '+')
+  const rating = metric(settings?.averageRatingMetric, 4.9, '/5')
+  const stats = [
+    { ...STATS[0], ...travelers },
+    { ...STATS[1], ...routes },
+    { ...STATS[2], ...rating },
+    STATS[3],
+  ]
   const sectionRef  = useRef(null)
   const [visible, setVisible] = useState(false)
 
@@ -124,7 +138,7 @@ export default function StatsStrip({ id }) {
         position: 'relative',
         zIndex:   1,
       }}>
-        {STATS.map((stat, i) => (
+        {stats.map((stat) => (
           <StatItem key={stat.label} stat={stat} isVisible={visible} />
         ))}
       </div>

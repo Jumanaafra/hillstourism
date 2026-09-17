@@ -22,9 +22,7 @@ const MOB_CONFIG = {
   '-1':{ translateX:-240, scale: 0.85, opacity: 0.6,  zIndex:  7 },
 }
 
-const total = categories.length
-
-function getPos(idx, active) {
+function getPos(idx, active, total) {
   let p = ((idx - active) % total + total) % total
   if (p > total / 2) p -= total
   return p
@@ -58,7 +56,12 @@ function getStyle(pos, isMob) {
   }
 }
 
-export default function TripCategoryCarousel({ id }) {
+/**
+ * @param {{ id?: string; initialCategories?: any[] }} props
+ */
+export default function TripCategoryCarousel({ id, initialCategories }) {
+  const categoryList = initialCategories ?? categories
+  const total = categoryList.length
   const [active,  setActive]  = useState(0)
   const [isMob,   setIsMob]   = useState(false)
   const dragRef   = useRef({ dragging: false, startX: 0, moved: 0 })
@@ -74,8 +77,8 @@ export default function TripCategoryCarousel({ id }) {
 
   /* Navigation */
   const go = useCallback((dir) => {
-    setActive(prev => (prev + dir + total) % total)
-  }, [])
+    if (total > 0) setActive(prev => (prev + dir + total) % total)
+  }, [total])
 
   /* Keyboard */
   useEffect(() => {
@@ -136,8 +139,8 @@ export default function TripCategoryCarousel({ id }) {
           onTouchEnd={onDragEnd}
           style={{ marginBottom: '2.5rem' }}
         >
-          {categories.map((cat, i) => {
-            const pos   = getPos(i, active)
+          {categoryList.map((cat, i) => {
+            const pos   = getPos(i, active, total)
             const style = getStyle(pos, isMob)
             return (
               <div
@@ -248,7 +251,7 @@ export default function TripCategoryCarousel({ id }) {
 
           {/* Dots */}
           <div style={{ display:'flex', gap:'8px' }} role="tablist" aria-label="Category indicators">
-            {categories.map((cat, i) => (
+            {categoryList.map((cat, i) => (
               <button
                 key={cat.id}
                 onClick={() => setActive(i)}
