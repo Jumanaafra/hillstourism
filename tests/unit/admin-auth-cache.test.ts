@@ -55,11 +55,15 @@ describe('Admin Auth & Cookie Hardening', () => {
   it('adminJsonResponse applies strict private no-store headers', () => {
     const response = adminJsonResponse({ success: true, data: [1, 2, 3] })
     expect(response.headers.get('cache-control')).toBe('private, no-store, no-cache, must-revalidate')
+    expect(response.headers.get('cdn-cache-control')).toBe('no-store')
+    expect(response.headers.get('surrogate-control')).toBe('no-store')
     expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow')
   })
 
   it('NO_CACHE_HEADERS constants are correctly defined', () => {
     expect(NO_CACHE_HEADERS['Cache-Control']).toBe('private, no-store, no-cache, must-revalidate')
+    expect(NO_CACHE_HEADERS['CDN-Cache-Control']).toBe('no-store')
+    expect(NO_CACHE_HEADERS['Surrogate-Control']).toBe('no-store')
     expect(NO_CACHE_HEADERS['X-Robots-Tag']).toBe('noindex, nofollow')
   })
 })

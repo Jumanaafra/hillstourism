@@ -14,6 +14,7 @@ export async function GET() {
       {
         headers: {
           'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+          'CDN-Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
         },
       }
     )
@@ -24,7 +25,9 @@ export async function GET() {
       {
         status: 500,
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+          'CDN-Cache-Control': 'no-store',
+          'Surrogate-Control': 'no-store',
         },
       }
     )

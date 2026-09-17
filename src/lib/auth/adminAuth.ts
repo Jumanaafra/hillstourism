@@ -15,6 +15,8 @@ export interface AdminAuthResult {
  */
 export const NO_CACHE_HEADERS: Record<string, string> = {
   'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+  'CDN-Cache-Control': 'no-store',
+  'Surrogate-Control': 'no-store',
   'X-Robots-Tag': 'noindex, nofollow',
 }
 
