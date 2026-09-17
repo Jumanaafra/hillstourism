@@ -29,9 +29,10 @@ function supportsWebP() {
  * Load a single image with a timeout, returning an Image element or null on failure.
  * @param {string} src
  * @param {number} timeoutMs
+ * @param {'high'|'low'|'auto'} [fetchPriority] - Optional fetch priority hint
  * @returns {Promise<HTMLImageElement|null>}
  */
-export function loadImage(src, timeoutMs = 8000) {
+export function loadImage(src, timeoutMs = 8000, fetchPriority) {
   return new Promise((resolve) => {
     const img = new Image()
     let settled = false
@@ -46,6 +47,8 @@ export function loadImage(src, timeoutMs = 8000) {
     const timer = setTimeout(() => settle(null), timeoutMs)
     img.onload  = () => settle(img)
     img.onerror = () => settle(null)
+    // Set fetchPriority before src to hint browser scheduling
+    if (fetchPriority) img.fetchPriority = fetchPriority
     img.src = src
   })
 }

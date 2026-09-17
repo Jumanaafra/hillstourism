@@ -1,7 +1,8 @@
 import type { Package, Hotel, Vehicle, SiteSettings } from '@/types/domain'
 import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
+import dynamic from 'next/dynamic'
 
-// Layout & Section components
+// Layout & Section components — above-fold or near-fold (static imports)
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import Hero from '@/components/Hero'
@@ -13,14 +14,15 @@ import StatsStrip from '@/components/StatsStrip'
 import TripCategoryCarousel from '@/components/TripCategoryCarousel'
 import FeaturedTrips from '@/components/FeaturedTrips'
 import Experiences from '@/components/Experiences'
-import Gallery from '@/components/Gallery'
 import WhyChooseUs from '@/components/WhyChooseUs'
-import Testimonials from '@/components/Testimonials'
-import Stays from '@/components/Stays'
-import Vehicles from '@/components/Vehicles'
 
-import SmartStayMatcher from '@/components/SmartStayMatcher'
-import Enquiry from '@/components/Enquiry'
+// Below-fold sections — lazy-loaded to reduce initial JS payload
+const Gallery = dynamic(() => import('@/components/Gallery'), { ssr: false })
+const Testimonials = dynamic(() => import('@/components/Testimonials'), { ssr: false })
+const Stays = dynamic(() => import('@/components/Stays'), { ssr: false })
+const Vehicles = dynamic(() => import('@/components/Vehicles'), { ssr: false })
+const SmartStayMatcher = dynamic(() => import('@/components/SmartStayMatcher'), { ssr: false })
+const Enquiry = dynamic(() => import('@/components/Enquiry'), { ssr: false })
 
 interface HomePageClientProps {
   initialPackages?: Package[]

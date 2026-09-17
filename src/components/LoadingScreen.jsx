@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { loadImage, getFramePath } from '../utils/imageLoader'
 
-const PRIORITY_FRAMES = 25   // preload this many during loading screen
-const MAX_WAIT_MS     = 10000 // absolute max loading-screen time
+const PRIORITY_FRAMES = 8     // preload initial buffer during loading screen (matches Hero's initial buffer)
+const MAX_WAIT_MS     = 6000  // absolute max loading-screen time
 
 export default function LoadingScreen({ onComplete }) {
   const [progress,     setProgress]     = useState(0)
@@ -46,8 +46,8 @@ export default function LoadingScreen({ onComplete }) {
       })
     )
 
-    /* Minimum screen time: 2.6 s */
-    const minWait = new Promise(r => setTimeout(r, 2600))
+    /* Minimum screen time: 1.8 s */
+    const minWait = new Promise(r => setTimeout(r, 1800))
 
     Promise.all([Promise.all(tasks), minWait]).then(() => {
       clearTimeout(timeoutRef.current)
@@ -106,12 +106,12 @@ export default function LoadingScreen({ onComplete }) {
         }}
       >
         <picture>
-          <source srcSet="/logo.webp" type="image/webp" />
+          <source srcSet="/logo-md.webp" type="image/webp" />
           <img
             src="/logo.png"
             alt="HillsTourism"
-            width={150}
-            height={100}
+            width={144}
+            height={96}
             style={{
               height:      'clamp(60px, 10vw, 96px)',
               width:       'auto',

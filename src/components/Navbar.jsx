@@ -110,12 +110,12 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
             style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
           >
             <picture>
-              <source srcSet="/logo.webp" type="image/webp" />
+              <source srcSet="/logo-sm.webp" type="image/webp" />
               <img
                 src="/logo.png"
                 alt="Hillstourism"
-                width={150}
-                height={100}
+                width={144}
+                height={96}
                 className="navbar-brand-logo"
                 style={{
                   height:      'clamp(32px, 3.8vw, 44px)',

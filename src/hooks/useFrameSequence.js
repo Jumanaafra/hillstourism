@@ -114,7 +114,9 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
     inFlightRef.current.add(i)
 
     try {
-      const img = await loadImage(getFramePath(i), 12000)
+      // Use high fetch priority for the first frame (LCP-critical)
+      const priority = i === 0 ? 'high' : undefined
+      const img = await loadImage(getFramePath(i), 12000, priority)
       if (img) {
         imagesRef.current[i] = img
         loadedRef.current[i] = true

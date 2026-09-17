@@ -80,6 +80,24 @@ const nextConfig = {
         ],
       },
       {
+        source: '/logo-sm.webp',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/logo-md.webp',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
         source: '/favicon.svg',
         headers: [
           {
