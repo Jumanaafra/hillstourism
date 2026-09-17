@@ -53,12 +53,7 @@ export default function Experiences({ id }) {
         </div>
 
         {/* Editorial layout: large image + list */}
-        <div style={{
-          display:             'grid',
-          gridTemplateColumns: '1fr 420px',
-          gap:                 'clamp(2rem,5vw,5rem)',
-          alignItems:          'stretch',
-        }}>
+        <div className="experiences-grid">
 
           {/* ── Large Active Image ── */}
           <div
@@ -266,6 +261,18 @@ export default function Experiences({ id }) {
       </div>
 
       <style>{`
+        .experiences-grid {
+          display: grid;
+          grid-template-columns: 1fr 420px;
+          gap: clamp(2rem, 5vw, 5rem);
+          align-items: stretch;
+        }
+        @media (max-width: 1024px) {
+          .experiences-grid {
+            grid-template-columns: 1fr;
+            gap: 2.25rem;
+          }
+        }
         @keyframes imgReveal {
           from { opacity: 0; transform: scale(1.04); }
           to   { opacity: 1; transform: scale(1); }

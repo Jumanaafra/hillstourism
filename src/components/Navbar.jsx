@@ -100,23 +100,8 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
         className={`navbar ${scrolled ? 'scrolled' : ''} ${menuOpen ? 'menu-open' : ''}`}
         role="navigation"
         aria-label="Main navigation"
-        style={!isHomePage && !scrolled && !menuOpen ? { background: 'rgba(0,9,31,0.95)', backdropFilter: 'blur(24px)' } : undefined}
       >
-        <div
-          className="navbar-container"
-          style={{
-            display:        'flex',
-            alignItems:     'center',
-            justifyContent: 'space-between',
-            padding:        scrolled
-              ? 'clamp(0.6rem,1.5vw,0.85rem) clamp(1.25rem,4vw,3rem)'
-              : 'clamp(0.85rem,2vw,1.15rem) clamp(1.25rem,4vw,3rem)',
-            maxWidth:       '1600px',
-            margin:         '0 auto',
-            width:          '100%',
-            transition:     'padding 0.4s cubic-bezier(0.25,0.46,0.45,0.94)',
-          }}
-        >
+        <div className="navbar-container">
           {/* Logo */}
           <a
             href="/"
@@ -133,11 +118,11 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
                 height={100}
                 className="navbar-brand-logo"
                 style={{
-                  height:      'clamp(34px, 4vw, 48px)',
+                  height:      'clamp(32px, 3.8vw, 44px)',
                   width:       'auto',
                   aspectRatio: '1536 / 1024',
                   objectFit:   'contain',
-                  filter:      'brightness(1.05)',
+                  filter:      'brightness(1.08)',
                 }}
                 onError={(e) => {
                   e.target.style.display = 'none'
@@ -151,15 +136,7 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
           </a>
 
           {/* Desktop nav links */}
-          <ul
-            style={{
-              display:    'flex',
-              alignItems: 'center',
-              gap:        'clamp(1rem, 2vw, 2rem)',
-              listStyle:  'none',
-            }}
-            className="desktop-nav"
-          >
+          <ul className="desktop-nav">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
                 <a
@@ -175,13 +152,13 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
           </ul>
 
           {/* CTA + hamburger */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+          <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
             {/* Desktop CTA */}
             <a
               href="/#contact"
               className="btn-primary desktop-cta"
               onClick={(e) => { e.preventDefault(); handleNavClick('/#contact') }}
-              style={{ padding: '0.6rem 1.35rem', fontSize: '0.72rem' }}
+              style={{ padding: '0.55rem 1.25rem', fontSize: '0.72rem', borderRadius: '9999px' }}
             >
               Plan My Trip
             </a>
@@ -227,21 +204,21 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
             </button>
           </div>
         </div>
-
-        {/* Responsive rules */}
-        <style>{`
-          @media (max-width: 1024px) {
-            .desktop-nav { display: none !important; }
-            .desktop-cta { display: none !important; }
-            .hamburger-btn { display: flex !important; }
-          }
-        `}</style>
       </nav>
 
-      {/* Mobile fluid navigation overlay */}
+      {/* Mobile Drawer Backdrop */}
       {menuMounted && (
         <div
-          className={`mobile-menu ${menuOpen ? 'open' : ''}`}
+          className={`mobile-drawer-backdrop ${menuOpen ? 'open' : ''}`}
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Right-Sliding Drawer */}
+      {menuMounted && (
+        <div
+          className={`mobile-drawer ${menuOpen ? 'open' : ''}`}
           role="dialog"
           aria-modal="true"
           aria-label="Mobile navigation"
@@ -250,8 +227,42 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
           <div className="mobile-menu-glow-1" aria-hidden="true" />
           <div className="mobile-menu-glow-2" aria-hidden="true" />
 
-          <nav className="mobile-menu-nav" aria-label="Mobile menu links">
-            <ul className="mobile-menu-list">
+          {/* Drawer Header with Logo + Close Button */}
+          <div className="mobile-drawer-header">
+            <a
+              href="/"
+              onClick={(e) => { e.preventDefault(); handleNavClick('/') }}
+              aria-label="Hillstourism — go to home"
+              style={{ display: 'flex', alignItems: 'center' }}
+            >
+              <img
+                src="/logo.png"
+                alt="Hillstourism"
+                width={120}
+                height={75}
+                style={{
+                  height: '30px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  filter: 'brightness(1.08)',
+                }}
+              />
+            </a>
+            <button
+              className="mobile-drawer-close-btn"
+              onClick={() => setMenuOpen(false)}
+              aria-label="Close navigation drawer"
+              type="button"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          <nav className="mobile-drawer-nav" aria-label="Mobile menu links">
+            <ul className="mobile-drawer-list">
               {allMobileLinks.map((link) => {
                 const active = isActive(link.href)
                 return (
@@ -273,7 +284,7 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
             </ul>
           </nav>
 
-          {/* Quick CTA Actions */}
+          {/* Quick CTA Actions at bottom of drawer */}
           <div className="mobile-nav-actions">
             <a
               href="/#contact"

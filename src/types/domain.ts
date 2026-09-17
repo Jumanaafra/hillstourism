@@ -165,9 +165,64 @@ export interface EnquiryIntegrations {
   sheetsStatus?: 'pending' | 'synced' | 'failed'
   emailError?: string
   sheetsError?: string
+  lastSheetSyncAt?: string
+  sheetRow?: number
 }
 
-export type EnquiryStatus = 'new' | 'contacted' | 'in_progress' | 'closed' | 'spam'
+export type EnquiryStatus =
+  | 'new'
+  | 'contacted'
+  | 'quotation_sent'
+  | 'confirmed'
+  | 'payment_pending'
+  | 'booked'
+  | 'completed'
+  | 'cancelled'
+  | 'spam'
+  | 'in_progress'
+  | 'closed'
+
+export interface EnquiryNote {
+  id: string
+  content: string
+  createdAt: string
+  author: string
+  updatedAt?: string
+}
+
+export interface EnquiryTimelineEvent {
+  id: string
+  type: 'created' | 'status_change' | 'email_sent' | 'email_failed' | 'sheets_synced' | 'sheets_failed' | 'note_added' | 'manual_sync'
+  title: string
+  description?: string
+  timestamp: string
+  author?: string
+  metadata?: Record<string, any>
+}
+
+export interface EnquiryEmailRecord {
+  id: string
+  template: 'booking_confirmation' | 'package_details' | 'quotation' | 'travel_reminder' | 'custom'
+  subject: string
+  to: string
+  bodyHtml?: string
+  bodyText?: string
+  sentAt: string
+  status: 'sent' | 'failed'
+  error?: string
+  author?: string
+}
+
+export interface AuditLogEntry {
+  id: string
+  action: 'status_update' | 'email_sent' | 'note_added' | 'sheet_sync' | 'enquiry_deleted' | 'batch_sync'
+  enquiryId?: string
+  customerName?: string
+  details: string
+  metadata?: Record<string, any>
+  adminEmail: string
+  timestamp: string
+}
 
 export interface Enquiry {
   id: string
@@ -180,6 +235,12 @@ export interface Enquiry {
   source?: string
   status: EnquiryStatus
   integrations: EnquiryIntegrations
+  lastEmailSentAt?: string
+  lastEmailSubject?: string
+  emailStatus?: 'sending' | 'sent' | 'failed'
+  emailHistory?: EnquiryEmailRecord[]
+  notes?: EnquiryNote[]
+  timeline?: EnquiryTimelineEvent[]
   createdAt: string | Date
   updatedAt: string | Date
 }
@@ -239,5 +300,6 @@ export interface SiteSettings {
   routesCountMetric: string
   averageRatingMetric: string
   socialLinks?: SocialLink[]
+  theme?: 'light' | 'dark' | 'system'
 }
 

@@ -73,8 +73,42 @@ export default function Vehicles({ id, initialVehicles }) {
                 />
               </div>
 
-              {/* Type badge */}
-              <span className="badge badge-blue" style={{ marginBottom: '0.75rem' }}>{v.type}</span>
+              {/* Badges strip */}
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.85rem' }}>
+                <span className="badge badge-blue">{v.type}</span>
+                <span className="badge badge-navy" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  <FiUsers style={{ fontSize: '0.7rem' }} /> {v.capacity} Seats
+                </span>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '2px 8px',
+                  borderRadius: '100px',
+                  fontSize: '0.62rem',
+                  fontWeight: 600,
+                  background: 'rgba(56, 189, 248, 0.12)',
+                  color: 'var(--hill-blue-bright)',
+                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                }}>
+                  {v.features?.some(f => f.includes('AC')) ? 'AC Included' : 'Non-AC'}
+                </span>
+                {v.driverAvailable && (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                    padding: '2px 8px',
+                    borderRadius: '100px',
+                    fontSize: '0.62rem',
+                    fontWeight: 600,
+                    background: 'rgba(34, 197, 94, 0.12)',
+                    color: '#16A34A',
+                    border: '1px solid rgba(34, 197, 94, 0.25)',
+                  }}>
+                    <FaCarSide style={{ fontSize: '0.65rem' }} /> Chauffeur Incl.
+                  </span>
+                )}
+              </div>
 
               {/* Name */}
               <h3 className="heading-sm" style={{ color: 'var(--hill-navy)', marginBottom: '0.25rem' }}>

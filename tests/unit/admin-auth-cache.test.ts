@@ -5,6 +5,7 @@ vi.mock('server-only', () => ({}))
 
 import {
   validateAdminToken,
+  validateAdminCredentials,
   verifyAdminAuth,
   NO_CACHE_HEADERS,
   adminJsonResponse,
@@ -55,12 +56,41 @@ describe('Admin Auth & Cookie Hardening', () => {
   it('adminJsonResponse applies strict private no-store headers', () => {
     const response = adminJsonResponse({ success: true, data: [1, 2, 3] })
     expect(response.headers.get('cache-control')).toBe('private, no-store, no-cache, must-revalidate')
+    expect(response.headers.get('cdn-cache-control')).toBe('no-store')
+    expect(response.headers.get('surrogate-control')).toBe('no-store')
     expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow')
   })
 
   it('NO_CACHE_HEADERS constants are correctly defined', () => {
     expect(NO_CACHE_HEADERS['Cache-Control']).toBe('private, no-store, no-cache, must-revalidate')
+    expect(NO_CACHE_HEADERS['CDN-Cache-Control']).toBe('no-store')
+    expect(NO_CACHE_HEADERS['Surrogate-Control']).toBe('no-store')
     expect(NO_CACHE_HEADERS['X-Robots-Tag']).toBe('noindex, nofollow')
+  })
+
+  it('authenticates with valid admin email and password', async () => {
+    const result = await validateAdminCredentials('admin@hillstourism.com', 'HillsAdmin@2025')
+    expect(result.authenticated).toBe(true)
+    expect(result.role).toBe('admin')
+    expect(result.email).toBe('admin@hillstourism.com')
+  })
+
+  it('authenticates with username shorthand "admin"', async () => {
+    const result = await validateAdminCredentials('admin', 'HillsAdmin@2025')
+    expect(result.authenticated).toBe(true)
+    expect(result.role).toBe('admin')
+  })
+
+  it('rejects invalid email or password', async () => {
+    const badPass = await validateAdminCredentials('admin@hillstourism.com', 'wrongpassword')
+    expect(badPass.authenticated).toBe(false)
+    expect(badPass.error).toBeDefined()
+
+    const badEmail = await validateAdminCredentials('fake@example.com', 'HillsAdmin@2025')
+    expect(badEmail.authenticated).toBe(false)
+
+    const empty = await validateAdminCredentials('', '')
+    expect(empty.authenticated).toBe(false)
   })
 })
 

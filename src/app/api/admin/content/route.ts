@@ -80,6 +80,9 @@ function buildSettingsPayload(data: Record<string, any>): Partial<SiteSettings> 
   if (data.totalTravelersMetric !== undefined)   allowed.totalTravelersMetric = String(data.totalTravelersMetric).trim()
   if (data.routesCountMetric !== undefined)      allowed.routesCountMetric = String(data.routesCountMetric).trim()
   if (data.averageRatingMetric !== undefined)    allowed.averageRatingMetric = String(data.averageRatingMetric).trim()
+  if (data.theme !== undefined && ['light', 'dark', 'system'].includes(String(data.theme))) {
+    allowed.theme = data.theme as 'light' | 'dark' | 'system'
+  }
   return allowed
 }
 

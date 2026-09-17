@@ -15,7 +15,8 @@ import { getHotelById } from '@/lib/repositories/hotels.repo'
 import { getVehicleById } from '@/lib/repositories/vehicles.repo'
 import { sendEnquiryEmails } from '@/lib/services/email.service'
 import { syncEnquiryToGoogleSheets } from '@/lib/services/sheets.service'
-import type { EnquiryStatus } from '@/types/domain'
+import { createAuditLog } from '@/lib/repositories/audit.repo'
+import type { EnquiryStatus, EnquiryTimelineEvent } from '@/types/domain'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -321,7 +322,19 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Validate status if provided
-    const validStatuses: EnquiryStatus[] = ['new', 'contacted', 'in_progress', 'closed', 'spam']
+    const validStatuses: EnquiryStatus[] = [
+      'new',
+      'contacted',
+      'quotation_sent',
+      'confirmed',
+      'payment_pending',
+      'booked',
+      'completed',
+      'cancelled',
+      'spam',
+      'in_progress',
+      'closed',
+    ]
     if (updates.status && !validStatuses.includes(updates.status)) {
       return enquiryResponse(
         { success: false, error: { code: 'VALIDATION_ERROR', message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` } },
@@ -339,8 +352,36 @@ export async function PATCH(req: NextRequest) {
 
     // Only allow safe fields to be updated
     const safeUpdates: Record<string, any> = {}
-    if (updates.status) safeUpdates.status = updates.status
+    const now = new Date().toISOString()
+    const adminEmail = auth.email || 'admin@hillstourism.com'
+
+    if (updates.status) {
+      safeUpdates.status = updates.status
+      if (updates.status !== existing.status) {
+        const timelineEvent: EnquiryTimelineEvent = {
+          id: `TLE-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          type: 'status_change',
+          title: `Status Changed to ${updates.status.replace(/_/g, ' ').toUpperCase()}`,
+          description: `Status updated from "${existing.status}" to "${updates.status}"`,
+          timestamp: now,
+          author: adminEmail,
+          metadata: { from: existing.status, to: updates.status },
+        }
+        safeUpdates.timeline = [...(existing.timeline || []), timelineEvent]
+
+        await createAuditLog({
+          action: 'status_update',
+          enquiryId: existing.id,
+          customerName: existing.customer?.name,
+          details: `Changed status from "${existing.status}" to "${updates.status}"`,
+          adminEmail,
+          metadata: { from: existing.status, to: updates.status },
+        })
+      }
+    }
     if (updates.notes !== undefined) safeUpdates.notes = updates.notes
+    if (updates.timeline !== undefined && !safeUpdates.timeline) safeUpdates.timeline = updates.timeline
+    if (updates.integrations !== undefined) safeUpdates.integrations = updates.integrations
 
     const updated = await updateEnquiry(id, safeUpdates)
     return enquiryResponse({ success: true, data: updated })
@@ -384,5 +425,12 @@ export async function DELETE(req: NextRequest) {
 
   // Soft-delete by marking status as 'spam' / archived
   await updateEnquiry(id, { status: 'spam' })
+  await createAuditLog({
+    action: 'enquiry_deleted',
+    enquiryId: existing.id,
+    customerName: existing.customer?.name,
+    details: `Archived/marked enquiry ${id} as spam`,
+    adminEmail: auth.email || 'admin@hillstourism.com',
+  })
   return enquiryResponse({ success: true, data: { archived: true } })
 }
