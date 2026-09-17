@@ -4,8 +4,12 @@ import React, { useState, useEffect } from 'react'
 import type { Package, ItineraryDay, Hotel, Vehicle, Category, Experience, Testimonial, SocialLink, PageSEO } from '@/types/domain'
 import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
 import ImageUploadField from '@/components/admin/ImageUploadField'
+import MobileAdminHeader from '@/components/admin/MobileAdminHeader'
+import AdminMobileDrawer, { type TabKey } from '@/components/admin/AdminMobileDrawer'
+import MobileEnquiryCard, { type EnquiryData } from '@/components/admin/MobileEnquiryCard'
+import EnquiryDetailModal from '@/components/admin/EnquiryDetailModal'
 import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
-import { FiCheck, FiAlertTriangle, FiMail, FiBarChart2, FiStar, FiCalendar, FiArrowUpRight, FiX, FiArrowRight, FiPlus, FiTrash2, FiEdit2, FiCopy, FiGlobe, FiShare2, FiExternalLink, FiRefreshCw } from 'react-icons/fi'
+import { FiCheck, FiAlertTriangle, FiMail, FiBarChart2, FiStar, FiCalendar, FiArrowUpRight, FiX, FiArrowRight, FiPlus, FiTrash2, FiEdit2, FiCopy, FiGlobe, FiShare2, FiExternalLink, FiRefreshCw, FiPhone, FiEye, FiMapPin, FiUser } from 'react-icons/fi'
 import { FaStar, FaWhatsapp, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from 'react-icons/fa'
 
 type Tab = 'overview' | 'enquiries' | 'packages' | 'hotels' | 'vehicles' | 'gallery' | 'content' | 'knowledge' | 'library' | 'social' | 'seo' | 'settings'
@@ -19,6 +23,8 @@ export default function AdminDashboardPage() {
     return ''
   })
   const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+  const [selectedEnquiryForModal, setSelectedEnquiryForModal] = useState<EnquiryData | null>(null)
   const [enquiries, setEnquiries] = useState<any[]>([])
   const [hotels, setHotels] = useState<any[]>([])
   const [vehicles, setVehicles] = useState<any[]>([])
@@ -954,9 +960,9 @@ export default function AdminDashboardPage() {
   })
 
   // ── Shared Styles ──
-  const cardStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.04)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }
+  const cardStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.04)', padding: 'clamp(1rem, 2.5vw, 1.5rem)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }
   const inputStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.3)', color: '#fff', width: '100%' }
-  const statStyle: React.CSSProperties = { ...cardStyle }
+  const statStyle: React.CSSProperties = { ...cardStyle, padding: 'clamp(0.85rem, 2vw, 1.25rem)' }
 
   const TABS: { key: Tab; label: string }[] = [
     { key: 'overview', label: 'Overview' },
@@ -974,10 +980,45 @@ export default function AdminDashboardPage() {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--hill-navy-deep)', color: '#ffffff', padding: '2rem 1.5rem' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--hill-navy-deep)', color: '#ffffff', padding: '0', maxWidth: '100vw', overflowX: 'hidden' }}>
+      {/* Mobile Sticky Header (< lg) */}
+      <MobileAdminHeader
+        activeTabLabel={TABS.find(t => t.key === activeTab)?.label || 'Dashboard'}
+        newEnquiriesCount={enquiries.filter(e => e.status === 'new').length}
+        refreshing={loading || refreshingEnquiries}
+        onOpenDrawer={() => setMobileDrawerOpen(true)}
+        onRefresh={() => {
+          if (activeTab === 'enquiries' || activeTab === 'overview') {
+            fetchEnquiries(true)
+          } else {
+            fetchAllData()
+          }
+        }}
+      />
+
+      {/* Mobile Slide-Over Drawer (< lg) */}
+      <AdminMobileDrawer
+        isOpen={mobileDrawerOpen}
+        activeTab={activeTab as TabKey}
+        newEnquiriesCount={enquiries.filter(e => e.status === 'new').length}
+        totalPackagesCount={packages.length}
+        totalHotelsCount={hotels.length}
+        totalVehiclesCount={vehicles.length}
+        onSelectTab={(tab) => setActiveTab(tab as Tab)}
+        onClose={() => setMobileDrawerOpen(false)}
+        onLogout={async () => {
+          try {
+            await fetch('/api/admin/auth', { method: 'DELETE' })
+          } catch {}
+          document.cookie = 'admin_token=; path=/; max-age=0'
+          window.location.href = '/admin/login'
+        }}
+      />
+
+      {/* Main Content Container */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: 'clamp(1rem, 2.5vw, 2rem) clamp(0.75rem, 2.5vw, 1.5rem)' }}>
+        {/* Desktop Header (>= lg) */}
+        <div className="hidden lg:flex" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 700 }}>
               Hills Tourism — Operations Dashboard
@@ -1020,8 +1061,8 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '2rem', flexWrap: 'wrap' }}>
+        {/* Desktop Tabs Bar (>= lg) */}
+        <div className="hidden lg:flex" style={{ gap: '6px', marginBottom: '2rem', flexWrap: 'wrap' }}>
           {TABS.map(tab => (
             <button
               key={tab.key}
@@ -1040,29 +1081,29 @@ export default function AdminDashboardPage() {
         {/* ── OVERVIEW TAB ── */}
         {activeTab === 'overview' && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.85rem', marginBottom: '2rem' }}>
               <div style={statStyle}>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total Enquiries</p>
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 700, color: 'var(--hill-blue-bright)', marginTop: '6px' }}>{enquiries.length}</p>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Enquiries</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 700, color: 'var(--hill-blue-bright)', marginTop: '4px' }}>{enquiries.length}</p>
               </div>
               <div style={statStyle}>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>New Leads</p>
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 700, color: '#22C55E', marginTop: '6px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>New Leads</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 700, color: '#22C55E', marginTop: '4px' }}>
                   {enquiries.filter(e => e.status === 'new').length}
                 </p>
               </div>
               <div style={statStyle}>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Active Packages</p>
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 700, color: '#F59E0B', marginTop: '6px' }}>{packages.filter(p => p.active).length}</p>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Active Packages</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 700, color: '#F59E0B', marginTop: '4px' }}>{packages.filter(p => p.active).length}</p>
               </div>
               <div style={statStyle}>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Hotels / Vehicles</p>
-                <p style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 700, color: '#A855F7', marginTop: '6px' }}>{hotels.length} / {vehicles.length}</p>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Hotels / Fleet</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 700, color: '#A855F7', marginTop: '4px' }}>{hotels.length} / {vehicles.length}</p>
               </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', margin: 0 }}>Recent Customer Leads</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Recent Customer Leads</h3>
               <button
                 type="button"
                 onClick={() => fetchEnquiries(true)}
@@ -1080,13 +1121,16 @@ export default function AdminDashboardPage() {
                   cursor: refreshingEnquiries ? 'not-allowed' : 'pointer',
                   opacity: refreshingEnquiries ? 0.7 : 1,
                   transition: 'all 0.2s ease',
+                  minHeight: '38px',
                 }}
               >
                 <FiRefreshCw style={{ animation: refreshingEnquiries ? 'spin 1s linear infinite' : 'none' }} />
                 {refreshingEnquiries ? 'Refreshing...' : 'Refresh'}
               </button>
             </div>
-            <div style={{ overflowX: 'auto', ...cardStyle }}>
+
+            {/* Desktop Leads Table (>= md) */}
+            <div className="hidden md:block" style={{ overflowX: 'auto', ...cardStyle }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>
@@ -1101,7 +1145,11 @@ export default function AdminDashboardPage() {
                 </thead>
                 <tbody>
                   {enquiries.slice(0, 5).map(e => (
-                    <tr key={e.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <tr
+                      key={e.id}
+                      onClick={() => setSelectedEnquiryForModal(e)}
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+                    >
                       <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--hill-blue-bright)' }}>{e.id}</td>
                       <td style={{ padding: '12px 16px' }}>{e.customer?.name}</td>
                       <td style={{ padding: '12px 16px' }}>{e.customer?.phone}</td>
@@ -1125,54 +1173,130 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Leads Cards (< md) */}
+            <div className="block md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {enquiries.slice(0, 5).map(e => (
+                <MobileEnquiryCard
+                  key={e.id}
+                  enquiry={e}
+                  onViewDetails={(enq) => setSelectedEnquiryForModal(enq)}
+                  onChangeStatus={handleChangeEnquiryStatus}
+                  onArchive={handleArchiveEnquiry}
+                />
+              ))}
+              {enquiries.length === 0 && (
+                <div style={{ ...cardStyle, textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '2rem' }}>
+                  No enquiries yet.
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* ── ENQUIRIES TAB ── */}
         {activeTab === 'enquiries' && (
           <div>
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', margin: 0 }}>Enquiries ({filteredEnquiries.length})</h3>
-                <input
-                  type="text" placeholder="Search name, phone, email..."
-                  value={enqSearch} onChange={e => setEnqSearch(e.target.value)}
-                  style={{ ...inputStyle, width: '250px' }}
-                />
-                <select value={enqStatusFilter} onChange={e => setEnqStatusFilter(e.target.value)}
-                  style={{ ...inputStyle, width: '150px', background: '#001040' }}>
-                  <option value="">All Statuses</option>
-                  <option value="new">New</option>
-                  <option value="contacted">Contacted</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="closed">Closed</option>
-                  <option value="spam">Spam</option>
-                </select>
+            {/* Search & Filters */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
+                  Enquiries ({filteredEnquiries.length})
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => fetchEnquiries(true)}
+                  disabled={refreshingEnquiries}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    background: 'rgba(255,255,255,0.05)',
+                    color: '#fff',
+                    fontSize: '0.8rem',
+                    cursor: refreshingEnquiries ? 'not-allowed' : 'pointer',
+                    opacity: refreshingEnquiries ? 0.7 : 1,
+                    transition: 'all 0.2s ease',
+                    minHeight: '40px',
+                  }}
+                >
+                  <FiRefreshCw style={{ animation: refreshingEnquiries ? 'spin 1s linear infinite' : 'none' }} />
+                  {refreshingEnquiries ? 'Refreshing...' : 'Refresh'}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => fetchEnquiries(true)}
-                disabled={refreshingEnquiries}
+
+              {/* Full Width Search Input */}
+              <div style={{ width: '100%' }}>
+                <input
+                  type="text"
+                  placeholder="Search name, phone, email, package, or ID..."
+                  value={enqSearch}
+                  onChange={e => setEnqSearch(e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    width: '100%',
+                    padding: '10px 14px',
+                    fontSize: '0.875rem',
+                    borderRadius: '8px',
+                  }}
+                />
+              </div>
+
+              {/* Filter Pills - Horizontal Scroll on Mobile */}
+              <div
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
+                  display: 'flex',
                   gap: '6px',
-                  padding: '7px 14px',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(255,255,255,0.05)',
-                  color: '#fff',
-                  fontSize: '0.8rem',
-                  cursor: refreshingEnquiries ? 'not-allowed' : 'pointer',
-                  opacity: refreshingEnquiries ? 0.7 : 1,
-                  transition: 'all 0.2s ease',
+                  overflowX: 'auto',
+                  paddingBottom: '4px',
+                  WebkitOverflowScrolling: 'touch',
                 }}
               >
-                <FiRefreshCw style={{ animation: refreshingEnquiries ? 'spin 1s linear infinite' : 'none' }} />
-                {refreshingEnquiries ? 'Refreshing...' : 'Refresh Enquiries'}
-              </button>
+                {[
+                  { value: '', label: 'All Statuses' },
+                  { value: 'new', label: 'New' },
+                  { value: 'contacted', label: 'Contacted' },
+                  { value: 'in_progress', label: 'In Progress' },
+                  { value: 'closed', label: 'Closed' },
+                  { value: 'spam', label: 'Spam' },
+                ].map(filter => {
+                  const isSelected = enqStatusFilter === filter.value
+                  return (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      onClick={() => setEnqStatusFilter(filter.value)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        background: isSelected ? 'var(--hill-blue-bright, #0878FF)' : 'rgba(255, 255, 255, 0.06)',
+                        color: '#ffffff',
+                        border: isSelected ? '1px solid var(--hill-blue-bright, #0878FF)' : '1px solid rgba(255, 255, 255, 0.1)',
+                        cursor: 'pointer',
+                        minHeight: '36px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      {filter.label}
+                      {filter.value === 'new' && enquiries.filter(e => e.status === 'new').length > 0 && (
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22C55E' }} />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-            <div style={{ overflowX: 'auto', ...cardStyle }}>
+
+            {/* Desktop Table View (>= lg) */}
+            <div className="hidden lg:block" style={{ overflowX: 'auto', ...cardStyle }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>
@@ -1191,7 +1315,7 @@ export default function AdminDashboardPage() {
                     <tr key={e.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--hill-blue-bright)', fontSize: '0.7rem' }}>{e.id}</td>
                       <td style={{ padding: '10px 12px' }}>
-                        <div>{e.customer?.name}</div>
+                        <div style={{ fontWeight: 600 }}>{e.customer?.name}</div>
                         <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)' }}>{e.customer?.email}</div>
                       </td>
                       <td style={{ padding: '10px 12px' }}>{e.customer?.phone}</td>
@@ -1224,15 +1348,51 @@ export default function AdminDashboardPage() {
                         </span>
                       </td>
                       <td style={{ padding: '10px 12px' }}>
-                        <button onClick={() => handleArchiveEnquiry(e.id)}
-                          style={{ color: '#EF4444', border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.7rem' }}>
-                          Archive
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEnquiryForModal(e)}
+                            style={{ color: 'var(--hill-blue-bright)', border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                          >
+                            Details
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleArchiveEnquiry(e.id)}
+                            style={{ color: '#EF4444', border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.7rem' }}
+                          >
+                            Archive
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
+                  {filteredEnquiries.length === 0 && (
+                    <tr><td colSpan={8} style={{ padding: '24px', textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>No enquiries matching your filter.</td></tr>
+                  )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Cards List (< lg) */}
+            <div className="block lg:hidden" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              {filteredEnquiries.map(e => (
+                <MobileEnquiryCard
+                  key={e.id}
+                  enquiry={e}
+                  onViewDetails={(enq) => setSelectedEnquiryForModal(enq)}
+                  onChangeStatus={handleChangeEnquiryStatus}
+                  onArchive={handleArchiveEnquiry}
+                />
+              ))}
+              {filteredEnquiries.length === 0 && (
+                <div style={{ ...cardStyle, textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '2.5rem 1rem' }}>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '0.95rem', fontWeight: 600 }}>No enquiries found</p>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
+                    Try adjusting your search terms or status filters.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1275,7 +1435,7 @@ export default function AdminDashboardPage() {
                     <h4 style={{ fontSize: '0.9rem', color: 'var(--hill-blue-bright)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginBottom: '1rem' }}>
                       1. Basic Information
                     </h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
                       <div>
                         <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Package Name *</label>
                         <input
@@ -1412,7 +1572,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                    <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1rem' }}>
                       <div>
                         <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Short Description (Hero & Cards)</label>
                         <textarea
@@ -1573,7 +1733,7 @@ export default function AdminDashboardPage() {
                             </div>
 
                             {/* Route, Activities, Meals, Stay, Travel, Images */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.75rem' }}>
                               <div>
                                 <label style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '2px' }}>Locations / Route (comma-separated)</label>
                                 <input
@@ -1670,7 +1830,7 @@ export default function AdminDashboardPage() {
                   </div>
 
                   {/* 4 & 5. Inclusions & Exclusions */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.5rem' }}>
                     <div>
                       <h4 style={{ fontSize: '0.9rem', color: '#86EFAC', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginBottom: '0.5rem' }}>
                         4. Inclusions (One per line)
@@ -1726,7 +1886,7 @@ export default function AdminDashboardPage() {
                     <h4 style={{ fontSize: '0.9rem', color: 'var(--hill-blue-bright)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginBottom: '0.75rem' }}>
                       7. Connected Hotels & Vehicles (Enquiry Options)
                     </h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.5rem' }}>
                       {/* Hotels checkboxes */}
                       <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: '8px' }}>
@@ -1790,7 +1950,7 @@ export default function AdminDashboardPage() {
                     <h4 style={{ fontSize: '0.9rem', color: 'var(--hill-blue-bright)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginBottom: '0.75rem' }}>
                       8. SEO & Social Metadata
                     </h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1rem' }}>
                       <div>
                         <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Meta Title</label>
                         <input
@@ -1860,7 +2020,7 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
               {packages.map(p => (
                 <div key={p.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
@@ -1948,7 +2108,7 @@ export default function AdminDashboardPage() {
                     Cancel <FiX />
                   </button>
                 </div>
-                <form onSubmit={handleUpdateHotel} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                <form onSubmit={handleUpdateHotel} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Hotel Name *</label>
                     <input type="text" required value={editingHotel.name} onChange={e => setEditingHotel({ ...editingHotel, name: e.target.value })} style={inputStyle} />
@@ -2003,7 +2163,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div style={{ gridColumn: '1 / -1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
                     <h5 style={{ fontSize: '0.8rem', color: 'var(--hill-blue-bright)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>SEO Metadata (Optional)</h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.75rem' }}>
                       <div>
                         <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '2px' }}>SEO Title</label>
                         <input
@@ -2059,7 +2219,7 @@ export default function AdminDashboardPage() {
               <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--hill-blue-bright)' }}>
                 Add New Hotel (Server-Enforced Name Uniqueness)
               </h4>
-              <form onSubmit={handleCreateHotel} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <form onSubmit={handleCreateHotel} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                 <input type="text" placeholder="Hotel Name *" required value={newHotel.name} onChange={e => setNewHotel({ ...newHotel, name: e.target.value })} style={inputStyle} />
                 <input type="text" placeholder="Location (e.g. Munnar, Kerala)" value={newHotel.location} onChange={e => setNewHotel({ ...newHotel, location: e.target.value })} style={inputStyle} />
                 <select value={newHotel.category} onChange={e => setNewHotel({ ...newHotel, category: e.target.value })} style={{ ...inputStyle, background: '#001040' }}>
@@ -2074,7 +2234,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Hotels Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
               {hotels.map(h => (
                 <div key={h.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
                   {h.image && (
@@ -2152,7 +2312,7 @@ export default function AdminDashboardPage() {
                     Cancel <FiX />
                   </button>
                 </div>
-                <form onSubmit={handleUpdateVehicle} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                <form onSubmit={handleUpdateVehicle} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Model Name *</label>
                     <input type="text" required value={editingVehicle.name} onChange={e => setEditingVehicle({ ...editingVehicle, name: e.target.value })} style={inputStyle} />
@@ -2232,7 +2392,7 @@ export default function AdminDashboardPage() {
               <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--hill-blue-bright)' }}>
                 Add New Fleet Vehicle (Server-Enforced Number Plate Uniqueness)
               </h4>
-              <form onSubmit={handleCreateVehicle} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <form onSubmit={handleCreateVehicle} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                 <input type="text" placeholder="Vehicle Model *" required value={newVehicle.name} onChange={e => setNewVehicle({ ...newVehicle, name: e.target.value })} style={inputStyle} />
                 <input type="text" placeholder="Number Plate (e.g. TN 01 AB 1234) *" required value={newVehicle.numberPlate} onChange={e => setNewVehicle({ ...newVehicle, numberPlate: e.target.value })} style={inputStyle} />
                 <select value={newVehicle.type} onChange={e => setNewVehicle({ ...newVehicle, type: e.target.value as any })} style={{ ...inputStyle, background: '#001040' }}>
@@ -2247,7 +2407,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Vehicles Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
               {vehicles.map(v => (
                 <div key={v.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
                   {v.image && (
@@ -2312,7 +2472,7 @@ export default function AdminDashboardPage() {
                     Cancel <FiX />
                   </button>
                 </div>
-                <form onSubmit={handleUpdateGalleryPhoto} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                <form onSubmit={handleUpdateGalleryPhoto} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
                   <div style={{ gridColumn: '1 / -1' }}>
                     <ImageUploadField
                       label="Gallery Image"
@@ -2369,7 +2529,7 @@ export default function AdminDashboardPage() {
               <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--hill-blue-bright)' }}>
                 Add New Gallery Photo
               </h4>
-              <form onSubmit={handleCreateGalleryPhoto} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <form onSubmit={handleCreateGalleryPhoto} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <ImageUploadField
                     label="Photo Image"
@@ -2413,7 +2573,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Photos Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '1.25rem' }}>
               {galleryPhotos.map(photo => (
                 <div key={photo.id} style={{ ...cardStyle, padding: '1rem', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ width: '100%', height: '160px', borderRadius: '8px', overflow: 'hidden', marginBottom: '0.75rem', background: '#000' }}>
@@ -2483,7 +2643,7 @@ export default function AdminDashboardPage() {
               {/* Add Category Form */}
               <form onSubmit={handleCreateCategory} style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
                 <p style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.75rem', color: '#fff' }}>+ Add New Category</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
                   <input
                     type="text" placeholder="Title (e.g. Honeymoon Special) *" required
                     value={newCategory.title || ''} onChange={e => setNewCategory({ ...newCategory, title: e.target.value })}
@@ -2536,7 +2696,7 @@ export default function AdminDashboardPage() {
                     <h5 style={{ fontWeight: 700, color: 'var(--hill-blue-bright)' }}>Edit Category: {editingCategory.title}</h5>
                     <button onClick={() => setEditingCategory(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><FiX /></button>
                   </div>
-                  <form onSubmit={handleUpdateCategory} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                  <form onSubmit={handleUpdateCategory} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
                     <input type="text" value={editingCategory.title} onChange={e => setEditingCategory({ ...editingCategory, title: e.target.value })} style={inputStyle} />
                     <input type="text" value={editingCategory.badge || ''} onChange={e => setEditingCategory({ ...editingCategory, badge: e.target.value })} style={inputStyle} placeholder="Badge" />
                     <input type="text" value={editingCategory.color || ''} onChange={e => setEditingCategory({ ...editingCategory, color: e.target.value })} style={inputStyle} placeholder="Color" />
@@ -2561,7 +2721,7 @@ export default function AdminDashboardPage() {
               )}
 
               {/* Categories Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '1rem' }}>
                 {contentData?.categories?.map((c: any) => (
                   <div key={c.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column' }}>
                     {c.image && (
@@ -2609,7 +2769,7 @@ export default function AdminDashboardPage() {
               {/* Add Testimonial Form */}
               <form onSubmit={handleCreateTestimonial} style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
                 <p style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.75rem', color: '#fff' }}>+ Add New Testimonial</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
                   <input
                     type="text" placeholder="Traveler Name (e.g. Priya & Rahul) *" required
                     value={newTestimonial.name || ''} onChange={e => setNewTestimonial({ ...newTestimonial, name: e.target.value })}
@@ -2666,7 +2826,7 @@ export default function AdminDashboardPage() {
                     <h5 style={{ fontWeight: 700, color: 'var(--hill-blue-bright)' }}>Edit Testimonial: {editingTestimonial.name}</h5>
                     <button onClick={() => setEditingTestimonial(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><FiX /></button>
                   </div>
-                  <form onSubmit={handleUpdateTestimonial} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                  <form onSubmit={handleUpdateTestimonial} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
                     <input type="text" value={editingTestimonial.name} onChange={e => setEditingTestimonial({ ...editingTestimonial, name: e.target.value })} style={inputStyle} />
                     <input type="text" value={editingTestimonial.trip || ''} onChange={e => setEditingTestimonial({ ...editingTestimonial, trip: e.target.value })} style={inputStyle} />
                     <input type="text" value={editingTestimonial.location || ''} onChange={e => setEditingTestimonial({ ...editingTestimonial, location: e.target.value })} style={inputStyle} />
@@ -2691,7 +2851,7 @@ export default function AdminDashboardPage() {
               )}
 
               {/* Testimonials Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '1rem' }}>
                 {contentData?.testimonials?.map((t: any) => (
                   <div key={t.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
@@ -2742,7 +2902,7 @@ export default function AdminDashboardPage() {
               {/* Add Experience Form */}
               <form onSubmit={handleCreateExperience} style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
                 <p style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.75rem', color: '#fff' }}>+ Add New Experience</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
                   <input
                     type="text" placeholder="Title (e.g. Tea Plantation Trails) *" required
                     value={newExperience.title || ''} onChange={e => setNewExperience({ ...newExperience, title: e.target.value })}
@@ -2804,7 +2964,7 @@ export default function AdminDashboardPage() {
                     <h5 style={{ fontWeight: 700, color: 'var(--hill-blue-bright)' }}>Edit Experience: {editingExperience.title}</h5>
                     <button onClick={() => setEditingExperience(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><FiX /></button>
                   </div>
-                  <form onSubmit={handleUpdateExperience} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                  <form onSubmit={handleUpdateExperience} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
                     <input type="text" value={editingExperience.title} onChange={e => setEditingExperience({ ...editingExperience, title: e.target.value })} style={inputStyle} />
                     <input type="text" value={editingExperience.location || ''} onChange={e => setEditingExperience({ ...editingExperience, location: e.target.value })} style={inputStyle} placeholder="Location" />
                     <input type="text" value={editingExperience.duration || ''} onChange={e => setEditingExperience({ ...editingExperience, duration: e.target.value })} style={inputStyle} placeholder="Duration" />
@@ -2829,7 +2989,7 @@ export default function AdminDashboardPage() {
               )}
 
               {/* Experiences Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '1.25rem' }}>
                 {contentData?.experiences?.map((e: any) => (
                   <div key={e.id} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     {e.image && (
@@ -2876,7 +3036,7 @@ export default function AdminDashboardPage() {
               <h4 style={{ color: 'var(--hill-blue-bright)', fontSize: '1rem', fontWeight: 700, marginBottom: '1rem' }}>
                 Direct Cloudinary Uploader
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: '6px' }}>Target Folder</label>
                   <select
@@ -2939,7 +3099,7 @@ export default function AdminDashboardPage() {
                   No assets uploaded through this session yet. Upload an image above to populate the library!
                 </p>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
                   {libraryUploadedImages.map((asset, idx) => (
                     <div key={idx} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
                       <div style={{ width: '100%', height: '140px', background: '#000', position: 'relative' }}>
@@ -2979,7 +3139,7 @@ export default function AdminDashboardPage() {
               <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--hill-blue-bright)' }}>
                 Add Chat Knowledge
               </h4>
-              <form onSubmit={handleCreateKnowledge} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <form onSubmit={handleCreateKnowledge} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                 <input type="text" placeholder="Title *" required value={newKnowledge.title} onChange={e => setNewKnowledge({ ...newKnowledge, title: e.target.value })} style={inputStyle} />
                 <select value={newKnowledge.category} onChange={e => setNewKnowledge({ ...newKnowledge, category: e.target.value })} style={{ ...inputStyle, background: '#001040' }}>
                   <option value="general">General</option>
@@ -3056,7 +3216,7 @@ export default function AdminDashboardPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 zIndex: 9999, padding: '1rem',
               }}>
-                <div style={{ ...cardStyle, background: '#0a1738', width: '100%', maxWidth: '500px', border: '1px solid rgba(255,255,255,0.15)' }}>
+                <div style={{ ...cardStyle, background: '#0a1738', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.15)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                     <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 600 }}>
                       {editingSocial ? 'Edit Social Link' : 'Add New Social Link'}
@@ -3099,7 +3259,7 @@ export default function AdminDashboardPage() {
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                       <div>
                         <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Display Order</label>
                         <input
@@ -3143,8 +3303,8 @@ export default function AdminDashboardPage() {
               </div>
             )}
 
-            {/* Social Links List */}
-            <div style={{ overflowX: 'auto', ...cardStyle }}>
+            {/* Desktop Social Links Table (>= md) */}
+            <div className="hidden md:block" style={{ overflowX: 'auto', ...cardStyle }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>
@@ -3256,6 +3416,135 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile Social Links Cards (< md) */}
+            <div className="block md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {socialList.map(s => {
+                const isWa = s.platform.toLowerCase() === 'whatsapp'
+                const isInsta = s.platform.toLowerCase() === 'instagram'
+                const isFb = s.platform.toLowerCase() === 'facebook'
+                const isYt = s.platform.toLowerCase() === 'youtube'
+                const isTw = s.platform.toLowerCase() === 'twitter'
+
+                return (
+                  <div key={s.id} style={{ ...cardStyle, padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                        padding: '4px 10px', borderRadius: '6px',
+                        background: 'rgba(255,255,255,0.08)', textTransform: 'capitalize',
+                        fontWeight: 600, fontSize: '0.85rem'
+                      }}>
+                        {isWa && <FaWhatsapp size={15} color="#25D366" />}
+                        {isInsta && <FaInstagram size={15} color="#E4405F" />}
+                        {isFb && <FaFacebookF size={14} color="#1877F2" />}
+                        {isYt && <FaYoutube size={15} color="#FF0000" />}
+                        {isTw && <FaTwitter size={14} color="#1DA1F2" />}
+                        {!isWa && !isInsta && !isFb && !isYt && !isTw && <FiShare2 size={14} />}
+                        {s.platform}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Order: {s.order}</span>
+                        <span style={{
+                          padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600,
+                          background: s.active ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                          color: s.active ? '#86EFAC' : '#FCA5A5',
+                        }}>
+                          {s.active ? 'Active' : 'Disabled'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: 'var(--hill-blue-bright)',
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '0.8rem',
+                          wordBreak: 'break-all',
+                        }}
+                      >
+                        {s.url} <FiExternalLink size={12} style={{ flexShrink: 0 }} />
+                      </a>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSocialActive(s)}
+                        style={{
+                          flex: 1,
+                          padding: '8px 10px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          borderRadius: '6px',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          minHeight: '38px',
+                        }}
+                      >
+                        {s.active ? 'Disable' : 'Enable'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingSocial(s)
+                          setSocialForm({ platform: s.platform, url: s.url, active: s.active, order: s.order || 10 })
+                          setIsCreatingSocial(false)
+                        }}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.75rem',
+                          minHeight: '38px',
+                        }}
+                      >
+                        <FiEdit2 size={13} /> Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSocial(s.id)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          background: 'rgba(239,68,68,0.15)',
+                          border: '1px solid rgba(239,68,68,0.3)',
+                          color: '#FCA5A5',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.75rem',
+                          minHeight: '38px',
+                        }}
+                      >
+                        <FiTrash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+              {socialList.length === 0 && (
+                <div style={{ ...cardStyle, textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '2rem 1rem' }}>
+                  No social links configured yet.
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -3366,7 +3655,7 @@ export default function AdminDashboardPage() {
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                       <div>
                         <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: '4px' }}>
                           Canonical URL Override (Optional)
@@ -3396,7 +3685,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                       <div>
                         <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: '4px' }}>
                           Open Graph Title (Optional)
@@ -3423,7 +3712,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap' }}>
                       <button
                         type="button"
                         onClick={() => handleResetSEO(editingSEO.route)}
@@ -3459,8 +3748,8 @@ export default function AdminDashboardPage() {
               </div>
             )}
 
-            {/* SEO Table */}
-            <div style={{ overflowX: 'auto', ...cardStyle }}>
+            {/* Desktop SEO Table (>= md) */}
+            <div className="hidden md:block" style={{ overflowX: 'auto', ...cardStyle }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>
@@ -3532,6 +3821,75 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile SEO Cards (< md) */}
+            <div className="block md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {seoList.map(item => (
+                <div key={item.route} style={{ ...cardStyle, padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{
+                      padding: '3px 8px', borderRadius: '4px',
+                      background: 'rgba(8,120,255,0.15)', color: 'var(--hill-blue-bright)',
+                      fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 600,
+                    }}>
+                      {item.route}
+                    </span>
+                    <span style={{
+                      fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 600,
+                      background: item.robots?.includes('noindex') ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)',
+                      color: item.robots?.includes('noindex') ? '#FCA5A5' : '#86EFAC',
+                    }}>
+                      {item.robots || 'index, follow'}
+                    </span>
+                  </div>
+
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#ffffff' }}>
+                    {item.title}
+                  </div>
+
+                  <div style={{
+                    fontSize: '0.8rem',
+                    color: 'rgba(255,255,255,0.6)',
+                    lineHeight: 1.4,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  }}>
+                    {item.description}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditingSEO({ ...item })}
+                      className="btn-primary"
+                      style={{ flex: 1, padding: '8px 12px', fontSize: '0.75rem', borderRadius: '6px', minHeight: '38px', justifyContent: 'center' }}
+                    >
+                      Edit SEO
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleResetSEO(item.route)}
+                      title="Reset to default SEO"
+                      style={{
+                        padding: '8px 14px', borderRadius: '6px',
+                        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+                        color: 'rgba(255,255,255,0.7)', cursor: 'pointer', minHeight: '38px',
+                        display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem',
+                      }}
+                    >
+                      <FiRefreshCw size={13} /> Reset
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {seoList.length === 0 && (
+                <div style={{ ...cardStyle, textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: '2rem 1rem' }}>
+                  Loading SEO entries...
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -3541,7 +3899,7 @@ export default function AdminDashboardPage() {
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', marginBottom: '1rem' }}>Site Settings</h3>
             {contentData?.settings ? (
               <form onSubmit={handleUpdateSettings} style={cardStyle}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                   {Object.entries(contentData.settings).map(([key, val]) => (
                     <div key={key}>
                       <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
@@ -3567,6 +3925,22 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Enquiry Detail Modal for Mobile / Quick View */}
+      <EnquiryDetailModal
+        enquiry={selectedEnquiryForModal}
+        isOpen={!!selectedEnquiryForModal}
+        onClose={() => setSelectedEnquiryForModal(null)}
+        onUpdateStatus={async (id, newStatus) => {
+          await handleChangeEnquiryStatus(id, newStatus)
+          setSelectedEnquiryForModal(prev => prev && prev.id === id ? { ...prev, status: newStatus } : prev)
+        }}
+        onArchive={(id) => {
+          handleArchiveEnquiry(id)
+          setSelectedEnquiryForModal(null)
+        }}
+      />
     </div>
   )
 }
+
