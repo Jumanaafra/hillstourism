@@ -35,6 +35,11 @@ export function triggerTargetedRevalidation(
       case 'settings':
       case 'social':
         revalidatePath('/')
+        revalidatePath('/contact')
+        revalidatePath('/about')
+        revalidatePath('/stays')
+        revalidatePath('/packages')
+        revalidatePath('/vehicles')
         break
       case 'seo':
         revalidatePath('/')

@@ -480,11 +480,17 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const doc = await withFirestoreTimeout(db.collection('siteSettings').doc('general').get(), 15000, 'siteSettings.get')
+      const docRef = db.collection('siteSettings').doc('general')
+      const doc = await withFirestoreTimeout(docRef.get(), 15000, 'siteSettings.get')
       if (doc.exists) {
         const data = doc.data() as SiteSettings
-        memorySettings = { ...data }
-        return data
+        const combined = { ...seedSiteSettings, ...data }
+        memorySettings = { ...combined }
+        return combined
+      } else {
+        await withFirestoreTimeout(docRef.set(seedSiteSettings), 15000, 'siteSettings.seed')
+        memorySettings = { ...seedSiteSettings }
+        return { ...seedSiteSettings }
       }
     } catch (err) {
       console.error('[Content Repo] SiteSettings fetch error:', err)
@@ -496,15 +502,20 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     throw new Error('Database is required in production but Firestore is not configured.')
   }
 
-  return { ...memorySettings }
+  return { ...seedSiteSettings, ...memorySettings }
 }
 
 export async function updateSiteSettings(updates: Partial<SiteSettings>): Promise<SiteSettings> {
-  memorySettings = { ...memorySettings, ...updates }
   const db = getFirestoreDB()
   if (db) {
     try {
-      await withFirestoreTimeout(db.collection('siteSettings').doc('general').set(memorySettings, { merge: true }), 15000, 'siteSettings.update')
+      const docRef = db.collection('siteSettings').doc('general')
+      const doc = await withFirestoreTimeout(docRef.get(), 15000, 'siteSettings.getBeforeUpdate')
+      const current = doc.exists ? (doc.data() as SiteSettings) : memorySettings
+      const merged: SiteSettings = { ...seedSiteSettings, ...current, ...updates }
+      await withFirestoreTimeout(docRef.set(merged, { merge: true }), 15000, 'siteSettings.update')
+      memorySettings = { ...merged }
+      return merged
     } catch (err) {
       console.error('[Content Repo] Save SiteSettings error:', err)
       if (!allowMemoryFallback()) {
@@ -515,6 +526,7 @@ export async function updateSiteSettings(updates: Partial<SiteSettings>): Promis
     throw new Error('Database is required in production but Firestore is not configured.')
   }
 
+  memorySettings = { ...seedSiteSettings, ...memorySettings, ...updates }
   return { ...memorySettings }
 }
 

@@ -299,6 +299,84 @@ button {
 }
 
 /* =============================================
+   RESPONSIVE BUTTON GROUPS & FORM ACTIONS
+   ============================================= */
+.admin-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .btn-primary,
+  .btn-outline,
+  .btn-outline-white {
+    white-space: normal !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-btn-group {
+    width: 100% !important;
+    gap: 0.5rem !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  .admin-btn-group > button,
+  .admin-btn-group > a,
+  .admin-btn-group .btn-primary {
+    flex: 1 1 auto !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    text-align: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    padding: 8px 14px !important;
+    font-size: 0.8rem !important;
+    letter-spacing: 0.03em !important;
+  }
+
+  .admin-form-actions {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+    gap: 0.6rem !important;
+    width: 100% !important;
+  }
+
+  .admin-form-actions > button,
+  .admin-form-actions > a,
+  .admin-form-actions .btn-primary,
+  .admin-form-actions .btn-outline,
+  .admin-form-actions .btn-outline-white {
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    box-sizing: border-box !important;
+    min-height: 42px !important;
+    padding: 10px 16px !important;
+    font-size: 0.84rem !important;
+    letter-spacing: 0.04em !important;
+  }
+}
+
+
+/* =============================================
    NAVBAR (LIQUID GLASS FLOATING PILL & COMPACT MOBILE)
    ============================================= */
 .navbar {

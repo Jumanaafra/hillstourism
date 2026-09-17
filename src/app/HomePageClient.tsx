@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import dynamic from 'next/dynamic'
-import type { Package, Hotel, Vehicle } from '@/types/domain'
+import type { Package, Hotel, Vehicle, SiteSettings } from '@/types/domain'
 import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
 
 // Layout & Section components
@@ -32,6 +32,7 @@ interface HomePageClientProps {
   initialHotels?: Hotel[]
   initialVehicles?: Vehicle[]
   initialGalleryPhotos?: GalleryPhoto[]
+  initialSettings?: SiteSettings
 }
 
 export default function HomePageClient({
@@ -39,6 +40,7 @@ export default function HomePageClient({
   initialHotels,
   initialVehicles,
   initialGalleryPhotos,
+  initialSettings,
 }: HomePageClientProps) {
   const [showLoader, setShowLoader] = useState(true)
 
@@ -115,7 +117,7 @@ export default function HomePageClient({
       </main>
 
       {/* Footer */}
-      <Footer id="footer" />
+      <Footer id="footer" settings={initialSettings} />
 
       {/* HillGuide grounded chatbot */}
       <HillGuide />

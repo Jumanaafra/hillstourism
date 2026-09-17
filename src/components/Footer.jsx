@@ -54,8 +54,37 @@ const DEFAULT_FOOTER_SOCIALS = [
   { id: 'social-whatsapp', platform: 'whatsapp', url: "https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism.", label: '+91 99990 00000' },
 ]
 
-export default function Footer({ id, socialLinks = DEFAULT_FOOTER_SOCIALS, whatsappUrl = "https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism." }) {
-  const activeSocials = Array.isArray(socialLinks) && socialLinks.length > 0 ? socialLinks : DEFAULT_FOOTER_SOCIALS
+/**
+ * @param {{
+ *   id?: string,
+ *   settings?: import('@/types/domain').SiteSettings | null,
+ *   socialLinks?: Array<{ id: string, platform: string, url: string, label?: string }>,
+ *   whatsappUrl?: string
+ * }} props
+ */
+export default function Footer({
+  id,
+  settings = null,
+  socialLinks = DEFAULT_FOOTER_SOCIALS,
+  whatsappUrl = "https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism."
+}) {
+  const displayAddress = settings?.address || '12 Mountain View Rd, Nilgiri Highlands, India'
+  const displayPhone = settings?.contactPhone || '+91 99990 00000'
+  const cleanPhone = displayPhone.replace(/[^0-9+]/g, '')
+  const displayEmail = settings?.contactEmail || 'contact@hillstourism.com'
+  const computedWhatsappUrl = settings?.whatsappNumber
+    ? `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism.`
+    : whatsappUrl
+
+  const baseSocials = Array.isArray(socialLinks) && socialLinks.length > 0 ? socialLinks : DEFAULT_FOOTER_SOCIALS
+  const activeSocials = [...baseSocials]
+  if (settings?.instagram && !activeSocials.some(s => s.platform === 'instagram')) {
+    activeSocials.push({ id: 'social-instagram', platform: 'instagram', url: settings.instagram, label: '@hillstourism' })
+  }
+  if (settings?.facebook && !activeSocials.some(s => s.platform === 'facebook')) {
+    activeSocials.push({ id: 'social-facebook', platform: 'facebook', url: settings.facebook, label: 'facebook.com/hillstourism' })
+  }
+
   const [openSection, setOpenSection] = useState(null)
 
   const toggleSection = (key) => {
@@ -134,7 +163,7 @@ export default function Footer({ id, socialLinks = DEFAULT_FOOTER_SOCIALS, whats
 
             {/* WhatsApp CTA */}
             <a
-              href={whatsappUrl}
+              href={computedWhatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary"
@@ -182,15 +211,15 @@ export default function Footer({ id, socialLinks = DEFAULT_FOOTER_SOCIALS, whats
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
                 <p style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                   <FaMapMarkerAlt style={{ color: 'var(--hill-blue-bright)', marginTop: 3, flexShrink: 0 }} />
-                  <span>12 Mountain View Rd, Nilgiri Highlands, India</span>
+                  <span>{displayAddress}</span>
                 </p>
-                <a href="tel:+919999000000" className="footer-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <a href={`tel:${cleanPhone}`} className="footer-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FaPhoneAlt style={{ color: 'var(--hill-blue-bright)', flexShrink: 0 }} />
-                  +91 99990 00000
+                  {displayPhone}
                 </a>
-                <a href="mailto:contact@hillstourism.com" className="footer-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <a href={`mailto:${displayEmail}`} className="footer-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FaEnvelope style={{ color: 'var(--hill-blue-bright)', flexShrink: 0 }} />
-                  contact@hillstourism.com
+                  {displayEmail}
                 </a>
                 <div style={{ marginTop: '0.5rem' }}>
                   <Link href="/contact" className="footer-link" style={{ color: 'var(--hill-blue-bright)', fontWeight: 600 }}>
@@ -310,15 +339,15 @@ export default function Footer({ id, socialLinks = DEFAULT_FOOTER_SOCIALS, whats
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', padding: '0.5rem 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)' }}>
                   <p style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                     <FaMapMarkerAlt style={{ color: 'var(--hill-blue-bright)', marginTop: 2, flexShrink: 0 }} />
-                    <span>12 Mountain View Rd, Nilgiri Highlands, India</span>
+                    <span>{displayAddress}</span>
                   </p>
-                  <a href="tel:+919999000000" className="footer-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <a href={`tel:${cleanPhone}`} className="footer-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <FaPhoneAlt style={{ color: 'var(--hill-blue-bright)', flexShrink: 0 }} />
-                    +91 99990 00000
+                    {displayPhone}
                   </a>
-                  <a href="mailto:contact@hillstourism.com" className="footer-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <a href={`mailto:${displayEmail}`} className="footer-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <FaEnvelope style={{ color: 'var(--hill-blue-bright)', flexShrink: 0 }} />
-                    contact@hillstourism.com
+                    {displayEmail}
                   </a>
                   <Link href="/contact" className="btn-primary" style={{ marginTop: '0.5rem', width: '100%', justifyContent: 'center', padding: '0.65rem', fontSize: '0.75rem' }}>
                     Open Enquiry Form

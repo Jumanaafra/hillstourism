@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react'
 import { FiUploadCloud, FiX, FiCheck, FiRefreshCw, FiImage, FiAlertCircle } from 'react-icons/fi'
 import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
+import { useAdminToast } from '@/components/admin/ToastProvider'
 
 export interface ImageUploadFieldProps {
   label?: string
@@ -34,6 +35,12 @@ export default function ImageUploadField({
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  let toast: ReturnType<typeof useAdminToast> | null = null
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    toast = useAdminToast()
+  } catch {}
+
   const handleFileSelect = async (file: File) => {
     if (!file) return
     setUploading(true)
@@ -60,9 +67,12 @@ export default function ImageUploadField({
       }
 
       onChange(json.data.secureUrl, json.data.publicId)
+      toast?.success('Image uploaded to Cloudinary successfully.')
     } catch (err: any) {
       console.error('[ImageUploadField] Upload error:', err)
-      setUploadError(err?.message || 'Upload failed. Please try again.')
+      const errorMsg = err?.message || 'Upload failed. Please try again.'
+      setUploadError(errorMsg)
+      toast?.error(errorMsg)
     } finally {
       setUploading(false)
     }

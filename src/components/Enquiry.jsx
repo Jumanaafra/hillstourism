@@ -21,6 +21,24 @@ const TRIP_TYPES = ['Honeymoon', 'Couple Getaway', 'Family Trip', 'Friends Group
  * @param {any[]} [props.initialHotels]
  * @param {any[]} [props.initialVehicles]
  */
+const Field = ({ id: fid, label, required, error, children }) => (
+  <div className={`form-field-wrapper ${error ? 'has-error' : ''}`}>
+    <label htmlFor={fid} className="form-label">
+      <span>{label}</span>
+      {required && <span style={{ color: '#38bdf8', marginLeft: '3px' }}>*</span>}
+    </label>
+    <div className="form-input-container">
+      {children}
+    </div>
+    {error && (
+      <p id={`${fid}-error`} role="alert" className="form-error-msg">
+        <FiAlertCircle style={{ fontSize: '0.75rem', flexShrink: 0 }} />
+        <span>{error}</span>
+      </p>
+    )}
+  </div>
+)
+
 export default function Enquiry({
   id = '',
   initialPackageId = '',
@@ -146,24 +164,6 @@ export default function Enquiry({
 
   const whatsappText = encodeURIComponent(
     `Hi! I'd like to plan a trip.\nName: ${form.name}\nPhone: ${form.phone}\nDate: ${form.travelDate}\nGroup: ${form.groupSize} people\nTrip Type: ${form.tripType}\nPackage: ${form.package || 'Not specified'}\n\n${form.message}`
-  )
-
-  const Field = ({ id: fid, label, required, error, children }) => (
-    <div className={`form-field-wrapper ${error ? 'has-error' : ''}`}>
-      <label htmlFor={fid} className="form-label">
-        <span>{label}</span>
-        {required && <span style={{ color: '#38bdf8', marginLeft: '3px' }}>*</span>}
-      </label>
-      <div className="form-input-container">
-        {children}
-      </div>
-      {error && (
-        <p id={`${fid}-error`} role="alert" className="form-error-msg">
-          <FiAlertCircle style={{ fontSize: '0.75rem', flexShrink: 0 }} />
-          <span>{error}</span>
-        </p>
-      )}
-    </div>
   )
 
   return (

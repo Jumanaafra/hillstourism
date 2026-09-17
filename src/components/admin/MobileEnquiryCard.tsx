@@ -357,6 +357,7 @@ export default function MobileEnquiryCard({
           justifyContent: 'space-between',
           alignItems: 'center',
           gap: '8px',
+          flexWrap: 'wrap',
           paddingTop: '0.65rem',
           borderTop: '1px solid var(--admin-border, rgba(255, 255, 255, 0.08))',
           marginTop: 'auto',

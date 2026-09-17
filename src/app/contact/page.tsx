@@ -5,6 +5,7 @@ import Enquiry from '@/components/Enquiry'
 import LazyHillGuide from '@/components/LazyHillGuide'
 import { getCanonicalUrl } from '@/lib/seo/siteUrl'
 import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
+import { getSiteSettings } from '@/lib/repositories/content.repo'
 import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, FaWhatsapp, FaShieldAlt, FaClock } from 'react-icons/fa'
 
 export const revalidate = 3600
@@ -30,7 +31,14 @@ export async function generateMetadata(): Promise<Metadata> {
   return resolvePageMetadata('/contact', defaultMeta)
 }
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const settings = await getSiteSettings().catch(() => null)
+  const contactPhone = settings?.contactPhone || '+91 99990 00000'
+  const cleanPhone = contactPhone.replace(/[^0-9+]/g, '')
+  const whatsappUrl = settings?.whatsappNumber
+    ? `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism.`
+    : "https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism."
+
   return (
     <>
       <Navbar />
@@ -78,7 +86,7 @@ export default function ContactPage() {
             margin: '0 auto',
           }}>
             <a
-              href="https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism."
+              href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary"
@@ -93,7 +101,7 @@ export default function ContactPage() {
               <FaWhatsapp size={16} /> Chat on WhatsApp
             </a>
             <a
-              href="tel:+919999000000"
+              href={`tel:${cleanPhone}`}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -108,7 +116,7 @@ export default function ContactPage() {
                 fontWeight: 600,
               }}
             >
-              <FaPhoneAlt size={14} style={{ color: 'var(--hill-blue-bright)' }} /> +91 99990 00000
+              <FaPhoneAlt size={14} style={{ color: 'var(--hill-blue-bright)' }} /> {contactPhone}
             </a>
           </div>
         </section>
@@ -205,7 +213,7 @@ export default function ContactPage() {
         </section>
 
       </main>
-      <Footer id="footer" />
+      <Footer id="footer" settings={settings} />
       <LazyHillGuide />
     </>
   )

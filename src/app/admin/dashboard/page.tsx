@@ -14,12 +14,14 @@ import AuditLogModal from '@/components/admin/AuditLogModal'
 import ThemeToggle from '@/components/admin/ThemeToggle'
 import { useAdminTheme } from '@/context/AdminThemeContext'
 import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
+import ToastProvider, { useAdminToast } from '@/components/admin/ToastProvider'
 import { FiCheck, FiAlertTriangle, FiMail, FiBarChart2, FiStar, FiCalendar, FiArrowUpRight, FiX, FiArrowRight, FiPlus, FiTrash2, FiEdit2, FiCopy, FiGlobe, FiShare2, FiExternalLink, FiRefreshCw, FiPhone, FiEye, FiMapPin, FiUser, FiSend, FiClock, FiActivity, FiShield, FiTrendingUp } from 'react-icons/fi'
 import { FaStar, FaWhatsapp, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from 'react-icons/fa'
 
 type Tab = 'overview' | 'enquiries' | 'packages' | 'hotels' | 'vehicles' | 'gallery' | 'content' | 'knowledge' | 'library' | 'social' | 'seo' | 'settings'
 
-export default function AdminDashboardPage() {
+function AdminDashboardContent() {
+  const toast = useAdminToast()
   const { syncFromFirestore } = useAdminTheme()
   const [token, setToken] = useState(() => {
     if (typeof document !== 'undefined') {
@@ -151,24 +153,32 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const fetchContent = async () => {
+  const fetchContent = async (showFeedback = false) => {
     try {
-      const res = await fetch('/api/admin/content', { headers })
+      const res = await fetch(`/api/admin/content?_t=${Date.now()}`, { headers, cache: 'no-store' })
       const data = await res.json()
       if (data.success) {
         setContentData(data.data)
         if (data.data?.settings?.theme) {
           syncFromFirestore(data.data.settings.theme)
         }
+        if (showFeedback) {
+          toast.success('Site settings and content refreshed from server.')
+        }
+      } else if (showFeedback) {
+        toast.error(data.error?.message || 'Failed to refresh content.')
       }
     } catch (err) {
       console.error('Failed to load content:', err)
+      if (showFeedback) {
+        toast.error('Network error while refreshing content.')
+      }
     }
   }
 
   const fetchKnowledge = async () => {
     try {
-      const res = await fetch('/api/admin/chat-knowledge', { headers })
+      const res = await fetch(`/api/admin/chat-knowledge?_t=${Date.now()}`, { headers, cache: 'no-store' })
       const data = await res.json()
       if (data.success) setKnowledge(data.data || [])
     } catch (err) {
@@ -178,7 +188,7 @@ export default function AdminDashboardPage() {
 
   const fetchSocialLinks = async () => {
     try {
-      const res = await fetch('/api/admin/social', { headers })
+      const res = await fetch(`/api/admin/social?_t=${Date.now()}`, { headers, cache: 'no-store' })
       const data = await res.json()
       if (data.success && Array.isArray(data.data)) {
         setSocialList(data.data)
@@ -190,7 +200,7 @@ export default function AdminDashboardPage() {
 
   const fetchSEOList = async () => {
     try {
-      const res = await fetch('/api/admin/seo', { headers })
+      const res = await fetch(`/api/admin/seo?_t=${Date.now()}`, { headers, cache: 'no-store' })
       const data = await res.json()
       if (data.success && Array.isArray(data.data)) {
         setSeoList(data.data)
@@ -219,6 +229,11 @@ export default function AdminDashboardPage() {
 
   const showMsg = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text })
+    if (type === 'success') {
+      toast.success(text)
+    } else {
+      toast.error(text)
+    }
     setTimeout(() => setMessage(null), 5000)
   }
 
@@ -366,41 +381,47 @@ export default function AdminDashboardPage() {
 
   const handleCreateHotel = async (e: React.FormEvent) => {
     e.preventDefault()
+    const toastId = toast.loading('Creating hotel...')
     try {
       const res = await fetch('/api/admin/hotels', {
         method: 'POST', headers,
         body: JSON.stringify({ ...newHotel, amenities: newHotel.amenities.split(',').map(s => s.trim()).filter(Boolean) }),
       })
       const data = await res.json()
+      toast.dismiss(toastId)
       if (data.success) {
-        showMsg('success', `Hotel "${newHotel.name}" created!`)
+        showMsg('success', `Hotel "${newHotel.name}" created successfully!`)
         setNewHotel({ name: '', location: '', category: 'Normal', pricePerNight: '₹3,500', amenities: 'Mountain View, Wi-Fi', image: '' })
         fetchAllData()
       } else {
         showMsg('error', data.error?.message || 'Failed to create hotel.')
       }
     } catch (err: any) {
-      showMsg('error', err?.message || 'Network error.')
+      toast.dismiss(toastId)
+      showMsg('error', err?.message || 'Network error while creating hotel.')
     }
   }
 
   const handleCreateVehicle = async (e: React.FormEvent) => {
     e.preventDefault()
+    const toastId = toast.loading('Registering fleet vehicle...')
     try {
       const res = await fetch('/api/admin/vehicles', {
         method: 'POST', headers,
         body: JSON.stringify(newVehicle),
       })
       const data = await res.json()
+      toast.dismiss(toastId)
       if (data.success) {
-        showMsg('success', `Vehicle "${newVehicle.numberPlate}" added!`)
+        showMsg('success', `Vehicle "${newVehicle.numberPlate}" added successfully!`)
         setNewVehicle({ name: '', numberPlate: '', type: 'SUV', capacity: 7, image: '' })
         fetchAllData()
       } else {
         showMsg('error', data.error?.message || 'Failed to add vehicle.')
       }
     } catch (err: any) {
-      showMsg('error', err?.message || 'Network error.')
+      toast.dismiss(toastId)
+      showMsg('error', err?.message || 'Network error while registering vehicle.')
     }
   }
 
@@ -425,20 +446,49 @@ export default function AdminDashboardPage() {
   }
 
   const handleDeleteHotel = async (id: string) => {
-    if (!confirm('Delete this hotel?')) return
-    await fetch(`/api/admin/hotels?id=${id}`, { method: 'DELETE', headers })
-    fetchAllData()
+    if (!confirm('Are you sure you want to delete this hotel? This action cannot be undone.')) return
+    const toastId = toast.loading('Deleting hotel...')
+    try {
+      const res = await fetch(`/api/admin/hotels?id=${id}`, { method: 'DELETE', headers })
+      const data = await res.json()
+      toast.dismiss(toastId)
+      if (data.success) {
+        showMsg('success', 'Hotel deleted successfully.')
+        if (editingHotel?.id === id) setEditingHotel(null)
+        fetchAllData()
+      } else {
+        showMsg('error', data.error?.message || 'Failed to delete hotel.')
+      }
+    } catch (err: any) {
+      toast.dismiss(toastId)
+      showMsg('error', err?.message || 'Network error while deleting hotel.')
+    }
   }
 
   const handleDeleteVehicle = async (id: string) => {
-    if (!confirm('Delete this vehicle?')) return
-    await fetch(`/api/admin/vehicles?id=${id}`, { method: 'DELETE', headers })
-    fetchAllData()
+    if (!confirm('Are you sure you want to delete this vehicle? This action cannot be undone.')) return
+    const toastId = toast.loading('Deleting vehicle...')
+    try {
+      const res = await fetch(`/api/admin/vehicles?id=${id}`, { method: 'DELETE', headers })
+      const data = await res.json()
+      toast.dismiss(toastId)
+      if (data.success) {
+        showMsg('success', 'Vehicle deleted successfully.')
+        if (editingVehicle?.id === id) setEditingVehicle(null)
+        fetchAllData()
+      } else {
+        showMsg('error', data.error?.message || 'Failed to delete vehicle.')
+      }
+    } catch (err: any) {
+      toast.dismiss(toastId)
+      showMsg('error', err?.message || 'Network error while deleting vehicle.')
+    }
   }
 
   const handleUpdateHotel = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingHotel) return
+    const toastId = toast.loading('Saving hotel changes...')
     try {
       const res = await fetch('/api/admin/hotels', {
         method: 'PATCH',
@@ -446,21 +496,24 @@ export default function AdminDashboardPage() {
         body: JSON.stringify(editingHotel),
       })
       const data = await res.json()
+      toast.dismiss(toastId)
       if (data.success) {
-        showMsg('success', `Hotel "${editingHotel.name}" updated!`)
+        showMsg('success', `Hotel "${editingHotel.name}" updated successfully!`)
         setEditingHotel(null)
         fetchAllData()
       } else {
         showMsg('error', data.error?.message || 'Failed to update hotel.')
       }
     } catch (err: any) {
-      showMsg('error', err?.message || 'Network error.')
+      toast.dismiss(toastId)
+      showMsg('error', err?.message || 'Network error while updating hotel.')
     }
   }
 
   const handleUpdateVehicle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingVehicle) return
+    const toastId = toast.loading('Updating vehicle details...')
     try {
       const res = await fetch('/api/admin/vehicles', {
         method: 'PATCH',
@@ -468,15 +521,17 @@ export default function AdminDashboardPage() {
         body: JSON.stringify(editingVehicle),
       })
       const data = await res.json()
+      toast.dismiss(toastId)
       if (data.success) {
-        showMsg('success', `Vehicle "${editingVehicle.name}" updated!`)
+        showMsg('success', `Vehicle "${editingVehicle.name}" updated successfully!`)
         setEditingVehicle(null)
         fetchAllData()
       } else {
         showMsg('error', data.error?.message || 'Failed to update vehicle.')
       }
     } catch (err: any) {
-      showMsg('error', err?.message || 'Network error.')
+      toast.dismiss(toastId)
+      showMsg('error', err?.message || 'Network error while updating vehicle.')
     }
   }
 
@@ -751,22 +806,35 @@ export default function AdminDashboardPage() {
     }
   }
 
+  const [savingSettings, setSavingSettings] = useState(false)
+
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!contentData?.settings) return
+    if (!contentData?.settings || savingSettings) return
+    setSavingSettings(true)
+    const toastId = toast.loading('Saving general settings...')
     try {
       const res = await fetch('/api/admin/content', {
-        method: 'PATCH', headers,
+        method: 'PATCH',
+        headers,
         body: JSON.stringify({ type: 'settings', ...contentData.settings }),
       })
       const data = await res.json()
+      toast.dismiss(toastId)
       if (data.success) {
-        showMsg('success', 'Settings updated!')
+        setContentData((prev: any) => ({
+          ...prev,
+          settings: data.data,
+        }))
+        showMsg('success', 'General settings updated successfully!')
       } else {
         showMsg('error', data.error?.message || 'Failed to update settings.')
       }
     } catch (err: any) {
-      showMsg('error', err?.message || 'Network error.')
+      toast.dismiss(toastId)
+      showMsg('error', err?.message || 'Network error while saving settings.')
+    } finally {
+      setSavingSettings(false)
     }
   }
 
@@ -845,8 +913,9 @@ export default function AdminDashboardPage() {
       }
     }
 
+    const isCreate = !editingPackage.id
+    const toastId = toast.loading(isCreate ? 'Creating package...' : 'Saving package changes...')
     try {
-      const isCreate = !editingPackage.id
       const url = '/api/admin/packages'
       const method = isCreate ? 'POST' : 'PATCH'
 
@@ -861,6 +930,7 @@ export default function AdminDashboardPage() {
         body: JSON.stringify(payload),
       })
       const data = await res.json()
+      toast.dismiss(toastId)
       if (data.success) {
         showMsg('success', `Package "${editingPackage.name}" saved successfully!`)
         setEditingPackage(null)
@@ -869,24 +939,28 @@ export default function AdminDashboardPage() {
         showMsg('error', data.error?.message || 'Failed to save package.')
       }
     } catch (err: any) {
-      showMsg('error', err?.message || 'Network error.')
+      toast.dismiss(toastId)
+      showMsg('error', err?.message || 'Network error while saving package.')
     }
   }
 
   const handleDeletePackage = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this package?')) return
+    if (!confirm('Are you sure you want to delete this package? This will permanently remove it from the catalog.')) return
+    const toastId = toast.loading('Deleting package...')
     try {
       const res = await fetch(`/api/admin/packages?id=${id}`, { method: 'DELETE', headers })
       const data = await res.json()
+      toast.dismiss(toastId)
       if (data.success) {
-        showMsg('success', 'Package deleted.')
+        showMsg('success', 'Package deleted successfully.')
         if (editingPackage?.id === id) setEditingPackage(null)
         fetchAllData()
       } else {
         showMsg('error', data.error?.message || 'Failed to delete package.')
       }
     } catch (err: any) {
-      showMsg('error', err?.message || 'Network error.')
+      toast.dismiss(toastId)
+      showMsg('error', err?.message || 'Network error while deleting package.')
     }
   }
 
@@ -974,7 +1048,7 @@ export default function AdminDashboardPage() {
   })
 
   // ── Shared Styles ──
-  const cardStyle: React.CSSProperties = { background: 'var(--admin-card)', padding: 'clamp(1rem, 2.5vw, 1.5rem)', borderRadius: '12px', border: '1px solid var(--admin-card-border)' }
+  const cardStyle: React.CSSProperties = { background: 'var(--admin-card)', padding: 'clamp(1rem, 2.5vw, 1.5rem)', borderRadius: '12px', border: '1px solid var(--admin-card-border)', maxWidth: '100%', boxSizing: 'border-box', overflowX: 'hidden' }
   const inputStyle: React.CSSProperties = { padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', width: '100%' }
   const statStyle: React.CSSProperties = { ...cardStyle, padding: 'clamp(0.85rem, 2vw, 1.25rem)' }
 
@@ -1546,7 +1620,7 @@ export default function AdminDashboardPage() {
                       {editingPackage.id ? `Edit Package: ${editingPackage.name}` : 'Create New Journey Package'}
                     </h3>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <div className="admin-btn-group" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={() => setEditingPackage(null)}
@@ -1797,7 +1871,7 @@ export default function AdminDashboardPage() {
                           >
                             {/* Day Header Controls */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--hill-blue-bright)', fontWeight: 700 }}>Day:</span>
                                 <input
                                   type="number"
@@ -1813,11 +1887,11 @@ export default function AdminDashboardPage() {
                                   placeholder="Day Title *"
                                   value={dayItem.title}
                                   onChange={e => updateItineraryDay(index, 'title', e.target.value)}
-                                  style={{ ...inputStyle, width: 'clamp(200px, 30vw, 360px)', padding: '4px 8px', fontSize: '0.85rem', fontWeight: 600 }}
+                                  style={{ ...inputStyle, flex: '1 1 180px', minWidth: '0', padding: '4px 8px', fontSize: '0.85rem', fontWeight: 600 }}
                                 />
                               </div>
 
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                 <button
                                   type="button"
                                   disabled={index === 0}
@@ -2117,7 +2191,7 @@ export default function AdminDashboardPage() {
                   </div>
 
                   {/* Save / Cancel Footer */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.25rem' }}>
+                  <div className="admin-form-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.25rem' }}>
                     <button
                       type="button"
                       onClick={() => setEditingPackage(null)}
@@ -2150,15 +2224,15 @@ export default function AdminDashboardPage() {
               <button
                 onClick={handleStartCreatePackage}
                 className="btn-primary"
-                style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                style={{ minHeight: '44px', padding: '10px 18px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                + Create New Package
+                <FiPlus size={15} /> Create New Package
               </button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
               {packages.map(p => (
-                <div key={p.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
+                <div key={p.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                     <div>
                       <span style={{ fontSize: '0.65rem', color: 'var(--hill-blue-bright)', fontWeight: 700, textTransform: 'uppercase' }}>
@@ -2195,28 +2269,28 @@ export default function AdminDashboardPage() {
                   )}
 
                   {/* Card Actions */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)', flexWrap: 'wrap', gap: '8px' }}>
                     <button
                       onClick={() => setEditingPackage(JSON.parse(JSON.stringify(p)))}
                       className="btn-primary"
-                      style={{ padding: '6px 12px', fontSize: '0.75rem' }}
+                      style={{ minHeight: '44px', padding: '8px 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     >
-                      Edit Itinerary & Details
+                      <FiEdit2 size={13} /> Edit Itinerary & Details
                     </button>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <a
                         href={`/packages/${p.slug || p.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ fontSize: '0.75rem', color: 'var(--hill-blue-bright)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+                        style={{ minHeight: '44px', minWidth: '44px', padding: '8px 12px', fontSize: '0.8rem', color: 'var(--hill-blue-bright)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', border: '1px solid var(--admin-border)', background: 'var(--admin-surface-alt)' }}
                       >
                         View <FiArrowUpRight style={{ marginLeft: 2 }} />
                       </a>
                       <button
                         onClick={() => handleDeletePackage(p.id)}
-                        style={{ color: '#EF4444', border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
+                        style={{ minHeight: '44px', minWidth: '44px', padding: '8px 12px', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.1)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
                       >
-                        Delete
+                        <FiTrash2 size={13} /> Delete
                       </button>
                     </div>
                   </div>
@@ -2338,7 +2412,7 @@ export default function AdminDashboardPage() {
                     />
                     <label htmlFor="editHotelActive" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>Active (Visible on public site)</label>
                   </div>
-                  <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
+                  <div className="admin-form-actions" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
                     <button type="button" onClick={() => setEditingHotel(null)} style={{ padding: '8px 18px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', cursor: 'pointer' }}>
                       Cancel
                     </button>
@@ -2365,14 +2439,14 @@ export default function AdminDashboardPage() {
                 </select>
                 <input type="text" placeholder="Price Per Night (e.g. ₹3,500)" value={newHotel.pricePerNight} onChange={e => setNewHotel({ ...newHotel, pricePerNight: e.target.value })} style={inputStyle} />
                 <input type="text" placeholder="Amenities (comma-separated)" value={newHotel.amenities} onChange={e => setNewHotel({ ...newHotel, amenities: e.target.value })} style={inputStyle} />
-                <button type="submit" className="btn-primary" style={{ padding: '8px 18px', fontSize: '0.85rem' }}>Create Hotel</button>
+                <button type="submit" className="btn-primary" style={{ minHeight: '44px', padding: '10px 20px', fontSize: '0.85rem' }}>Create Hotel</button>
               </form>
             </div>
 
             {/* Hotels Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
               {hotels.map(h => (
-                <div key={h.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
+                <div key={h.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                   {h.image && (
                     <div style={{ width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', marginBottom: '1rem' }}>
                       <img src={getOptimizedImageUrl(h.image, { width: 400, height: 240, crop: 'fill' })} alt={h.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -2407,20 +2481,20 @@ export default function AdminDashboardPage() {
                       )}
                     </div>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap', gap: '8px' }}>
                     <p style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F59E0B' }}>{h.pricePerNight}</p>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <button
                         onClick={() => setEditingHotel(JSON.parse(JSON.stringify(h)))}
-                        style={{ color: 'var(--hill-blue-bright)', border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                        style={{ minHeight: '44px', padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--admin-brand, #0878FF)', background: 'rgba(8, 120, 255, 0.1)', color: 'var(--hill-blue-bright)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                       >
-                        Edit
+                        <FiEdit2 size={13} /> Edit
                       </button>
                       <button
                         onClick={() => handleDeleteHotel(h.id)}
-                        style={{ color: '#EF4444', border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                        style={{ minHeight: '44px', padding: '8px 14px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                       >
-                        Delete
+                        <FiTrash2 size={13} /> Delete
                       </button>
                     </div>
                   </div>
@@ -2511,7 +2585,7 @@ export default function AdminDashboardPage() {
                     />
                     <label htmlFor="editVehicleActive" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>Active (Available in fleet)</label>
                   </div>
-                  <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
+                  <div className="admin-form-actions" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
                     <button type="button" onClick={() => setEditingVehicle(null)} style={{ padding: '8px 18px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', cursor: 'pointer' }}>
                       Cancel
                     </button>
@@ -2538,14 +2612,14 @@ export default function AdminDashboardPage() {
                   <option value="Luxury Coach">Luxury Coach</option>
                 </select>
                 <input type="number" placeholder="Capacity (Seats)" min={1} max={50} value={newVehicle.capacity} onChange={e => setNewVehicle({ ...newVehicle, capacity: parseInt(e.target.value) || 4 })} style={inputStyle} />
-                <button type="submit" className="btn-primary" style={{ padding: '8px 18px', fontSize: '0.85rem' }}>Register Vehicle</button>
+                <button type="submit" className="btn-primary" style={{ minHeight: '44px', padding: '10px 20px', fontSize: '0.85rem' }}>Register Vehicle</button>
               </form>
             </div>
 
             {/* Vehicles Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
               {vehicles.map(v => (
-                <div key={v.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column' }}>
+                <div key={v.id} style={{ ...cardStyle, display: 'flex', flexDirection: 'column', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                   {v.image && (
                     <div style={{ width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', marginBottom: '1rem' }}>
                       <img src={getOptimizedImageUrl(v.image, { width: 400, height: 240, crop: 'fill' })} alt={v.name} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -2555,7 +2629,22 @@ export default function AdminDashboardPage() {
                     <div>
                       <span style={{ fontSize: '0.65rem', color: 'var(--hill-blue-bright)', fontWeight: 700 }}>{v.type} · {v.capacity} Seats</span>
                       <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 700, margin: '4px 0' }}>{v.name}</h4>
-                      <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#F59E0B' }}>{v.numberPlate}</p>
+                      <div style={{
+                        marginTop: '4px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        background: 'rgba(245, 158, 11, 0.12)',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        fontFamily: 'monospace',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: '#F59E0B',
+                        letterSpacing: '0.04em'
+                      }}>
+                        {v.numberPlate}
+                      </div>
                     </div>
                     <span style={{ padding: '2px 8px', borderRadius: '4px', background: v.active !== false ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', color: v.active !== false ? '#86EFAC' : '#FCA5A5', fontSize: '0.65rem' }}>
                       {v.active !== false ? 'Active' : 'Inactive'}
@@ -2567,20 +2656,20 @@ export default function AdminDashboardPage() {
                   {v.idealFor && (
                     <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Ideal for: {v.idealFor}</p>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap', gap: '8px' }}>
                     <span style={{ fontSize: '0.75rem', color: '#86EFAC' }}>{v.priceNote || 'Included in packages'}</span>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <button
                         onClick={() => setEditingVehicle(JSON.parse(JSON.stringify(v)))}
-                        style={{ color: 'var(--hill-blue-bright)', border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                        style={{ minHeight: '44px', padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--admin-brand, #0878FF)', background: 'rgba(8, 120, 255, 0.1)', color: 'var(--hill-blue-bright)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                       >
-                        Edit
+                        <FiEdit2 size={13} /> Edit
                       </button>
                       <button
                         onClick={() => handleDeleteVehicle(v.id)}
-                        style={{ color: '#EF4444', border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                        style={{ minHeight: '44px', padding: '8px 14px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                       >
-                        Delete
+                        <FiTrash2 size={13} /> Delete
                       </button>
                     </div>
                   </div>
@@ -2648,7 +2737,7 @@ export default function AdminDashboardPage() {
                     />
                     <label htmlFor="editGalActive" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>Active (Visible in gallery)</label>
                   </div>
-                  <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
+                  <div className="admin-form-actions" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
                     <button type="button" onClick={() => setEditingGalleryPhoto(null)} style={{ padding: '8px 18px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', cursor: 'pointer' }}>
                       Cancel
                     </button>
@@ -2848,7 +2937,7 @@ export default function AdminDashboardPage() {
                     <div style={{ gridColumn: '1 / -1' }}>
                       <textarea rows={2} value={editingCategory.description || ''} onChange={e => setEditingCategory({ ...editingCategory, description: e.target.value })} style={{ ...inputStyle, resize: 'vertical' }} />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', gridColumn: '1 / -1', justifyContent: 'flex-end' }}>
+                    <div className="admin-form-actions" style={{ display: 'flex', gap: '10px', gridColumn: '1 / -1', justifyContent: 'flex-end' }}>
                       <button type="button" onClick={() => setEditingCategory(null)} style={{ padding: '6px 14px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '6px' }}>Cancel</button>
                       <button type="submit" className="btn-primary" style={{ padding: '6px 18px', fontSize: '0.8rem' }}>Save Changes</button>
                     </div>
@@ -2978,7 +3067,7 @@ export default function AdminDashboardPage() {
                     <div style={{ gridColumn: '1 / -1' }}>
                       <textarea rows={3} value={editingTestimonial.review} onChange={e => setEditingTestimonial({ ...editingTestimonial, review: e.target.value })} style={{ ...inputStyle, resize: 'vertical' }} />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', gridColumn: '1 / -1', justifyContent: 'flex-end' }}>
+                    <div className="admin-form-actions" style={{ display: 'flex', gap: '10px', gridColumn: '1 / -1', justifyContent: 'flex-end' }}>
                       <button type="button" onClick={() => setEditingTestimonial(null)} style={{ padding: '6px 14px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '6px' }}>Cancel</button>
                       <button type="submit" className="btn-primary" style={{ padding: '6px 18px', fontSize: '0.8rem' }}>Save Changes</button>
                     </div>
@@ -3116,7 +3205,7 @@ export default function AdminDashboardPage() {
                     <div style={{ gridColumn: '1 / -1' }}>
                       <textarea rows={2} value={editingExperience.description} onChange={e => setEditingExperience({ ...editingExperience, description: e.target.value })} style={{ ...inputStyle, resize: 'vertical' }} />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', gridColumn: '1 / -1', justifyContent: 'flex-end' }}>
+                    <div className="admin-form-actions" style={{ display: 'flex', gap: '10px', gridColumn: '1 / -1', justifyContent: 'flex-end' }}>
                       <button type="button" onClick={() => setEditingExperience(null)} style={{ padding: '6px 14px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '6px' }}>Cancel</button>
                       <button type="submit" className="btn-primary" style={{ padding: '6px 18px', fontSize: '0.8rem' }}>Save Changes</button>
                     </div>
@@ -3417,7 +3506,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                    <div className="admin-form-actions" style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                       <button
                         type="button"
                         className="btn-outline-white"
@@ -4047,32 +4136,265 @@ export default function AdminDashboardPage() {
 
             {/* General Site Settings */}
             <div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--admin-text)' }}>
-                General Site Settings
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, color: 'var(--admin-text)' }}>
+                    General Site Settings
+                  </h3>
+                  <p style={{ color: 'var(--admin-text-muted)', fontSize: '0.8rem', marginTop: '2px' }}>
+                    Source of truth for public website headers, footers, contact details, and social links.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fetchContent(true)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    minHeight: '44px',
+                    padding: '8px 14px',
+                    fontSize: '0.8rem',
+                    borderRadius: '6px',
+                    border: '1px solid var(--admin-border)',
+                    background: 'var(--admin-surface-alt)',
+                    color: 'var(--admin-text)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <FiRefreshCw size={13} /> Refresh from Server
+                </button>
+              </div>
+
               {contentData?.settings ? (
                 <form onSubmit={handleUpdateSettings} style={cardStyle}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                    {Object.entries(contentData.settings)
-                      .filter(([key]) => key !== 'theme')
-                      .map(([key, val]) => (
-                      <div key={key}>
+                  {/* Brand & Identity */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '0.85rem', color: 'var(--admin-brand, #0878FF)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.85rem' }}>
+                      Brand & Identity
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1rem' }}>
+                      <div>
                         <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
+                          Site Name
                         </label>
                         <input
                           type="text"
-                          value={String(val)}
+                          value={contentData.settings.siteName ?? ''}
                           onChange={e => setContentData({
                             ...contentData,
-                            settings: { ...contentData.settings, [key]: e.target.value },
+                            settings: { ...contentData.settings, siteName: e.target.value },
                           })}
                           style={inputStyle}
+                          placeholder="Hills Tourism"
                         />
                       </div>
-                    ))}
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
+                          Tagline
+                        </label>
+                        <input
+                          type="text"
+                          value={contentData.settings.tagline ?? ''}
+                          onChange={e => setContentData({
+                            ...contentData,
+                            settings: { ...contentData.settings, tagline: e.target.value },
+                          })}
+                          style={inputStyle}
+                          placeholder="Curated Journeys Across the Highlands"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <button type="submit" className="btn-primary" style={{ padding: '10px 24px', fontSize: '0.85rem' }}>Save Settings</button>
+
+                  {/* Contact & Location Details */}
+                  <div style={{ marginBottom: '1.5rem', borderTop: '1px solid var(--admin-card-border, rgba(255,255,255,0.08))', paddingTop: '1.25rem' }}>
+                    <h4 style={{ fontSize: '0.85rem', color: 'var(--admin-brand, #0878FF)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.85rem' }}>
+                      Contact & Communication
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '1rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
+                          Contact Phone
+                        </label>
+                        <input
+                          type="text"
+                          value={contentData.settings.contactPhone ?? contentData.settings.phone ?? ''}
+                          onChange={e => setContentData({
+                            ...contentData,
+                            settings: { ...contentData.settings, contactPhone: e.target.value, phone: e.target.value },
+                          })}
+                          style={inputStyle}
+                          placeholder="+91 94877 75512"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
+                          Contact Email
+                        </label>
+                        <input
+                          type="email"
+                          value={contentData.settings.contactEmail ?? contentData.settings.email ?? ''}
+                          onChange={e => setContentData({
+                            ...contentData,
+                            settings: { ...contentData.settings, contactEmail: e.target.value, email: e.target.value },
+                          })}
+                          style={inputStyle}
+                          placeholder="hillstourism.in@gmail.com"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
+                          WhatsApp Number / Phone
+                        </label>
+                        <input
+                          type="text"
+                          value={contentData.settings.whatsappNumber ?? contentData.settings.whatsapp ?? ''}
+                          onChange={e => setContentData({
+                            ...contentData,
+                            settings: { ...contentData.settings, whatsappNumber: e.target.value, whatsapp: e.target.value },
+                          })}
+                          style={inputStyle}
+                          placeholder="+91 94877 75512"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
+                          Business Hours
+                        </label>
+                        <input
+                          type="text"
+                          value={contentData.settings.businessHours ?? ''}
+                          onChange={e => setContentData({
+                            ...contentData,
+                            settings: { ...contentData.settings, businessHours: e.target.value },
+                          })}
+                          style={inputStyle}
+                          placeholder="Mon - Sun: 8:00 AM - 9:00 PM"
+                        />
+                      </div>
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
+                          Office / Base Address
+                        </label>
+                        <input
+                          type="text"
+                          value={contentData.settings.address ?? ''}
+                          onChange={e => setContentData({
+                            ...contentData,
+                            settings: { ...contentData.settings, address: e.target.value },
+                          })}
+                          style={inputStyle}
+                          placeholder="Munnar Main Road, Idukki District, Kerala, India - 685612"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Social Profiles */}
+                  <div style={{ marginBottom: '1.5rem', borderTop: '1px solid var(--admin-card-border, rgba(255,255,255,0.08))', paddingTop: '1.25rem' }}>
+                    <h4 style={{ fontSize: '0.85rem', color: 'var(--admin-brand, #0878FF)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.85rem' }}>
+                      Social Profiles
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '1rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
+                          Instagram Profile URL
+                        </label>
+                        <input
+                          type="url"
+                          value={contentData.settings.instagram ?? ''}
+                          onChange={e => setContentData({
+                            ...contentData,
+                            settings: { ...contentData.settings, instagram: e.target.value },
+                          })}
+                          style={inputStyle}
+                          placeholder="https://instagram.com/hillstourism"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
+                          Facebook Page URL
+                        </label>
+                        <input
+                          type="url"
+                          value={contentData.settings.facebook ?? ''}
+                          onChange={e => setContentData({
+                            ...contentData,
+                            settings: { ...contentData.settings, facebook: e.target.value },
+                          })}
+                          style={inputStyle}
+                          placeholder="https://facebook.com/hillstourism"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Dynamic Settings */}
+                  {Object.entries(contentData.settings).filter(([k]) => ![
+                    'theme', 'siteName', 'tagline', 'contactPhone', 'phone', 'contactEmail',
+                    'email', 'whatsappNumber', 'whatsapp', 'address', 'businessHours',
+                    'instagram', 'facebook', 'updatedAt', 'createdAt', 'id'
+                  ].includes(k)).length > 0 && (
+                    <div style={{ marginBottom: '1.5rem', borderTop: '1px solid var(--admin-card-border, rgba(255,255,255,0.08))', paddingTop: '1.25rem' }}>
+                      <h4 style={{ fontSize: '0.85rem', color: 'var(--admin-brand, #0878FF)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.85rem' }}>
+                        Operational Settings & Metrics
+                      </h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '1rem' }}>
+                        {Object.entries(contentData.settings)
+                          .filter(([k]) => ![
+                            'theme', 'siteName', 'tagline', 'contactPhone', 'phone', 'contactEmail',
+                            'email', 'whatsappNumber', 'whatsapp', 'address', 'businessHours',
+                            'instagram', 'facebook', 'updatedAt', 'createdAt', 'id'
+                          ].includes(k))
+                          .map(([key, val]) => (
+                            <div key={key}>
+                              <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>
+                                {key.replace(/([A-Z])/g, ' $1').trim()}
+                              </label>
+                              <input
+                                type="text"
+                                value={String(val ?? '')}
+                                onChange={e => setContentData({
+                                  ...contentData,
+                                  settings: { ...contentData.settings, [key]: e.target.value },
+                                })}
+                                style={inputStyle}
+                              />
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="submit"
+                      disabled={savingSettings}
+                      className="btn-primary"
+                      style={{
+                        minHeight: '44px',
+                        padding: '10px 24px',
+                        fontSize: '0.85rem',
+                        opacity: savingSettings ? 0.7 : 1,
+                        cursor: savingSettings ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      {savingSettings ? (
+                        <>
+                          <FiRefreshCw className="animate-spin" size={14} /> Saving Settings...
+                        </>
+                      ) : (
+                        'Save Settings'
+                      )}
+                    </button>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+                      Changes persist to Firestore and trigger ISR revalidation across all public pages.
+                    </span>
+                  </div>
                 </form>
               ) : (
                 <p style={{ color: 'var(--admin-text-muted)' }}>Loading settings...</p>
@@ -4118,6 +4440,14 @@ export default function AdminDashboardPage() {
         onClose={() => setAuditModalOpen(false)}
       />
     </div>
+  )
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <ToastProvider>
+      <AdminDashboardContent />
+    </ToastProvider>
   )
 }
 

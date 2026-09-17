@@ -13,14 +13,16 @@ import { getPackages } from '@/lib/repositories/packages.repo'
 import { getHotels } from '@/lib/repositories/hotels.repo'
 import { getVehicles } from '@/lib/repositories/vehicles.repo'
 import { getGalleryPhotos } from '@/lib/repositories/gallery.repo'
+import { getSiteSettings } from '@/lib/repositories/content.repo'
 import HomePageClient from './HomePageClient'
 
 export default async function HomePage() {
-  const [packages, hotels, vehicles, galleryPhotos] = await Promise.allSettled([
+  const [packages, hotels, vehicles, galleryPhotos, settings] = await Promise.allSettled([
     getPackages(true),
     getHotels(true),
     getVehicles(true),
     getGalleryPhotos(true),
+    getSiteSettings(),
   ])
 
   return (
@@ -29,6 +31,7 @@ export default async function HomePage() {
       initialHotels={hotels.status === 'fulfilled' ? hotels.value : []}
       initialVehicles={vehicles.status === 'fulfilled' ? vehicles.value : []}
       initialGalleryPhotos={galleryPhotos.status === 'fulfilled' ? galleryPhotos.value : []}
+      initialSettings={settings.status === 'fulfilled' ? settings.value : undefined}
     />
   )
 }

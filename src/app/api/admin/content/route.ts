@@ -72,14 +72,23 @@ function buildSettingsPayload(data: Record<string, any>): Partial<SiteSettings> 
   const allowed: Partial<SiteSettings> = {}
   if (data.siteName !== undefined)               allowed.siteName = String(data.siteName).trim()
   if (data.tagline !== undefined)                allowed.tagline = String(data.tagline).trim()
-  if (data.contactPhone !== undefined)           allowed.contactPhone = String(data.contactPhone).trim()
-  if (data.contactEmail !== undefined)           allowed.contactEmail = String(data.contactEmail).trim()
-  if (data.whatsappNumber !== undefined)         allowed.whatsappNumber = String(data.whatsappNumber).trim()
+  
+  const phone = data.contactPhone !== undefined ? data.contactPhone : data.phone
+  if (phone !== undefined)                       allowed.contactPhone = String(phone).trim()
+  
+  const email = data.contactEmail !== undefined ? data.contactEmail : data.email
+  if (email !== undefined)                       allowed.contactEmail = String(email).trim()
+  
+  const whatsapp = data.whatsappNumber !== undefined ? data.whatsappNumber : data.whatsapp
+  if (whatsapp !== undefined)                     allowed.whatsappNumber = String(whatsapp).trim()
+  
   if (data.address !== undefined)                allowed.address = String(data.address).trim()
   if (data.operationalHours !== undefined)       allowed.operationalHours = String(data.operationalHours).trim()
   if (data.totalTravelersMetric !== undefined)   allowed.totalTravelersMetric = String(data.totalTravelersMetric).trim()
   if (data.routesCountMetric !== undefined)      allowed.routesCountMetric = String(data.routesCountMetric).trim()
   if (data.averageRatingMetric !== undefined)    allowed.averageRatingMetric = String(data.averageRatingMetric).trim()
+  if (data.instagram !== undefined)              allowed.instagram = String(data.instagram).trim()
+  if (data.facebook !== undefined)               allowed.facebook = String(data.facebook).trim()
   if (data.theme !== undefined && ['light', 'dark', 'system'].includes(String(data.theme))) {
     allowed.theme = data.theme as 'light' | 'dark' | 'system'
   }

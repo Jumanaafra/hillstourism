@@ -545,4 +545,6 @@ export const seedSiteSettings: SiteSettings = {
   totalTravelersMetric: '2,500+',
   routesCountMetric: '120+',
   averageRatingMetric: '4.9',
+  instagram: 'https://instagram.com/hillstourism',
+  facebook: 'https://facebook.com/hillstourism',
 }

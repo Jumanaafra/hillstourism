@@ -548,6 +548,7 @@ export default function EmailComposerModal({
 
           {/* Footer Actions */}
           <div
+            className="admin-form-actions"
             style={{
               display: 'flex',
               justifyContent: 'flex-end',

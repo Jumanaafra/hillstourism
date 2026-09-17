@@ -301,5 +301,7 @@ export interface SiteSettings {
   averageRatingMetric: string
   socialLinks?: SocialLink[]
   theme?: 'light' | 'dark' | 'system'
+  instagram?: string
+  facebook?: string
 }
 

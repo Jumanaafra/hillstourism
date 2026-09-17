@@ -333,7 +333,7 @@ export default function EnquiryDetailModal({
           {activeTab === 'details' && (
             <>
               {/* Quick Communication Action Bar */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.6rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 120px), 1fr))', gap: '0.6rem' }}>
                 {cleanPhone && (
                   <a
                     href={`tel:${cleanPhone}`}
@@ -714,8 +714,8 @@ export default function EnquiryDetailModal({
             gap: '0.75rem',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-            <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 200px' }}>
               <label
                 htmlFor="modalEnquiryStatus"
                 style={{
@@ -763,7 +763,8 @@ export default function EnquiryDetailModal({
               disabled={saving}
               className="btn-primary"
               style={{
-                alignSelf: 'flex-end',
+                flex: '1 1 auto',
+                justifyContent: 'center',
                 padding: '10px 18px',
                 fontSize: '0.85rem',
                 fontWeight: 600,
