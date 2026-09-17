@@ -101,7 +101,7 @@ export default function FeaturedTrips({ id, initialPackages }) {
               key={pkg.id}
               className={`package-card ${sectionRevealed ? 'visible' : 'reveal'}`}
               style={{ transitionDelay: `${i * 0.07}s` }}
-              aria-label={`${pkg.title} — ${pkg.destination}`}
+              aria-label={`${pkg.name || pkg.title} — ${pkg.destination}`}
             >
               {/* Image */}
               <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ display: 'block', textDecoration: 'none' }} tabIndex={-1}>
@@ -110,7 +110,7 @@ export default function FeaturedTrips({ id, initialPackages }) {
                     src={getOptimizedImageUrl(pkg.image, { width: 640, crop: 'fill' })}
                     srcSet={generateResponsiveSrcSet(pkg.image, [360, 480, 640, 768], { crop: 'fill' })}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
-                    alt={`${pkg.title} — ${pkg.destination}`}
+                    alt={`${pkg.name || pkg.title} — ${pkg.destination}`}
                     width={640}
                     height={480}
                     loading="lazy"
@@ -196,7 +196,7 @@ export default function FeaturedTrips({ id, initialPackages }) {
                   </p>
                   <h3 className="heading-sm" style={{ color: 'var(--hill-navy)', marginBottom: '0.5rem' }}>
                     <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                      {pkg.title}
+                      {pkg.name || pkg.title}
                     </Link>
                   </h3>
                   <p className="body-md" style={{ color: 'var(--hill-muted)', lineHeight: 1.6 }}>
@@ -251,7 +251,7 @@ export default function FeaturedTrips({ id, initialPackages }) {
                     href={`/packages/${pkg.slug || pkg.id}`}
                     className="btn-primary"
                     style={{ padding: '0.6rem 1.2rem', fontSize: '0.7rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                    aria-label={`View journey details for ${pkg.title}`}
+                    aria-label={`View journey details for ${pkg.name || pkg.title}`}
                   >
                     View Journey <FiArrowRight style={{ fontSize: '0.8rem' }} />
                   </Link>

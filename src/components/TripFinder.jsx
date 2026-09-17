@@ -210,7 +210,7 @@ export default function TripFinder({ id, initialPackages }) {
                       src={getOptimizedImageUrl(pkg.image, { width: 640, crop: 'fill' })}
                       srcSet={generateResponsiveSrcSet(pkg.image, [360, 480, 640, 768], { crop: 'fill' })}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
-                      alt={`${pkg.title} — ${pkg.destination}`}
+                      alt={`${pkg.name || pkg.title} — ${pkg.destination}`}
                       width={640}
                       height={480}
                       loading="lazy"
@@ -225,7 +225,7 @@ export default function TripFinder({ id, initialPackages }) {
                     </div>
                   </div>
                   <div className="package-card-body">
-                    <h3 className="heading-sm" style={{ color: 'var(--hill-navy)' }}>{pkg.title}</h3>
+                    <h3 className="heading-sm" style={{ color: 'var(--hill-navy)' }}>{pkg.name || pkg.title}</h3>
                     <p style={{ fontSize: '0.8rem', color: 'var(--hill-muted)' }}>{pkg.duration}</p>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'auto', paddingTop:'0.75rem', borderTop:'1px solid var(--hill-border)' }}>
                       <p style={{ fontFamily:'var(--font-display)', fontSize:'1.3rem', fontWeight:700, color:'var(--hill-navy)', letterSpacing:'-0.02em' }}>{pkg.price}</p>

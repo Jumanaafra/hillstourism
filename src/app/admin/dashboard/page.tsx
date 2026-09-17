@@ -1,16 +1,17 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import type { Package, ItineraryDay, Hotel, Vehicle, Category, Experience, Testimonial, SocialLink, PageSEO } from '@/types/domain'
 import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
 import ImageUploadField from '@/components/admin/ImageUploadField'
 import MobileAdminHeader from '@/components/admin/MobileAdminHeader'
 import AdminMobileDrawer, { type TabKey } from '@/components/admin/AdminMobileDrawer'
 import MobileEnquiryCard, { type EnquiryData } from '@/components/admin/MobileEnquiryCard'
-import EnquiryDetailModal from '@/components/admin/EnquiryDetailModal'
-import EmailComposerModal from '@/components/admin/EmailComposerModal'
+const EnquiryDetailModal = dynamic(() => import('@/components/admin/EnquiryDetailModal'))
+const EmailComposerModal = dynamic(() => import('@/components/admin/EmailComposerModal'))
 import SheetsSyncCenter from '@/components/admin/SheetsSyncCenter'
-import AuditLogModal from '@/components/admin/AuditLogModal'
+const AuditLogModal = dynamic(() => import('@/components/admin/AuditLogModal'))
 import ThemeToggle from '@/components/admin/ThemeToggle'
 import { useAdminTheme } from '@/context/AdminThemeContext'
 import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
@@ -21,6 +22,7 @@ import { FaStar, FaWhatsapp, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } fr
 type Tab = 'overview' | 'enquiries' | 'packages' | 'hotels' | 'vehicles' | 'gallery' | 'content' | 'knowledge' | 'library' | 'social' | 'seo' | 'settings'
 
 function AdminDashboardContent() {
+  const initialTabEffect = useRef(true)
   const toast = useAdminToast()
   const { syncFromFirestore } = useAdminTheme()
   const [token, setToken] = useState(() => {
@@ -216,6 +218,10 @@ function AdminDashboardContent() {
   }, [token])
 
   useEffect(() => {
+    if (initialTabEffect.current) {
+      initialTabEffect.current = false
+      return
+    }
     if (activeTab === 'enquiries') fetchEnquiries()
     if (activeTab === 'overview') fetchEnquiries()
     if (activeTab === 'content') fetchContent()
@@ -4405,7 +4411,7 @@ function AdminDashboardContent() {
       </div>
 
       {/* Enquiry Detail Modal for Mobile / Quick View */}
-      <EnquiryDetailModal
+      {selectedEnquiryForModal && <EnquiryDetailModal
         enquiry={selectedEnquiryForModal}
         isOpen={!!selectedEnquiryForModal}
         onClose={() => setSelectedEnquiryForModal(null)}
@@ -4419,10 +4425,10 @@ function AdminDashboardContent() {
         }}
         onOpenEmailComposer={(enq) => setSelectedEnquiryForEmail(enq)}
         onSyncCompleted={() => fetchEnquiries(true)}
-      />
+      />}
 
       {/* CRM Customer Email Composer Modal */}
-      <EmailComposerModal
+      {selectedEnquiryForEmail && <EmailComposerModal
         enquiry={selectedEnquiryForEmail}
         isOpen={!!selectedEnquiryForEmail}
         onClose={() => setSelectedEnquiryForEmail(null)}
@@ -4432,13 +4438,13 @@ function AdminDashboardContent() {
             setSelectedEnquiryForModal(updated)
           }
         }}
-      />
+      />}
 
       {/* CRM System Audit Log Modal */}
-      <AuditLogModal
+      {auditModalOpen && <AuditLogModal
         isOpen={auditModalOpen}
         onClose={() => setAuditModalOpen(false)}
-      />
+      />}
     </div>
   )
 }

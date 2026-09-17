@@ -1,7 +1,3 @@
-'use client'
-
-import React, { useState } from 'react'
-import dynamic from 'next/dynamic'
 import type { Package, Hotel, Vehicle, SiteSettings } from '@/types/domain'
 import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
 
@@ -9,6 +5,8 @@ import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import Hero from '@/components/Hero'
+import HomeLoadingOverlay from '@/components/HomeLoadingOverlay'
+import LazyHillGuide from '@/components/LazyHillGuide'
 import Journey from '@/components/Journey'
 import TripFinder from '@/components/TripFinder'
 import StatsStrip from '@/components/StatsStrip'
@@ -21,11 +19,8 @@ import Testimonials from '@/components/Testimonials'
 import Stays from '@/components/Stays'
 import Vehicles from '@/components/Vehicles'
 
-// Dynamic code-split components
-const LoadingScreen = dynamic(() => import('@/components/LoadingScreen'), { ssr: false })
-const HillGuide = dynamic(() => import('@/components/HillGuide'), { ssr: false })
-const SmartStayMatcher = dynamic(() => import('@/components/SmartStayMatcher'), { ssr: true })
-const Enquiry = dynamic(() => import('@/components/Enquiry'), { ssr: true })
+import SmartStayMatcher from '@/components/SmartStayMatcher'
+import Enquiry from '@/components/Enquiry'
 
 interface HomePageClientProps {
   initialPackages?: Package[]
@@ -42,27 +37,9 @@ export default function HomePageClient({
   initialGalleryPhotos,
   initialSettings,
 }: HomePageClientProps) {
-  const [showLoader, setShowLoader] = useState(true)
-
-  // Use isomorphic layout effect to avoid a flash of the loading screen on return visits
-  const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect
-
-  useIsomorphicLayoutEffect(() => {
-    if (typeof window !== 'undefined' && sessionStorage.getItem('ht_loaded') === '1') {
-      setShowLoader(false)
-    }
-  }, [])
-
-  const handleLoadComplete = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('ht_loaded', '1')
-    }
-    setShowLoader(false)
-  }
-
   return (
     <>
-      {showLoader && <LoadingScreen onComplete={handleLoadComplete} />}
+      <HomeLoadingOverlay />
 
       {/* Navigation */}
       <Navbar />
@@ -120,7 +97,7 @@ export default function HomePageClient({
       <Footer id="footer" settings={initialSettings} />
 
       {/* HillGuide grounded chatbot */}
-      <HillGuide />
+      <LazyHillGuide />
     </>
   )
 }
