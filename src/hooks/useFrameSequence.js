@@ -162,6 +162,23 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
     }
   }, [enabled, resizeCanvas, renderFrame, loadSingle])
 
+  const hasUserScrolledRef = useRef(false)
+
+  // Track real user scroll interaction before enabling progressive lookahead
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onFirstScroll = () => {
+      hasUserScrolledRef.current = true
+      window.removeEventListener('scroll', onFirstScroll)
+    }
+    if (window.scrollY > 10) {
+      hasUserScrolledRef.current = true
+    } else {
+      window.addEventListener('scroll', onFirstScroll, { passive: true })
+    }
+    return () => window.removeEventListener('scroll', onFirstScroll)
+  }, [])
+
   /* ── GSAP ScrollTrigger Pin & Scrub Setup ────────── */
   useEffect(() => {
     if (!enabled || !containerRef.current || !pinRef.current) return
@@ -188,8 +205,10 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
           const progress = Math.max(0, Math.min(1, self.progress))
           const frameIndex = Math.min(TOTAL_FRAMES - 1, Math.floor(progress * TOTAL_FRAMES))
           renderFrame(frameIndex)
-          // Progressively load nearby frames around current scroll position
-          preloadWindow(frameIndex, 4)
+          // Progressively load nearby frames ONLY after user has actually initiated scroll
+          if (hasUserScrolledRef.current) {
+            preloadWindow(frameIndex, 4)
+          }
           onProgressRef.current?.(frameIndex, progress)
         },
       })
