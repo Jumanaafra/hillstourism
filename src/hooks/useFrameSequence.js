@@ -131,10 +131,10 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
     }
   }, [renderFrame])
 
-  // Preload a window of frames around a target index (lookahead)
-  const preloadWindow = useCallback((centerIndex, windowSize = 12) => {
+  // Preload a window of frames around a target index (adaptive scroll lookahead)
+  const preloadWindow = useCallback((centerIndex, lookahead = 4) => {
     const start = Math.max(0, centerIndex - 2)
-    const end = Math.min(TOTAL_FRAMES, centerIndex + windowSize)
+    const end = Math.min(TOTAL_FRAMES, centerIndex + lookahead + 1)
     for (let i = start; i < end; i++) {
       if (!loadedRef.current[i] && !inFlightRef.current.has(i)) {
         loadSingle(i)
@@ -147,58 +147,13 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
     let isMounted = true
 
     const initializeHeroFrames = async () => {
-      // 1. Immediately load frame 0 and display
+      // Load frame 0 ONLY on initial mount for immediate canvas display
+      // Frames 1–99 are loaded strictly on-demand as the user scrolls
       await loadSingle(0)
       if (isMounted) {
         resizeCanvas()
         renderFrame(0)
       }
-
-      // 2. Load immediate initial buffer (frames 1–7) so initial scrub starts with zero lag
-      const initialBuffer = []
-      for (let i = 1; i < Math.min(8, TOTAL_FRAMES); i++) {
-        initialBuffer.push(loadSingle(i))
-      }
-      await Promise.all(initialBuffer)
-
-      // 3. Gentle background idle preloading for subsequent frames
-      // Uses requestIdleCallback where available to avoid competing with main-thread work
-      const scheduleIdleBatch = (startIndex) => {
-        if (!isMounted || startIndex >= TOTAL_FRAMES) return
-
-        const runBatch = () => {
-          if (!isMounted) return
-          const BATCH_SIZE = 6
-          const nextIndex = Math.min(startIndex + BATCH_SIZE, TOTAL_FRAMES)
-          const promises = []
-          for (let i = startIndex; i < nextIndex; i++) {
-            if (!loadedRef.current[i]) {
-              promises.push(loadSingle(i))
-            }
-          }
-          Promise.all(promises).then(() => {
-            if (isMounted && nextIndex < TOTAL_FRAMES) {
-              // Yield 80ms before next batch to ensure smooth 60fps scrolling
-              setTimeout(() => {
-                if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-                  window.requestIdleCallback(() => scheduleIdleBatch(nextIndex), { timeout: 1000 })
-                } else {
-                  scheduleIdleBatch(nextIndex)
-                }
-              }, 80)
-            }
-          })
-        }
-
-        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-          window.requestIdleCallback(runBatch, { timeout: 1500 })
-        } else {
-          setTimeout(runBatch, 100)
-        }
-      }
-
-      // Start background idle queue after initial buffer settles
-      setTimeout(() => scheduleIdleBatch(8), 200)
     }
 
     initializeHeroFrames()
@@ -233,7 +188,8 @@ export function useScrollFrameSequence(canvasRef, containerRef, pinRef, onProgre
           const progress = Math.max(0, Math.min(1, self.progress))
           const frameIndex = Math.min(TOTAL_FRAMES - 1, Math.floor(progress * TOTAL_FRAMES))
           renderFrame(frameIndex)
-          preloadWindow(frameIndex, 14)
+          // Progressively load nearby frames around current scroll position
+          preloadWindow(frameIndex, 4)
           onProgressRef.current?.(frameIndex, progress)
         },
       })

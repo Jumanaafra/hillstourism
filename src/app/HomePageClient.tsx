@@ -1,12 +1,9 @@
 import type { Package, Hotel, Vehicle, SiteSettings } from '@/types/domain'
 import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
-import dynamic from 'next/dynamic'
-
-// Layout & Section components — above-fold or near-fold (static imports)
+// Layout & Section components — static imports to preserve full SSR document height
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import Hero from '@/components/Hero'
-import HomeLoadingOverlay from '@/components/HomeLoadingOverlay'
 import LazyHillGuide from '@/components/LazyHillGuide'
 import Journey from '@/components/Journey'
 import TripFinder from '@/components/TripFinder'
@@ -15,14 +12,12 @@ import TripCategoryCarousel from '@/components/TripCategoryCarousel'
 import FeaturedTrips from '@/components/FeaturedTrips'
 import Experiences from '@/components/Experiences'
 import WhyChooseUs from '@/components/WhyChooseUs'
-
-// Below-fold sections — lazy-loaded to reduce initial JS payload
-const Gallery = dynamic(() => import('@/components/Gallery'), { ssr: false })
-const Testimonials = dynamic(() => import('@/components/Testimonials'), { ssr: false })
-const Stays = dynamic(() => import('@/components/Stays'), { ssr: false })
-const Vehicles = dynamic(() => import('@/components/Vehicles'), { ssr: false })
-const SmartStayMatcher = dynamic(() => import('@/components/SmartStayMatcher'), { ssr: false })
-const Enquiry = dynamic(() => import('@/components/Enquiry'), { ssr: false })
+import Gallery from '@/components/Gallery'
+import Testimonials from '@/components/Testimonials'
+import Stays from '@/components/Stays'
+import Vehicles from '@/components/Vehicles'
+import SmartStayMatcher from '@/components/SmartStayMatcher'
+import Enquiry from '@/components/Enquiry'
 
 interface HomePageClientProps {
   initialPackages?: Package[]
@@ -41,7 +36,6 @@ export default function HomePageClient({
 }: HomePageClientProps) {
   return (
     <>
-      <HomeLoadingOverlay />
 
       {/* Navigation */}
       <Navbar />

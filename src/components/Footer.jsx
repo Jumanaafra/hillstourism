@@ -112,12 +112,14 @@ export default function Footer({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <Link href="/" aria-label="Hillstourism — go to top" style={{ display: 'inline-block' }}>
               <picture>
-                <source srcSet="/logo.webp" type="image/webp" />
+                <source srcSet="/logo-sm.webp" type="image/webp" />
                 <img
                   src="/logo.png"
                   alt="Hillstourism"
-                  width={150}
-                  height={100}
+                  width={144}
+                  height={96}
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     height:      'clamp(36px,5vw,52px)',
                     width:       'auto',
@@ -249,13 +251,15 @@ export default function Footer({
           <div style={{ marginBottom: '2rem', textAlign: 'left' }}>
             <Link href="/" aria-label="Hillstourism — go to top" style={{ display: 'inline-block', marginBottom: '1rem' }}>
               <picture>
-                <source srcSet="/logo.webp" type="image/webp" />
+                <source srcSet="/logo-sm.webp" type="image/webp" />
                 <img
                   src="/logo.png"
                   alt="Hillstourism"
-                  width={140}
-                  height={93}
-                  style={{ height: '42px', width: 'auto', objectFit: 'contain', filter: 'brightness(1.1)' }}
+                  width={144}
+                  height={96}
+                  loading="lazy"
+                  decoding="async"
+                  style={{ height: '42px', width: 'auto', aspectRatio: '1536 / 1024', objectFit: 'contain', filter: 'brightness(1.1)' }}
                 />
               </picture>
             </Link>

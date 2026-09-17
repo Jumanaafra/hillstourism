@@ -122,9 +122,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${sora.variable} ${inter.variable}`}>
       <head>
-        {/* Preload LCP-critical hero frame — discoverable during HTML parse, before JS */}
-        <link rel="preload" href="/frames-webp/frame_000.webp" as="image" type="image/webp" />
-        {/* Preload optimized logo for Navbar (above-fold) */}
+        {/* Preload optimized logo for Navbar (above-fold, 6.5 KB) */}
         <link rel="preload" href="/logo-sm.webp" as="image" type="image/webp" />
       </head>
       <body>
