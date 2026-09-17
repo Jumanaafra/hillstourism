@@ -24,7 +24,7 @@ export default function NewsletterForm() {
   }
 
   return (
-    <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }} aria-label="Newsletter signup">
+    <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', width: '100%' }} aria-label="Newsletter signup">
       <input
         type="email"
         value={email}
@@ -40,14 +40,16 @@ export default function NewsletterForm() {
           color:        '#ffffff',
           fontSize:     '0.85rem',
           outline:      'none',
-          minWidth:     '220px',
+          flex:         '1 1 180px',
+          minWidth:     '0',
+          width:        '100%',
           fontFamily:   'var(--font-body)',
           transition:   'border-color 0.2s ease',
         }}
         onFocus={e  => e.target.style.borderColor = 'var(--hill-blue-bright)'}
         onBlur={e   => e.target.style.borderColor = 'rgba(255,255,255,0.12)'}
       />
-      <button type="submit" className="btn-primary" style={{ padding: '0.75rem 1.4rem', fontSize: '0.75rem' }}>
+      <button type="submit" className="btn-primary" style={{ padding: '0.75rem 1.4rem', fontSize: '0.75rem', flexShrink: 0 }}>
         Subscribe
       </button>
     </form>

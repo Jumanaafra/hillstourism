@@ -91,33 +91,29 @@ export default function ImageUploadField({
           gap: '12px',
           alignItems: 'center',
           padding: '10px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'var(--admin-card, rgba(255,255,255,0.04))',
+          border: '1px solid var(--admin-card-border, rgba(255,255,255,0.1))',
           borderRadius: '8px',
           marginBottom: '8px',
         }}>
           <div style={{
             width: '64px',
-            height: '64px',
+            height: '48px',
             borderRadius: '6px',
             overflow: 'hidden',
-            background: '#000',
+            background: 'var(--admin-input-bg, #000)',
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            border: '1px solid var(--admin-border, rgba(255,255,255,0.1))',
           }}>
             <img
-              src={getOptimizedImageUrl(value, { width: 128, height: 128, crop: 'fill' })}
+              src={getOptimizedImageUrl(value, { width: 128, quality: 'auto' })}
               alt={altText || 'Preview'}
-              width={64}
-              height={64}
-              loading="lazy"
-              decoding="async"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={(e) => {
-                // Fallback indicator
-                (e.target as HTMLElement).style.display = 'none'
+                ;(e.target as HTMLElement).style.display = 'none'
               }}
             />
           </div>
@@ -125,8 +121,8 @@ export default function ImageUploadField({
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{
               fontSize: '0.75rem',
-              color: '#fff',
-              margin: '0 0 4px 0',
+              color: 'var(--admin-text, #fff)',
+              margin: '0 0 2px 0',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -135,6 +131,9 @@ export default function ImageUploadField({
               {value}
             </p>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.65rem', color: '#86EFAC', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <FiCheck size={10} /> Active
+              </span>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -142,9 +141,8 @@ export default function ImageUploadField({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: 'var(--hill-blue-bright)',
+                  color: 'var(--admin-brand, #0878FF)',
                   fontSize: '0.7rem',
-                  fontWeight: 600,
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -183,27 +181,27 @@ export default function ImageUploadField({
           onDrop={handleDrop}
           onClick={() => !uploading && fileInputRef.current?.click()}
           style={{
-            border: `1.5px dashed ${isDragOver ? 'var(--hill-blue-bright)' : 'rgba(255,255,255,0.15)'}`,
+            border: `1.5px dashed ${isDragOver ? 'var(--admin-brand, #0878FF)' : 'var(--admin-border, rgba(255,255,255,0.15))'}`,
             borderRadius: '8px',
             padding: '14px',
             textAlign: 'center',
             cursor: uploading ? 'not-allowed' : 'pointer',
-            background: isDragOver ? 'rgba(56,189,248,0.06)' : 'rgba(255,255,255,0.02)',
+            background: isDragOver ? 'var(--admin-brand-bg, rgba(56,189,248,0.06))' : 'var(--admin-card, rgba(255,255,255,0.02))',
             transition: 'all 0.2s ease',
             marginBottom: '8px',
           }}
         >
           {uploading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--hill-blue-bright)', fontSize: '0.8rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--admin-brand, #0878FF)', fontSize: '0.8rem' }}>
               <FiRefreshCw className="animate-spin" size={14} /> Uploading to Cloudinary...
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-              <FiUploadCloud size={20} color="var(--hill-blue-bright)" />
-              <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)', margin: 0 }}>
+              <FiUploadCloud size={20} color="var(--admin-brand, #0878FF)" />
+              <p style={{ fontSize: '0.75rem', color: 'var(--admin-text, rgba(255,255,255,0.8))', margin: 0 }}>
                 Click or drag & drop image to upload to Cloudinary
               </p>
-              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--admin-text-muted, rgba(255,255,255,0.4))' }}>
                 JPEG, PNG, WebP, GIF, AVIF (up to 10MB)
               </span>
             </div>
@@ -234,12 +232,12 @@ export default function ImageUploadField({
           style={{
             flex: 1,
             padding: '7px 10px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'var(--admin-input-bg, rgba(255,255,255,0.05))',
+            border: '1px solid var(--admin-input-border, rgba(255,255,255,0.1))',
             borderRadius: '6px',
-            color: '#fff',
+            color: 'var(--admin-input-text, #fff)',
             fontSize: '0.75rem',
-            fontFamily: 'monospace',
+            outline: 'none',
           }}
         />
       </div>

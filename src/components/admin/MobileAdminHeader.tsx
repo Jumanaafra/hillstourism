@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { FiMenu, FiRefreshCw } from 'react-icons/fi'
+import ThemeToggle from './ThemeToggle'
 
 interface MobileAdminHeaderProps {
   activeTabLabel: string
@@ -20,12 +21,12 @@ export default function MobileAdminHeader({
 }: MobileAdminHeaderProps) {
   return (
     <header
-      className="lg:hidden sticky top-0 z-30 w-full"
+      className="lg:hidden sticky top-0 z-30 w-full admin-header"
       style={{
-        background: 'rgba(0, 9, 31, 0.95)',
+        background: 'var(--admin-header-bg, rgba(0, 9, 31, 0.95))',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        borderBottom: '1px solid var(--admin-header-border, rgba(255, 255, 255, 0.08))',
         padding: '0.65rem 0.85rem',
       }}
     >
@@ -37,12 +38,12 @@ export default function MobileAdminHeader({
             onClick={onOpenDrawer}
             aria-label="Open navigation menu"
             style={{
-              width: '42px',
-              height: '42px',
+              width: '40px',
+              height: '40px',
               borderRadius: '8px',
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#ffffff',
+              background: 'var(--admin-card, rgba(255, 255, 255, 0.06))',
+              border: '1px solid var(--admin-card-border, rgba(255, 255, 255, 0.12))',
+              color: 'var(--admin-text, #ffffff)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -60,7 +61,7 @@ export default function MobileAdminHeader({
                   fontFamily: 'var(--font-display)',
                   fontWeight: 700,
                   fontSize: '0.95rem',
-                  color: '#ffffff',
+                  color: 'var(--admin-text, #ffffff)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -73,8 +74,8 @@ export default function MobileAdminHeader({
                   fontSize: '0.65rem',
                   padding: '1px 6px',
                   borderRadius: '4px',
-                  background: 'rgba(8, 120, 255, 0.2)',
-                  color: 'var(--hill-blue-bright, #0878FF)',
+                  background: 'var(--admin-brand-bg, rgba(8, 120, 255, 0.2))',
+                  color: 'var(--admin-brand, #0878FF)',
                   fontWeight: 700,
                   letterSpacing: '0.04em',
                 }}
@@ -85,7 +86,7 @@ export default function MobileAdminHeader({
             <p
               style={{
                 fontSize: '0.75rem',
-                color: 'rgba(255, 255, 255, 0.6)',
+                color: 'var(--admin-text-secondary, rgba(255, 255, 255, 0.6))',
                 margin: 0,
                 lineHeight: 1.2,
                 whiteSpace: 'nowrap',
@@ -93,7 +94,7 @@ export default function MobileAdminHeader({
                 textOverflow: 'ellipsis',
               }}
             >
-              Section: <span style={{ color: '#86EFAC', fontWeight: 600 }}>{activeTabLabel}</span>
+              Section: <span style={{ color: 'var(--admin-brand, #0878FF)', fontWeight: 600 }}>{activeTabLabel}</span>
             </p>
           </div>
         </div>
@@ -105,9 +106,9 @@ export default function MobileAdminHeader({
               style={{
                 padding: '3px 8px',
                 borderRadius: '12px',
-                background: 'rgba(34, 197, 94, 0.2)',
+                background: 'rgba(34, 197, 94, 0.15)',
                 border: '1px solid rgba(34, 197, 94, 0.4)',
-                color: '#86EFAC',
+                color: '#22C55E',
                 fontSize: '0.7rem',
                 fontWeight: 700,
                 display: 'inline-flex',
@@ -121,6 +122,10 @@ export default function MobileAdminHeader({
             </span>
           )}
 
+          {/* Quick Theme Toggle */}
+          <ThemeToggle variant="mobile-quick" />
+
+          {/* Refresh button */}
           <button
             type="button"
             onClick={onRefresh}
@@ -130,9 +135,9 @@ export default function MobileAdminHeader({
               width: '40px',
               height: '40px',
               borderRadius: '8px',
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#ffffff',
+              background: 'var(--admin-card, rgba(255, 255, 255, 0.06))',
+              border: '1px solid var(--admin-card-border, rgba(255, 255, 255, 0.12))',
+              color: 'var(--admin-text, #ffffff)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

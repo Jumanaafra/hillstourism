@@ -1,11 +1,14 @@
 import 'server-only'
 import { google } from 'googleapis'
-import type { Enquiry } from '../../types/domain'
+import type { Enquiry, EnquiryTimelineEvent } from '../../types/domain'
+import { getEnquiryById, updateEnquiry, getEnquiries } from '../repositories/enquiries.repo'
+import { createAuditLog } from '../repositories/audit.repo'
 
 export interface SheetSyncResult {
   success: boolean
   error?: string
   updatedRange?: string
+  rowNumber?: number
 }
 
 /**
@@ -19,7 +22,7 @@ export async function syncEnquiryToGoogleSheets(enquiry: Enquiry): Promise<Sheet
 
   if (!spreadsheetId || !clientEmail || !privateKey) {
     console.log(`[Google Sheets (Simulated)] Appended enquiry ${enquiry.id} to reporting sheet.`)
-    return { success: true, updatedRange: 'Sheet1!A:P (simulated)' }
+    return { success: true, updatedRange: 'Sheet1!A42:P42 (simulated)', rowNumber: 42 }
   }
 
   privateKey = privateKey.replace(/\\n/g, '\n')
@@ -131,9 +134,17 @@ export async function syncEnquiryToGoogleSheets(enquiry: Enquiry): Promise<Sheet
 
     console.log(`[Google Sheets] Successfully appended enquiry ${enquiry.id} to range ${res.data.updates?.updatedRange || targetRange}`)
 
+    const updatedRange = res.data.updates?.updatedRange || targetRange
+    let rowNumber: number | undefined
+    const rowMatch = updatedRange.match(/([A-Za-z]+)(\d+)(?::([A-Za-z]+)(\d+))?/)
+    if (rowMatch) {
+      rowNumber = parseInt(rowMatch[2], 10)
+    }
+
     return {
       success: true,
-      updatedRange: res.data.updates?.updatedRange || targetRange,
+      updatedRange,
+      rowNumber,
     }
   } catch (err: any) {
     console.error('[Google Sheets] Failed to sync enquiry row:', err?.message || err)
@@ -141,5 +152,125 @@ export async function syncEnquiryToGoogleSheets(enquiry: Enquiry): Promise<Sheet
       success: false,
       error: err?.message || String(err),
     }
+  }
+}
+
+/**
+ * Manually syncs an individual enquiry to Google Sheets, updating timeline,
+ * integrations, and recording an audit log.
+ */
+export async function syncSingleEnquiryManual(
+  enquiryId: string,
+  adminEmail = 'admin@hillstourism.com'
+): Promise<{ success: boolean; enquiry?: Enquiry; error?: string; rowNumber?: number }> {
+  const enquiry = await getEnquiryById(enquiryId)
+  if (!enquiry) {
+    return { success: false, error: `Enquiry ${enquiryId} not found` }
+  }
+
+  const result = await syncEnquiryToGoogleSheets(enquiry)
+  const now = new Date().toISOString()
+
+  const timelineEvent: EnquiryTimelineEvent = {
+    id: `TLE-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+    type: result.success ? 'sheets_synced' : 'sheets_failed',
+    title: result.success ? 'Google Sheet Synced' : 'Google Sheet Sync Failed',
+    description: result.success
+      ? `Synced to sheet at Row #${result.rowNumber || 'N/A'} (${result.updatedRange || 'Range updated'})`
+      : `Failed to sync to Google Sheets: ${result.error || 'Unknown error'}`,
+    timestamp: now,
+    author: adminEmail,
+    metadata: {
+      rowNumber: result.rowNumber,
+      updatedRange: result.updatedRange,
+      error: result.error,
+    },
+  }
+
+  const updatedIntegrations = {
+    ...enquiry.integrations,
+    sheetsStatus: (result.success ? 'synced' : 'failed') as any,
+    sheetsError: result.error,
+    lastSheetSyncAt: now,
+    sheetRow: result.rowNumber || enquiry.integrations?.sheetRow,
+  }
+
+  const updatedTimeline = [...(enquiry.timeline || []), timelineEvent]
+
+  const updated = await updateEnquiry(enquiryId, {
+    integrations: updatedIntegrations,
+    timeline: updatedTimeline,
+  })
+
+  await createAuditLog({
+    action: 'sheet_sync',
+    enquiryId: enquiry.id,
+    customerName: enquiry.customer?.name,
+    details: result.success
+      ? `Synced enquiry ${enquiry.id} to Google Sheets (Row: ${result.rowNumber || 'N/A'})`
+      : `Failed to sync enquiry ${enquiry.id} to Google Sheets: ${result.error}`,
+    adminEmail,
+    metadata: { rowNumber: result.rowNumber, error: result.error },
+  })
+
+  return {
+    success: result.success,
+    enquiry: updated,
+    error: result.error,
+    rowNumber: result.rowNumber,
+  }
+}
+
+/**
+ * Batch syncs enquiries matching criteria ('all_pending' or 'retry_failed').
+ */
+export async function batchSyncEnquiries(
+  mode: 'all_pending' | 'retry_failed' | 'pending' | 'failed',
+  adminEmail = 'admin@hillstourism.com'
+): Promise<{
+  total: number
+  synced: number
+  failed: number
+  results: Array<{ id: string; success: boolean; error?: string; rowNumber?: number }>
+}> {
+  const allEnquiries = await getEnquiries({ limit: 100 })
+
+  const targets = allEnquiries.filter(e => {
+    if (mode === 'all_pending' || mode === 'pending') {
+      return !e.integrations?.sheetsStatus || e.integrations.sheetsStatus === 'pending'
+    }
+    if (mode === 'retry_failed' || mode === 'failed') {
+      return e.integrations?.sheetsStatus === 'failed'
+    }
+    return false
+  })
+
+  const results: Array<{ id: string; success: boolean; error?: string; rowNumber?: number }> = []
+  let synced = 0
+  let failed = 0
+
+  for (const enq of targets) {
+    const res = await syncSingleEnquiryManual(enq.id, adminEmail)
+    if (res.success) {
+      synced++
+      results.push({ id: enq.id, success: true, rowNumber: res.rowNumber })
+    } else {
+      failed++
+      results.push({ id: enq.id, success: false, error: res.error })
+    }
+  }
+
+  await createAuditLog({
+    action: 'batch_sync',
+    details: `Batch synced ${targets.length} enquiries (Mode: ${mode}). Success: ${synced}, Failed: ${failed}`,
+    adminEmail,
+    metadata: { mode, total: targets.length, synced, failed },
+  })
+
+  return {
+    total: targets.length,
+    synced,
+    failed,
+    results,
   }
 }

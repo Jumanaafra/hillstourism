@@ -120,14 +120,38 @@ export default function FeaturedTrips({ id, initialPackages }) {
                       e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=640&q=75&auto=format'
                     }}
                   />
-                  {/* Tag badge */}
+                  {/* Destination & Tag badge */}
                   <div style={{
                     position:     'absolute',
                     top:          '0.9rem',
                     left:         '0.9rem',
+                    display:      'flex',
+                    gap:          '0.4rem',
+                    alignItems:   'center',
                   }}>
-                    <span className="badge badge-navy">{pkg.tag}</span>
+                    <span className="badge badge-navy">{pkg.tag || 'Popular'}</span>
                   </div>
+
+                  {/* Rating badge */}
+                  <div style={{
+                    position:       'absolute',
+                    top:            '0.9rem',
+                    right:          '0.9rem',
+                    background:     'rgba(0,9,31,0.85)',
+                    backdropFilter: 'blur(8px)',
+                    borderRadius:   '6px',
+                    padding:        '4px 8px',
+                    fontSize:       '0.7rem',
+                    fontWeight:     700,
+                    color:          '#ffffff',
+                    display:        'inline-flex',
+                    alignItems:     'center',
+                    gap:            '3px',
+                  }}>
+                    <span style={{ color: '#F59E0B' }}>★</span>
+                    <span>{pkg.rating || '4.9'}</span>
+                  </div>
+
                   {/* Duration */}
                   <div style={{
                     position:     'absolute',

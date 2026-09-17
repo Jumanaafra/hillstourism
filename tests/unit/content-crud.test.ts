@@ -142,5 +142,25 @@ describe('Content Repository CRUD', () => {
       expect(updated.siteName).toBe('Hills Tourism & Travel Club')
       expect(updated.contactPhone).toBe('+91 99999 88888')
     })
+
+    it('persists and retrieves admin theme preference in site settings', async () => {
+      const updatedDark = await updateSiteSettings({
+        theme: 'dark',
+      })
+      expect(updatedDark.theme).toBe('dark')
+
+      const readBackDark = await getSiteSettings()
+      expect(readBackDark.theme).toBe('dark')
+
+      const updatedLight = await updateSiteSettings({
+        theme: 'light',
+      })
+      expect(updatedLight.theme).toBe('light')
+
+      const updatedSystem = await updateSiteSettings({
+        theme: 'system',
+      })
+      expect(updatedSystem.theme).toBe('system')
+    })
   })
 })

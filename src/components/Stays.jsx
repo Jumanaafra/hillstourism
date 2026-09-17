@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { stays } from '../data/stays'
 import { FiStar, FiMapPin, FiArrowRight } from 'react-icons/fi'
@@ -204,14 +205,14 @@ export default function Stays({ id, initialHotels }) {
                     </p>
                     <p style={{ fontSize: '0.6rem', color: 'var(--hill-muted)' }}>/ night</p>
                   </div>
-                  <button
+                  <Link
+                    href={`/hotels/${stay.slug || stay.id || 'valley-view-homestay'}`}
                     className="btn-primary"
-                    style={{ padding: '0.6rem 1.1rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    onClick={() => document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' })}
+                    style={{ padding: '0.6rem 1.1rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
                     aria-label={`View ${stay.name}`}
                   >
                     View Stay <FiArrowRight style={{ fontSize: '0.75rem' }} />
-                  </button>
+                  </Link>
                 </div>
               </div>
             </article>

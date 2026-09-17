@@ -1,6 +1,6 @@
 import 'server-only'
 import { getFirestoreDB, withFirestoreTimeout, allowMemoryFallback } from '../firebase/admin'
-import type { Enquiry, EnquiryStatus } from '../../types/domain'
+import type { Enquiry, EnquiryStatus, EnquiryNote, EnquiryTimelineEvent } from '../../types/domain'
 
 let memoryEnquiries: Enquiry[] = []
 
@@ -28,6 +28,7 @@ function sanitizeForFirestore<T>(data: T): T {
 }
 
 export async function createEnquiry(data: Omit<Enquiry, 'id' | 'createdAt' | 'updatedAt'>): Promise<Enquiry> {
+  const createdAt = new Date().toISOString()
   const newEnquiry: Enquiry = {
     ...data,
     id: `ENQ-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -36,8 +37,18 @@ export async function createEnquiry(data: Omit<Enquiry, 'id' | 'createdAt' | 'up
       emailStatus: data.integrations?.emailStatus || 'pending',
       sheetsStatus: data.integrations?.sheetsStatus || 'pending',
     },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    timeline: data.timeline || [
+      {
+        id: `TLE-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        type: 'created',
+        title: 'Enquiry Received',
+        description: `Customer submitted enquiry for ${data.package?.nameSnapshot || 'custom tour'}`,
+        timestamp: createdAt,
+      },
+    ],
+    notes: data.notes || [],
+    createdAt,
+    updatedAt: createdAt,
   }
 
   const db = getFirestoreDB()
@@ -233,6 +244,13 @@ export async function updateEnquiryIntegrations(
   return updated
 }
 
+export async function updateEnquiryStatus(
+  id: string,
+  status: EnquiryStatus
+): Promise<Enquiry> {
+  return await updateEnquiry(id, { status })
+}
+
 /**
  * Idempotency / duplicate check for recent submissions with the same phone and customer name.
  */
@@ -248,5 +266,121 @@ export async function isRecentDuplicateEnquiry(phone: string, name: string, wind
 
 export function _resetMemoryEnquiries() {
   memoryEnquiries = []
+}
+
+/**
+ * Adds an internal admin note to an enquiry.
+ */
+export async function addEnquiryNote(
+  enquiryId: string,
+  noteData: Omit<EnquiryNote, 'id' | 'createdAt'>
+): Promise<{ enquiry: Enquiry; note: EnquiryNote }> {
+  const enquiry = await getEnquiryById(enquiryId)
+  if (!enquiry) {
+    throw new Error(`Enquiry ${enquiryId} not found`)
+  }
+
+  const newNote: EnquiryNote = {
+    id: `NOTE-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+    content: noteData.content.trim(),
+    author: noteData.author || 'Admin',
+    createdAt: new Date().toISOString(),
+  }
+
+  const timelineEvent: EnquiryTimelineEvent = {
+    id: `TLE-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+    type: 'note_added',
+    title: `Internal Note Added`,
+    description: newNote.content.slice(0, 100) + (newNote.content.length > 100 ? '...' : ''),
+    timestamp: newNote.createdAt,
+    author: newNote.author,
+  }
+
+  const updatedNotes = [...(enquiry.notes || []), newNote]
+  const updatedTimeline = [...(enquiry.timeline || []), timelineEvent]
+
+  const updated = await updateEnquiry(enquiryId, {
+    notes: updatedNotes,
+    timeline: updatedTimeline,
+  })
+
+  return { enquiry: updated, note: newNote }
+}
+
+/**
+ * Updates an internal admin note.
+ */
+export async function updateEnquiryNote(
+  enquiryId: string,
+  noteId: string,
+  content: string
+): Promise<{ enquiry: Enquiry; note: EnquiryNote }> {
+  const enquiry = await getEnquiryById(enquiryId)
+  if (!enquiry) {
+    throw new Error(`Enquiry ${enquiryId} not found`)
+  }
+
+  const notes = enquiry.notes || []
+  const noteIndex = notes.findIndex(n => n.id === noteId)
+  if (noteIndex === -1) {
+    throw new Error(`Note ${noteId} not found on enquiry ${enquiryId}`)
+  }
+
+  const updatedNote: EnquiryNote = {
+    ...notes[noteIndex],
+    content: content.trim(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  const updatedNotes = [...notes]
+  updatedNotes[noteIndex] = updatedNote
+
+  const updated = await updateEnquiry(enquiryId, {
+    notes: updatedNotes,
+  })
+
+  return { enquiry: updated, note: updatedNote }
+}
+
+/**
+ * Deletes an internal admin note.
+ */
+export async function deleteEnquiryNote(
+  enquiryId: string,
+  noteId: string
+): Promise<Enquiry> {
+  const enquiry = await getEnquiryById(enquiryId)
+  if (!enquiry) {
+    throw new Error(`Enquiry ${enquiryId} not found`)
+  }
+
+  const updatedNotes = (enquiry.notes || []).filter(n => n.id !== noteId)
+  return await updateEnquiry(enquiryId, {
+    notes: updatedNotes,
+  })
+}
+
+/**
+ * Appends a timeline event to an enquiry.
+ */
+export async function addEnquiryTimelineEvent(
+  enquiryId: string,
+  event: Omit<EnquiryTimelineEvent, 'id' | 'timestamp'>
+): Promise<Enquiry> {
+  const enquiry = await getEnquiryById(enquiryId)
+  if (!enquiry) {
+    throw new Error(`Enquiry ${enquiryId} not found`)
+  }
+
+  const newEvent: EnquiryTimelineEvent = {
+    ...event,
+    id: `TLE-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+    timestamp: new Date().toISOString(),
+  }
+
+  const updatedTimeline = [...(enquiry.timeline || []), newEvent]
+  return await updateEnquiry(enquiryId, {
+    timeline: updatedTimeline,
+  })
 }
 

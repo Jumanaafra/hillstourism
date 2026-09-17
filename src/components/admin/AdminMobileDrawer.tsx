@@ -19,6 +19,7 @@ import {
   FiLogOut,
   FiArrowRight,
 } from 'react-icons/fi'
+import ThemeToggle from './ThemeToggle'
 
 export type TabKey =
   | 'overview'
@@ -136,7 +137,7 @@ export default function AdminMobileDrawer({
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.65)',
+          background: 'var(--admin-modal-overlay, rgba(0, 0, 0, 0.65))',
           backdropFilter: 'blur(6px)',
           WebkitBackdropFilter: 'blur(6px)',
           transition: 'opacity 0.25s ease',
@@ -145,6 +146,7 @@ export default function AdminMobileDrawer({
 
       {/* Drawer Panel */}
       <div
+        className="admin-drawer"
         style={{
           position: 'fixed',
           top: 0,
@@ -152,9 +154,9 @@ export default function AdminMobileDrawer({
           bottom: 0,
           width: '82%',
           maxWidth: '320px',
-          background: 'var(--hill-navy-deep, #00091F)',
-          borderRight: '1px solid rgba(255, 255, 255, 0.12)',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8)',
+          background: 'var(--admin-sidebar-bg, var(--admin-surface, #00091F))',
+          borderRight: '1px solid var(--admin-border, rgba(255, 255, 255, 0.12))',
+          boxShadow: 'var(--admin-shadow-md, 0 20px 40px rgba(0, 0, 0, 0.8))',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 51,
@@ -165,7 +167,7 @@ export default function AdminMobileDrawer({
         <div
           style={{
             padding: '1.25rem 1rem 1rem',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            borderBottom: '1px solid var(--admin-border, rgba(255, 255, 255, 0.08))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -178,7 +180,7 @@ export default function AdminMobileDrawer({
                   fontFamily: 'var(--font-display)',
                   fontWeight: 700,
                   fontSize: '1.1rem',
-                  color: '#ffffff',
+                  color: 'var(--admin-text, #ffffff)',
                 }}
               >
                 Hills Tourism
@@ -188,15 +190,15 @@ export default function AdminMobileDrawer({
                   fontSize: '0.65rem',
                   padding: '2px 6px',
                   borderRadius: '4px',
-                  background: 'rgba(8, 120, 255, 0.2)',
-                  color: 'var(--hill-blue-bright, #0878FF)',
+                  background: 'var(--admin-brand-bg, rgba(8, 120, 255, 0.2))',
+                  color: 'var(--admin-brand, #0878FF)',
                   fontWeight: 700,
                 }}
               >
                 PORTAL
               </span>
             </div>
-            <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)', marginTop: '2px' }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted, rgba(255, 255, 255, 0.5))', marginTop: '2px' }}>
               Operations Dashboard
             </p>
           </div>
@@ -209,9 +211,9 @@ export default function AdminMobileDrawer({
               width: '36px',
               height: '36px',
               borderRadius: '8px',
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#ffffff',
+              background: 'var(--admin-card, rgba(255, 255, 255, 0.06))',
+              border: '1px solid var(--admin-card-border, rgba(255, 255, 255, 0.1))',
+              color: 'var(--admin-text, #ffffff)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -254,12 +256,14 @@ export default function AdminMobileDrawer({
                   borderRadius: '8px',
                   fontSize: '0.875rem',
                   fontWeight: isActive ? 600 : 500,
-                  color: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.75)',
+                  color: isActive
+                    ? 'var(--admin-brand, #0878FF)'
+                    : 'var(--admin-text, rgba(255, 255, 255, 0.75))',
                   background: isActive
-                    ? 'linear-gradient(90deg, rgba(8, 120, 255, 0.35) 0%, rgba(8, 120, 255, 0.15) 100%)'
+                    ? 'var(--admin-brand-bg, rgba(8, 120, 255, 0.15))'
                     : 'transparent',
                   border: isActive
-                    ? '1px solid rgba(8, 120, 255, 0.5)'
+                    ? '1px solid var(--admin-brand, rgba(8, 120, 255, 0.5))'
                     : '1px solid transparent',
                   cursor: 'pointer',
                   textAlign: 'left',
@@ -271,7 +275,7 @@ export default function AdminMobileDrawer({
                   <Icon
                     size={18}
                     style={{
-                      color: isActive ? 'var(--hill-blue-bright, #0878FF)' : 'rgba(255, 255, 255, 0.5)',
+                      color: isActive ? 'var(--admin-brand, #0878FF)' : 'var(--admin-text-muted, rgba(255, 255, 255, 0.5))',
                       flexShrink: 0,
                     }}
                   />
@@ -286,9 +290,9 @@ export default function AdminMobileDrawer({
                       padding: '2px 8px',
                       borderRadius: '10px',
                       background: tab.badgeColor
-                        ? 'rgba(34, 197, 94, 0.2)'
-                        : 'rgba(255, 255, 255, 0.1)',
-                      color: tab.badgeColor || 'rgba(255, 255, 255, 0.7)',
+                        ? 'rgba(34, 197, 94, 0.15)'
+                        : 'var(--admin-badge-bg, rgba(255, 255, 255, 0.1))',
+                      color: tab.badgeColor || 'var(--admin-badge-text, #ffffff)',
                       border: tab.badgeColor ? '1px solid rgba(34, 197, 94, 0.4)' : 'none',
                     }}
                   >
@@ -304,13 +308,16 @@ export default function AdminMobileDrawer({
         <div
           style={{
             padding: '1rem',
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+            borderTop: '1px solid var(--admin-border, rgba(255, 255, 255, 0.08))',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.65rem',
-            background: 'rgba(0, 0, 0, 0.2)',
+            gap: '0.85rem',
+            background: 'var(--admin-surface-alt, rgba(0, 0, 0, 0.2))',
           }}
         >
+          {/* Mobile Drawer Theme Switcher */}
+          <ThemeToggle variant="mobile-drawer" />
+
           <a
             href="/"
             target="_blank"
@@ -321,9 +328,9 @@ export default function AdminMobileDrawer({
               justifyContent: 'space-between',
               padding: '10px 14px',
               borderRadius: '8px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: 'var(--hill-blue-bright, #0878FF)',
+              background: 'var(--admin-card, rgba(255, 255, 255, 0.05))',
+              border: '1px solid var(--admin-card-border, rgba(255, 255, 255, 0.1))',
+              color: 'var(--admin-brand, #0878FF)',
               fontSize: '0.85rem',
               fontWeight: 600,
               textDecoration: 'none',
@@ -346,9 +353,9 @@ export default function AdminMobileDrawer({
               gap: '8px',
               padding: '10px 14px',
               borderRadius: '8px',
-              background: 'rgba(239, 68, 68, 0.15)',
+              background: 'rgba(239, 68, 68, 0.12)',
               border: '1px solid rgba(239, 68, 68, 0.35)',
-              color: '#FCA5A5',
+              color: '#EF4444',
               fontSize: '0.85rem',
               fontWeight: 600,
               cursor: 'pointer',

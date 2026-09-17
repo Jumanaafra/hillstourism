@@ -45,7 +45,15 @@ export interface EnquiryData {
     sheetsStatus?: string
     emailError?: string
     sheetsError?: string
+    lastSheetSyncAt?: string
+    sheetRow?: number
   }
+  lastEmailSentAt?: string
+  lastEmailSubject?: string
+  emailStatus?: string
+  emailHistory?: any[]
+  notes?: any[]
+  timeline?: any[]
   createdAt?: any
 }
 
@@ -54,6 +62,7 @@ interface MobileEnquiryCardProps {
   onViewDetails: (enquiry: EnquiryData) => void
   onChangeStatus: (id: string, newStatus: string) => void
   onArchive: (id: string) => void
+  onOpenEmailComposer?: (enquiry: EnquiryData) => void
 }
 
 export default function MobileEnquiryCard({
@@ -61,6 +70,7 @@ export default function MobileEnquiryCard({
   onViewDetails,
   onChangeStatus,
   onArchive,
+  onOpenEmailComposer,
 }: MobileEnquiryCardProps) {
   const status = enquiry.status || 'new'
   const isNew = status === 'new'
@@ -71,12 +81,24 @@ export default function MobileEnquiryCard({
         return { bg: 'rgba(34, 197, 94, 0.2)', border: 'rgba(34, 197, 94, 0.4)', text: '#86EFAC', label: 'New Lead' }
       case 'contacted':
         return { bg: 'rgba(245, 158, 11, 0.2)', border: 'rgba(245, 158, 11, 0.4)', text: '#FDE68A', label: 'Contacted' }
+      case 'quotation_sent':
+        return { bg: 'rgba(139, 92, 246, 0.2)', border: 'rgba(139, 92, 246, 0.4)', text: '#C4B5FD', label: 'Quotation Sent' }
+      case 'confirmed':
+        return { bg: 'rgba(16, 185, 129, 0.2)', border: 'rgba(16, 185, 129, 0.4)', text: '#6EE7B7', label: 'Confirmed' }
+      case 'payment_pending':
+        return { bg: 'rgba(249, 115, 22, 0.2)', border: 'rgba(249, 115, 22, 0.4)', text: '#FDBA74', label: 'Payment Pending' }
+      case 'booked':
+        return { bg: 'rgba(59, 130, 246, 0.2)', border: 'rgba(59, 130, 246, 0.4)', text: '#93C5FD', label: 'Booked' }
+      case 'completed':
+        return { bg: 'rgba(6, 182, 212, 0.2)', border: 'rgba(6, 182, 212, 0.4)', text: '#67E8F9', label: 'Completed' }
+      case 'cancelled':
+        return { bg: 'rgba(244, 63, 94, 0.2)', border: 'rgba(244, 63, 94, 0.4)', text: '#FDA4AF', label: 'Cancelled' }
+      case 'spam':
+        return { bg: 'rgba(239, 68, 68, 0.2)', border: 'rgba(239, 68, 68, 0.4)', text: '#FCA5A5', label: 'Spam' }
       case 'in_progress':
         return { bg: 'rgba(59, 130, 246, 0.2)', border: 'rgba(59, 130, 246, 0.4)', text: '#93C5FD', label: 'In Progress' }
       case 'closed':
         return { bg: 'rgba(255, 255, 255, 0.1)', border: 'rgba(255, 255, 255, 0.2)', text: '#CBD5E1', label: 'Closed' }
-      case 'spam':
-        return { bg: 'rgba(239, 68, 68, 0.2)', border: 'rgba(239, 68, 68, 0.4)', text: '#FCA5A5', label: 'Spam' }
       default:
         return { bg: 'rgba(255, 255, 255, 0.1)', border: 'rgba(255, 255, 255, 0.2)', text: '#ffffff', label: st }
     }
@@ -90,19 +112,21 @@ export default function MobileEnquiryCard({
 
   return (
     <div
+      className="admin-card"
       style={{
         background: isNew
-          ? 'linear-gradient(180deg, rgba(8, 120, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)'
-          : 'rgba(255, 255, 255, 0.04)',
+          ? 'var(--admin-brand-bg, rgba(8, 120, 255, 0.08))'
+          : 'var(--admin-card, rgba(255, 255, 255, 0.04))',
         border: isNew
-          ? '1px solid rgba(8, 120, 255, 0.35)'
-          : '1px solid rgba(255, 255, 255, 0.08)',
+          ? '1px solid var(--admin-brand, rgba(8, 120, 255, 0.45))'
+          : '1px solid var(--admin-card-border, rgba(255, 255, 255, 0.08))',
         borderRadius: '12px',
         padding: '1rem',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.75rem',
         position: 'relative',
+        boxShadow: 'var(--admin-shadow-sm, none)',
       }}
     >
       {/* Top Bar: ID + Status + Integrations */}
@@ -112,8 +136,8 @@ export default function MobileEnquiryCard({
             fontFamily: 'monospace',
             fontWeight: 700,
             fontSize: '0.75rem',
-            color: 'var(--hill-blue-bright, #0878FF)',
-            background: 'rgba(8, 120, 255, 0.12)',
+            color: 'var(--admin-brand, #0878FF)',
+            background: 'var(--admin-brand-bg, rgba(8, 120, 255, 0.12))',
             padding: '2px 8px',
             borderRadius: '4px',
           }}
@@ -147,7 +171,7 @@ export default function MobileEnquiryCard({
             fontFamily: 'var(--font-display)',
             fontSize: '1.05rem',
             fontWeight: 700,
-            color: '#ffffff',
+            color: 'var(--admin-text, #ffffff)',
             margin: '0 0 2px 0',
           }}
         >
@@ -156,38 +180,62 @@ export default function MobileEnquiryCard({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
           {enquiry.customer?.phone && (
-            <span style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--admin-text, rgba(255, 255, 255, 0.85))', fontWeight: 500 }}>
               {enquiry.customer.phone}
             </span>
           )}
 
-          {/* Direct call & WhatsApp triggers */}
-          {cleanPhone && (
-            <div style={{ display: 'inline-flex', gap: '6px' }}>
-              <a
-                href={`tel:${cleanPhone}`}
-                aria-label={`Call ${enquiry.customer?.name || 'customer'}`}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '6px',
-                  background: 'rgba(8, 120, 255, 0.2)',
-                  color: 'var(--hill-blue-bright, #0878FF)',
-                  border: '1px solid rgba(8, 120, 255, 0.4)',
-                  textDecoration: 'none',
-                }}
-              >
-                <FiPhone size={14} />
-              </a>
+          {/* Direct call, WhatsApp, and Email triggers */}
+          <div style={{ display: 'inline-flex', gap: '6px' }}>
+            {cleanPhone && (
+              <>
+                <a
+                  href={`tel:${cleanPhone}`}
+                  aria-label={`Call ${enquiry.customer?.name || 'customer'}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '6px',
+                    background: 'var(--admin-brand-bg, rgba(8, 120, 255, 0.15))',
+                    color: 'var(--admin-brand, #0878FF)',
+                    border: '1px solid var(--admin-brand, rgba(8, 120, 255, 0.4))',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <FiPhone size={14} />
+                </a>
 
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`WhatsApp ${enquiry.customer?.name || 'customer'}`}
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`WhatsApp ${enquiry.customer?.name || 'customer'}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '6px',
+                    background: 'rgba(34, 197, 94, 0.15)',
+                    color: '#22C55E',
+                    border: '1px solid rgba(34, 197, 94, 0.4)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <FaWhatsapp size={15} />
+                </a>
+              </>
+            )}
+
+            {onOpenEmailComposer && enquiry.customer?.email && (
+              <button
+                type="button"
+                onClick={() => onOpenEmailComposer(enquiry)}
+                aria-label={`Email ${enquiry.customer?.name || 'customer'}`}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -195,20 +243,21 @@ export default function MobileEnquiryCard({
                   width: '30px',
                   height: '30px',
                   borderRadius: '6px',
-                  background: 'rgba(34, 197, 94, 0.2)',
-                  color: '#86EFAC',
-                  border: '1px solid rgba(34, 197, 94, 0.4)',
-                  textDecoration: 'none',
+                  background: 'rgba(139, 92, 246, 0.15)',
+                  color: '#A78BFA',
+                  border: '1px solid rgba(139, 92, 246, 0.4)',
+                  cursor: 'pointer',
+                  padding: 0,
                 }}
               >
-                <FaWhatsapp size={15} />
-              </a>
-            </div>
-          )}
+                <FiMail size={14} />
+              </button>
+            )}
+          </div>
         </div>
 
         {enquiry.customer?.email && (
-          <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)', margin: '4px 0 0 0' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted, rgba(255, 255, 255, 0.5))', margin: '4px 0 0 0' }}>
             {enquiry.customer.email}
           </p>
         )}
@@ -217,7 +266,8 @@ export default function MobileEnquiryCard({
       {/* Trip & Package Context */}
       <div
         style={{
-          background: 'rgba(0, 0, 0, 0.25)',
+          background: 'var(--admin-surface-alt, rgba(0, 0, 0, 0.25))',
+          border: '1px solid var(--admin-border, rgba(255, 255, 255, 0.06))',
           padding: '8px 10px',
           borderRadius: '8px',
           fontSize: '0.8rem',
@@ -226,14 +276,14 @@ export default function MobileEnquiryCard({
           gap: '4px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#86EFAC' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--admin-brand, #0878FF)' }}>
           <FiMapPin size={13} style={{ flexShrink: 0 }} />
           <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {enquiry.package?.nameSnapshot || enquiry.hotel?.nameSnapshot || 'Customised Mountain Tour'}
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--admin-text-secondary, rgba(255, 255, 255, 0.65))', fontSize: '0.75rem' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             <FiCalendar size={12} /> {enquiry.travel?.date || 'Flexible Date'}
           </span>
@@ -251,7 +301,7 @@ export default function MobileEnquiryCard({
           <p
             style={{
               fontSize: '0.75rem',
-              color: 'rgba(255, 255, 255, 0.5)',
+              color: 'var(--admin-text-muted, rgba(255, 255, 255, 0.5))',
               margin: '2px 0 0 0',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -274,7 +324,7 @@ export default function MobileEnquiryCard({
             background: enquiry.integrations?.emailStatus === 'sent'
               ? 'rgba(34, 197, 94, 0.15)'
               : 'rgba(245, 158, 11, 0.15)',
-            color: enquiry.integrations?.emailStatus === 'sent' ? '#86EFAC' : '#FDE68A',
+            color: enquiry.integrations?.emailStatus === 'sent' ? '#22C55E' : '#F59E0B',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '3px',
@@ -290,7 +340,7 @@ export default function MobileEnquiryCard({
             background: enquiry.integrations?.sheetsStatus === 'synced'
               ? 'rgba(34, 197, 94, 0.15)'
               : 'rgba(245, 158, 11, 0.15)',
-            color: enquiry.integrations?.sheetsStatus === 'synced' ? '#86EFAC' : '#FDE68A',
+            color: enquiry.integrations?.sheetsStatus === 'synced' ? '#22C55E' : '#F59E0B',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '3px',
@@ -308,7 +358,7 @@ export default function MobileEnquiryCard({
           alignItems: 'center',
           gap: '8px',
           paddingTop: '0.65rem',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          borderTop: '1px solid var(--admin-border, rgba(255, 255, 255, 0.08))',
           marginTop: 'auto',
         }}
       >
@@ -335,18 +385,24 @@ export default function MobileEnquiryCard({
             style={{
               padding: '6px 8px',
               borderRadius: '6px',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              background: '#001040',
-              color: '#ffffff',
+              border: '1px solid var(--admin-input-border, rgba(255, 255, 255, 0.2))',
+              background: 'var(--admin-input-bg, #001040)',
+              color: 'var(--admin-input-text, #ffffff)',
               fontSize: '0.75rem',
               minHeight: '40px',
             }}
           >
-            <option value="new">New</option>
+            <option value="new">New Lead</option>
             <option value="contacted">Contacted</option>
-            <option value="in_progress">In Progress</option>
-            <option value="closed">Closed</option>
+            <option value="quotation_sent">Quotation Sent</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="payment_pending">Payment Pending</option>
+            <option value="booked">Booked</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
             <option value="spam">Spam</option>
+            <option value="in_progress">In Progress (Legacy)</option>
+            <option value="closed">Closed (Legacy)</option>
           </select>
 
           <button
@@ -359,7 +415,7 @@ export default function MobileEnquiryCard({
               borderRadius: '6px',
               border: '1px solid rgba(239, 68, 68, 0.3)',
               background: 'rgba(239, 68, 68, 0.1)',
-              color: '#FCA5A5',
+              color: '#EF4444',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

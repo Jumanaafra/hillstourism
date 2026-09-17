@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateAdminToken, verifyAdminAuth, adminJsonResponse } from '@/lib/auth/adminAuth'
+import {
+  validateAdminToken,
+  validateAdminCredentials,
+  getAdminSessionToken,
+  verifyAdminAuth,
+  adminJsonResponse,
+} from '@/lib/auth/adminAuth'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/admin/auth — Admin Login
- * Validates admin credentials and sets a hardened HttpOnly session cookie.
+ * Validates admin credentials (email & password or access token)
+ * and sets a hardened HttpOnly session cookie.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -19,15 +26,41 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const email = body?.email
+    const password = body?.password
     const token = body?.token
-    if (!token || typeof token !== 'string') {
+
+    let authResult: any
+    let sessionToken: string = ''
+
+    // A. Authenticate with Email & Password
+    if (email && password) {
+      if (typeof email !== 'string' || typeof password !== 'string') {
+        return adminJsonResponse(
+          { success: false, error: 'Email and password must be valid strings.' },
+          { status: 400 }
+        )
+      }
+      authResult = await validateAdminCredentials(email, password)
+      sessionToken = getAdminSessionToken()
+    }
+    // B. Authenticate with Direct Access Token (backward compatibility)
+    else if (token) {
+      if (typeof token !== 'string') {
+        return adminJsonResponse(
+          { success: false, error: 'Admin access token must be a string.' },
+          { status: 400 }
+        )
+      }
+      authResult = await validateAdminToken(token)
+      sessionToken = token.trim()
+    } else {
       return adminJsonResponse(
-        { success: false, error: 'Admin access token is required.' },
+        { success: false, error: 'Please enter your admin email and password.' },
         { status: 400 }
       )
     }
 
-    const authResult = await validateAdminToken(token)
     if (!authResult.authenticated) {
       return adminJsonResponse(
         { success: false, error: authResult.error || 'Invalid admin credentials.' },
@@ -48,7 +81,7 @@ export async function POST(req: NextRequest) {
     // Set hardened HttpOnly cookie (inaccessible to JavaScript)
     response.cookies.set({
       name: 'admin_token',
-      value: token.trim(),
+      value: sessionToken,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

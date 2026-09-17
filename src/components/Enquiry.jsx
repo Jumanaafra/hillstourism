@@ -149,14 +149,18 @@ export default function Enquiry({
   )
 
   const Field = ({ id: fid, label, required, error, children }) => (
-    <div>
+    <div className={`form-field-wrapper ${error ? 'has-error' : ''}`}>
       <label htmlFor={fid} className="form-label">
-        {label}{required && <span style={{ color: 'var(--hill-blue-bright)', marginLeft: '2px' }}>*</span>}
+        <span>{label}</span>
+        {required && <span style={{ color: '#38bdf8', marginLeft: '3px' }}>*</span>}
       </label>
-      {children}
+      <div className="form-input-container">
+        {children}
+      </div>
       {error && (
-        <p id={`${fid}-error`} role="alert" style={{ fontSize: '0.7rem', color: '#EF4444', marginTop: '0.4rem', fontFamily: 'var(--font-body)' }}>
-          {error}
+        <p id={`${fid}-error`} role="alert" className="form-error-msg">
+          <FiAlertCircle style={{ fontSize: '0.75rem', flexShrink: 0 }} />
+          <span>{error}</span>
         </p>
       )}
     </div>
@@ -171,7 +175,7 @@ export default function Enquiry({
         position:   'relative',
         overflow:   'hidden',
         background: 'var(--hill-navy-deep)',
-        padding:    'clamp(4rem,8vw,7rem) clamp(1.25rem,5vw,5rem)',
+        padding:    'clamp(3.5rem,7vw,6.5rem) clamp(1rem,4vw,4rem)',
       }}
     >
       {/* Background mountain image */}
@@ -198,12 +202,7 @@ export default function Enquiry({
       }} aria-hidden="true" />
 
       <div style={{ maxWidth: 'var(--container-w)', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-        <div style={{
-          display:             'grid',
-          gridTemplateColumns: '1fr 1.2fr',
-          gap:                 'clamp(2rem,5vw,6rem)',
-          alignItems:          'start',
-        }}>
+        <div className="enquiry-layout-grid">
 
           {/* ── Left — Copy ── */}
           <div className="reveal">
@@ -326,7 +325,7 @@ export default function Enquiry({
                     </div>
                   )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                  <div className="enquiry-inputs-grid">
                     <Field id="name" label="Full Name" required error={errors.name}>
                       <input id="name" type="text" value={form.name} onChange={e => update('name', e.target.value)}
                         placeholder="Rahul Mehta" className="form-input" required aria-required="true"
@@ -373,7 +372,7 @@ export default function Enquiry({
                       </select>
                     </Field>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                  <div className="enquiry-inputs-grid">
                     <Field id="hotelId" label="Preferred Stay">
                       <select id="hotelId" value={form.hotelId} onChange={e => update('hotelId', e.target.value)}
                         className="form-input">
@@ -395,24 +394,25 @@ export default function Enquiry({
                       rows={4} className="form-input" style={{ resize: 'vertical' }} />
                   </Field>
 
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    disabled={status === 'sending'}
-                    style={{ width: '100%', justifyContent: 'center', marginTop: '1.5rem', padding: '1rem' }}
-                    aria-label="Send trip enquiry"
-                  >
-                    {status === 'sending' ? (
-                      <>
-                        <span style={{ display:'inline-block', width:'16px', height:'16px', borderRadius:'50%', border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'white', animation:'spin 0.7s linear infinite' }} />
-                        Sending…
-                      </>
-                    ) : (
-                      <>Send Enquiry <FiArrowRight style={{ marginLeft: '6px' }} /></>
-                    )}
-                  </button>
+                  <div className="enquiry-submit-wrapper">
+                    <button
+                      type="submit"
+                      className="btn-primary enquiry-submit-btn"
+                      disabled={status === 'sending'}
+                      aria-label="Send trip enquiry"
+                    >
+                      {status === 'sending' ? (
+                        <>
+                          <span style={{ display:'inline-block', width:'16px', height:'16px', borderRadius:'50%', border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'white', animation:'spin 0.7s linear infinite', marginRight:'8px' }} />
+                          Sending Enquiry…
+                        </>
+                      ) : (
+                        <>Send Enquiry <FiArrowRight style={{ marginLeft: '6px' }} /></>
+                      )}
+                    </button>
+                  </div>
 
-                  <p style={{ textAlign:'center', fontSize:'0.7rem', color:'rgba(255,255,255,0.3)', marginTop:'1rem' }}>
+                  <p style={{ textAlign:'center', fontSize:'0.7rem', color:'rgba(255,255,255,0.35)', marginTop:'1rem' }}>
                     No spam. We'll only use this to plan your trip.
                   </p>
                 </form>
@@ -424,6 +424,72 @@ export default function Enquiry({
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        .enquiry-layout-grid {
+          display: grid;
+          grid-template-columns: 1fr 1.2fr;
+          gap: clamp(2rem, 5vw, 6rem);
+          align-items: start;
+        }
+
+        .enquiry-inputs-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.25rem;
+          margin-bottom: 1.25rem;
+        }
+
+        .form-field-wrapper {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .form-error-msg {
+          font-size: 0.72rem;
+          color: #EF4444;
+          margin-top: 0.35rem;
+          font-family: var(--font-body);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .enquiry-submit-wrapper {
+          margin-top: 1.5rem;
+        }
+
+        .enquiry-submit-btn {
+          width: 100%;
+          justify-content: center;
+          padding: 0.95rem 1.5rem;
+          font-size: 0.92rem;
+          border-radius: 10px;
+          min-height: 48px;
+        }
+
+        @media (max-width: 992px) {
+          .enquiry-layout-grid {
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .enquiry-inputs-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+          }
+
+          .enquiry-submit-wrapper {
+            position: sticky;
+            bottom: 0.75rem;
+            z-index: 20;
+            padding: 0.5rem 0;
+            background: linear-gradient(to top, rgba(0, 9, 31, 0.95) 75%, transparent);
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+          }
+        }
       `}</style>
     </section>
   )
