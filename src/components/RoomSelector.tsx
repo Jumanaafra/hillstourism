@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import type { Hotel, Room } from '@/types/domain'
-import { FiCalendar, FiCheck, FiInfo, FiUser, FiArrowRight, FiAlertCircle, FiChevronLeft, FiChevronRight, FiEye, FiArrowLeft } from 'react-icons/fi'
+import { FiCalendar, FiCheck, FiInfo, FiUser, FiArrowRight, FiAlertCircle, FiChevronLeft, FiChevronRight, FiEye, FiArrowLeft, FiX } from 'react-icons/fi'
 import DateRangePicker from '@/components/DateRangePicker'
 import CottageDetailsModal from '@/components/CottageDetailsModal'
+import Enquiry from '@/components/Enquiry'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -35,6 +36,7 @@ export default function RoomSelector({ hotel, onRoomsSelected }: Props) {
   const [loadingAvailability, setLoadingAvailability] = useState<boolean>(false)
   const [apiError, setApiError] = useState<string>('')
   const [selectedRoomForModal, setSelectedRoomForModal] = useState<Room | null>(null)
+  const [showEnquiryModal, setShowEnquiryModal] = useState<boolean>(false)
 
   const rowsContainerRef = useRef<HTMLDivElement>(null)
 
@@ -158,6 +160,34 @@ export default function RoomSelector({ hotel, onRoomsSelected }: Props) {
     return perNight * (nights > 0 ? nights : 1)
   }, [selectedRooms, nights])
 
+  useEffect(() => {
+    if (showEnquiryModal) {
+      document.body.style.overflow = 'hidden'
+      const timer = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('hillstourism_room_selected', {
+          detail: {
+            hotelId: hotel.id,
+            checkIn,
+            checkOut,
+            nights,
+            roomIds: selectedRoomIds,
+            selectedRooms,
+            estimatedAmount,
+          }
+        }))
+      }, 50)
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setShowEnquiryModal(false)
+      }
+      window.addEventListener('keydown', handleKeyDown)
+      return () => {
+        clearTimeout(timer)
+        document.body.style.overflow = ''
+        window.removeEventListener('keydown', handleKeyDown)
+      }
+    }
+  }, [showEnquiryModal, hotel.id, checkIn, checkOut, nights, selectedRoomIds, selectedRooms, estimatedAmount])
+
   const toggleRoomSelection = (room: Room, isAvailable: boolean) => {
     if (!isAvailable) return
 
@@ -179,23 +209,19 @@ export default function RoomSelector({ hotel, onRoomsSelected }: Props) {
       })
     }
 
-    // Pre-fill enquiry form and smooth scroll
-    const enquirySection = document.getElementById('contact')
-    if (enquirySection) {
-      enquirySection.scrollIntoView({ behavior: 'smooth' })
-      // Dispatch custom event to notify Enquiry form
-      window.dispatchEvent(new CustomEvent('hillstourism_room_selected', {
-        detail: {
-          hotelId: hotel.id,
-          checkIn,
-          checkOut,
-          nights,
-          roomIds: selectedRoomIds,
-          selectedRooms,
-          estimatedAmount,
-        }
-      }))
-    }
+    // Open existing Enquiry form inside Modal popup on the SAME page
+    setShowEnquiryModal(true)
+    window.dispatchEvent(new CustomEvent('hillstourism_room_selected', {
+      detail: {
+        hotelId: hotel.id,
+        checkIn,
+        checkOut,
+        nights,
+        roomIds: selectedRoomIds,
+        selectedRooms,
+        estimatedAmount,
+      }
+    }))
   }
 
   // Scroll horizontal carousel
@@ -713,6 +739,78 @@ export default function RoomSelector({ hotel, onRoomsSelected }: Props) {
             onClose={() => setSelectedRoomForModal(null)}
             onToggleSelect={(r) => toggleRoomSelection(r, !(availabilityData[r.id]?.computedStatus === 'booked' || r.status === 'maintenance'))}
           />
+        )}
+
+        {/* Modal Popup for Stay Room Selection */}
+        {showEnquiryModal && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1rem',
+              background: 'rgba(0, 9, 31, 0.75)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              animation: 'fadeIn 0.2s ease-out',
+            }}
+            onClick={() => setShowEnquiryModal(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Enquire for ${hotel.name}`}
+          >
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: '1500px',
+                maxHeight: '100vh',
+                overflowY: 'auto',
+                borderRadius: '20px',
+                background: 'var(--hill-navy-deep)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowEnquiryModal(false)}
+                aria-label="Close enquiry modal"
+                type="button"
+                style={{
+                  position: 'absolute',
+                  top: '1.25rem',
+                  right: '1.25rem',
+                  zIndex: 10,
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.12)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+              >
+                <FiX style={{ fontSize: '1.2rem' }} />
+              </button>
+
+              {/* Render embedded Enquiry component */}
+              <Enquiry
+                initialHotelId={hotel.id}
+                initialHotels={[hotel]}
+              />
+            </div>
+          </div>
         )}
 
       </div>

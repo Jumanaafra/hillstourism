@@ -6,6 +6,8 @@ import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinar
 import { packages } from '../data/packages'
 import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 
+import HorizontalCarousel from './HorizontalCarousel'
+
 const FILTERS = ['All', 'Couple', 'Family', 'Friends', 'Honeymoon']
 
 export default function FeaturedTrips({ id, initialPackages }) {
@@ -90,17 +92,15 @@ export default function FeaturedTrips({ id, initialPackages }) {
           ))}
         </div>
 
-        {/* Package grid */}
-        <div style={{
-          display:             'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
-          gap:                 'clamp(1rem,2vw,1.5rem)',
-        }}>
-          {filtered.map((pkg, i) => (
+        {/* Package carousel */}
+        <HorizontalCarousel
+          items={filtered}
+          ariaLabel="Curated travel packages carousel"
+          renderItem={(pkg, i) => (
             <article
               key={pkg.id}
               className={`package-card ${sectionRevealed ? 'visible' : 'reveal'}`}
-              style={{ transitionDelay: `${i * 0.07}s` }}
+              style={{ transitionDelay: `${i * 0.07}s`, height: '100%', display: 'flex', flexDirection: 'column' }}
               aria-label={`${pkg.name || pkg.title} — ${pkg.destination}`}
             >
               {/* Image */}
@@ -177,7 +177,7 @@ export default function FeaturedTrips({ id, initialPackages }) {
               </Link>
 
               {/* Body */}
-              <div className="package-card-body">
+              <div className="package-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <div>
                   <p style={{
                     fontSize:      '0.65rem',
@@ -205,7 +205,7 @@ export default function FeaturedTrips({ id, initialPackages }) {
                 </div>
 
                 {/* Highlights */}
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
                   {pkg.highlights.map(h => (
                     <span key={h} style={{
                       fontSize:     '0.6rem',
@@ -258,8 +258,8 @@ export default function FeaturedTrips({ id, initialPackages }) {
                 </div>
               </div>
             </article>
-          ))}
-        </div>
+          )}
+        />
 
         {/* View all */}
         <div className="reveal" style={{ textAlign: 'center', marginTop: '3rem', transitionDelay: '0.3s' }}>

@@ -33,6 +33,7 @@ function buildVehicleUpdatePayload(body: Record<string, any>) {
   if (body.priceNote !== undefined)      allowed.priceNote = String(body.priceNote).trim()
   if (body.description !== undefined)    allowed.description = String(body.description).trim()
   if (body.image !== undefined)          allowed.image = String(body.image).trim()
+  if (body.images !== undefined)         allowed.images = Array.isArray(body.images) ? body.images.map(s => String(s).trim()).filter(Boolean) : []
   if (body.media !== undefined)          allowed.media = Array.isArray(body.media) ? body.media : []
   if (body.active !== undefined)         allowed.active = Boolean(body.active)
 
@@ -70,6 +71,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const imagesArray = Array.isArray(body.images) && body.images.length > 0
+      ? body.images.map((s: any) => String(s).trim()).filter(Boolean)
+      : (body.image ? [String(body.image).trim()] : [])
+
     const vehicle = await createVehicle({
       name: body.name.trim(),
       numberPlate: body.numberPlate.trim(),
@@ -83,7 +88,8 @@ export async function POST(req: NextRequest) {
       features: Array.isArray(body.features) ? body.features : ['AC'],
       idealFor: body.idealFor || 'Couples & Small Families',
       priceNote: body.priceNote || 'Starting ₹2,500/day',
-      image: body.image || '',
+      image: body.image || (imagesArray[0] || ''),
+      images: imagesArray,
       active: body.active !== undefined ? Boolean(body.active) : true,
     })
 

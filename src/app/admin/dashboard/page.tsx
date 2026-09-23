@@ -12,6 +12,7 @@ const EnquiryDetailModal = dynamic(() => import('@/components/admin/EnquiryDetai
 const EmailComposerModal = dynamic(() => import('@/components/admin/EmailComposerModal'))
 import SheetsSyncCenter from '@/components/admin/SheetsSyncCenter'
 const AuditLogModal = dynamic(() => import('@/components/admin/AuditLogModal'))
+import AdminModal from '@/components/admin/AdminModal'
 import ThemeToggle from '@/components/admin/ThemeToggle'
 import { useAdminTheme } from '@/context/AdminThemeContext'
 import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
@@ -1616,34 +1617,14 @@ function AdminDashboardContent() {
         {/* ── PACKAGES TAB ── */}
         {activeTab === 'packages' && (
           <div>
-            {editingPackage ? (
-              /* ── PACKAGE & ITINERARY EDITOR ── */
-              <div style={{ ...cardStyle, marginBottom: '2rem', border: '1px solid var(--hill-blue-bright)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--hill-blue-bright)', fontWeight: 700, textTransform: 'uppercase' }}>Package Management</span>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.35rem', fontWeight: 700, marginTop: '2px' }}>
-                      {editingPackage.id ? `Edit Package: ${editingPackage.name}` : 'Create New Journey Package'}
-                    </h3>
-                  </div>
-                  <div className="admin-btn-group" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={() => setEditingPackage(null)}
-                      style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSavePackage}
-                      className="btn-primary"
-                      style={{ padding: '8px 20px', fontSize: '0.85rem' }}
-                    >
-                      Save Package & Itinerary
-                    </button>
-                  </div>
-                </div>
+            {editingPackage && (
+              /* ── PACKAGE & ITINERARY EDITOR MODAL ── */
+              <AdminModal
+                title={editingPackage.id ? `Edit Package: ${editingPackage.name}` : 'Create New Journey Package'}
+                subtitle="Configure basic details, itinerary days, inclusions, exclusions, and connected stays/vehicles"
+                maxWidth="1100px"
+                onClose={() => setEditingPackage(null)}
+              >
 
                 <form onSubmit={handleSavePackage} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                   {/* 1. Basic Information */}
@@ -2214,8 +2195,8 @@ function AdminDashboardContent() {
                     </button>
                   </div>
                 </form>
-              </div>
-            ) : null}
+              </AdminModal>
+            )}
 
             {/* ── PACKAGES CATALOG LIST ── */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -2309,21 +2290,14 @@ function AdminDashboardContent() {
         {/* ── HOTELS TAB ── */}
         {activeTab === 'hotels' && (
           <div>
-            {/* Edit Hotel Form */}
+            {/* Edit Hotel Form Modal */}
             {editingHotel && (
-              <div style={{ ...cardStyle, marginBottom: '2rem', border: '1px solid var(--hill-blue-bright)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                  <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', color: 'var(--hill-blue-bright)', fontWeight: 700 }}>
-                    Edit Hotel: {editingHotel.name}
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setEditingHotel(null)}
-                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    Cancel <FiX />
-                  </button>
-                </div>
+              <AdminModal
+                title={`Edit Hotel: ${editingHotel.name}`}
+                subtitle="Manage stay details, amenities, pricing, rooms & cottages"
+                maxWidth="1000px"
+                onClose={() => setEditingHotel(null)}
+              >
                 <form onSubmit={handleUpdateHotel} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Hotel Name *</label>
@@ -2643,7 +2617,7 @@ function AdminDashboardContent() {
                     </button>
                   </div>
                 </form>
-              </div>
+              </AdminModal>
             )}
 
             {/* Add Hotel Form */}
@@ -2729,21 +2703,14 @@ function AdminDashboardContent() {
         {/* ── VEHICLES TAB ── */}
         {activeTab === 'vehicles' && (
           <div>
-            {/* Edit Vehicle Form */}
+            {/* Edit Vehicle Form Modal */}
             {editingVehicle && (
-              <div style={{ ...cardStyle, marginBottom: '2rem', border: '1px solid var(--hill-blue-bright)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                  <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', color: 'var(--hill-blue-bright)', fontWeight: 700 }}>
-                    Edit Vehicle: {editingVehicle.name} ({editingVehicle.numberPlate})
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setEditingVehicle(null)}
-                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    Cancel <FiX />
-                  </button>
-                </div>
+              <AdminModal
+                title={`Edit Vehicle: ${editingVehicle.name} (${editingVehicle.numberPlate})`}
+                subtitle="Configure vehicle specs, features, pricing, and multi-photo gallery"
+                maxWidth="960px"
+                onClose={() => setEditingVehicle(null)}
+              >
                 <form onSubmit={handleUpdateVehicle} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Model Name *</label>
@@ -2770,15 +2737,80 @@ function AdminDashboardContent() {
                     <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Luggage Capacity</label>
                     <input type="text" placeholder="e.g. 4 Large Bags" value={editingVehicle.luggage || ''} onChange={e => setEditingVehicle({ ...editingVehicle, luggage: e.target.value })} style={inputStyle} />
                   </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
+
+                  {/* Multi-Photo Upload Gallery */}
+                  <div style={{ gridColumn: '1 / -1', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--hill-blue-bright)', fontWeight: 700, display: 'block', marginBottom: '8px', textTransform: 'uppercase' }}>
+                      Vehicle Photos Gallery (Multiple Photos Supported)
+                    </label>
+
+                    {/* Display current photos thumbnails */}
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                      {(editingVehicle.images && editingVehicle.images.length > 0
+                        ? editingVehicle.images
+                        : (editingVehicle.image ? [editingVehicle.image] : [])
+                      ).map((imgUrl, imgIdx) => (
+                        <div key={imgIdx} style={{ position: 'relative', width: '100px', height: '70px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.2)' }}>
+                          <img src={getOptimizedImageUrl(imgUrl, { width: 200, height: 140, crop: 'fill' })} alt={`Vehicle photo ${imgIdx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentImgs = [...(editingVehicle.images || (editingVehicle.image ? [editingVehicle.image] : []))]
+                              currentImgs.splice(imgIdx, 1)
+                              setEditingVehicle({
+                                ...editingVehicle,
+                                images: currentImgs,
+                                image: currentImgs[0] || '',
+                              })
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              background: 'rgba(0,0,0,0.75)',
+                              color: '#EF4444',
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: '20px',
+                              height: '20px',
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                            }}
+                            title="Remove photo"
+                          >
+                            <FiX size={12} />
+                          </button>
+                          {imgIdx === 0 && (
+                            <span style={{ position: 'absolute', bottom: 2, left: 2, background: 'rgba(8,120,255,0.85)', color: '#fff', fontSize: '0.55rem', padding: '1px 4px', borderRadius: '3px', fontWeight: 700 }}>
+                              Primary
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
                     <ImageUploadField
-                      label="Vehicle Image"
+                      label="Add Vehicle Photo to Gallery"
                       folder="vehicles"
                       token={token}
-                      value={editingVehicle.image || ''}
-                      onChange={(url) => setEditingVehicle({ ...editingVehicle, image: url })}
+                      placeholder="Upload or paste image URL to add to vehicle gallery"
+                      onChange={(url) => {
+                        if (url) {
+                          const currentImgs = [...(editingVehicle.images || (editingVehicle.image ? [editingVehicle.image] : []))]
+                          currentImgs.push(url)
+                          setEditingVehicle({
+                            ...editingVehicle,
+                            images: currentImgs,
+                            image: currentImgs[0] || url,
+                          })
+                        }
+                      }}
                     />
                   </div>
+
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Ideal For</label>
                     <input type="text" placeholder="e.g. Small families, couples" value={editingVehicle.idealFor || ''} onChange={e => setEditingVehicle({ ...editingVehicle, idealFor: e.target.value })} style={inputStyle} />
@@ -2816,7 +2848,7 @@ function AdminDashboardContent() {
                     </button>
                   </div>
                 </form>
-              </div>
+              </AdminModal>
             )}
 
             {/* Add Vehicle Form */}
@@ -2904,21 +2936,14 @@ function AdminDashboardContent() {
         {/* ── GALLERY TAB ── */}
         {activeTab === 'gallery' && (
           <div>
-            {/* Edit Photo Form */}
+            {/* Edit Photo Form Modal */}
             {editingGalleryPhoto && (
-              <div style={{ ...cardStyle, marginBottom: '2rem', border: '1px solid var(--hill-blue-bright)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                  <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', color: 'var(--hill-blue-bright)', fontWeight: 700 }}>
-                    Edit Gallery Photo #{editingGalleryPhoto.id}
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setEditingGalleryPhoto(null)}
-                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    Cancel <FiX />
-                  </button>
-                </div>
+              <AdminModal
+                title={`Edit Gallery Photo #${editingGalleryPhoto.id}`}
+                subtitle="Update photo image, caption, category, and display order"
+                maxWidth="800px"
+                onClose={() => setEditingGalleryPhoto(null)}
+              >
                 <form onSubmit={handleUpdateGalleryPhoto} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
                   <div style={{ gridColumn: '1 / -1' }}>
                     <ImageUploadField
@@ -2968,7 +2993,7 @@ function AdminDashboardContent() {
                     </button>
                   </div>
                 </form>
-              </div>
+              </AdminModal>
             )}
 
             {/* Add Photo Form */}
@@ -3138,11 +3163,12 @@ function AdminDashboardContent() {
 
               {/* Edit Category Modal */}
               {editingCategory && (
-                <div style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid var(--hill-blue-bright)', padding: '1.25rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h5 style={{ fontWeight: 700, color: 'var(--hill-blue-bright)' }}>Edit Category: {editingCategory.title}</h5>
-                    <button onClick={() => setEditingCategory(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><FiX /></button>
-                  </div>
+                <AdminModal
+                  title={`Edit Category: ${editingCategory.title}`}
+                  subtitle="Update title, badge, color, description, and cover image"
+                  maxWidth="800px"
+                  onClose={() => setEditingCategory(null)}
+                >
                   <form onSubmit={handleUpdateCategory} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
                     <input type="text" value={editingCategory.title} onChange={e => setEditingCategory({ ...editingCategory, title: e.target.value })} style={inputStyle} />
                     <input type="text" value={editingCategory.badge || ''} onChange={e => setEditingCategory({ ...editingCategory, badge: e.target.value })} style={inputStyle} placeholder="Badge" />
@@ -3164,7 +3190,7 @@ function AdminDashboardContent() {
                       <button type="submit" className="btn-primary" style={{ padding: '6px 18px', fontSize: '0.8rem' }}>Save Changes</button>
                     </div>
                   </form>
-                </div>
+                </AdminModal>
               )}
 
               {/* Categories Grid */}
@@ -3268,11 +3294,12 @@ function AdminDashboardContent() {
 
               {/* Edit Testimonial Modal */}
               {editingTestimonial && (
-                <div style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid var(--hill-blue-bright)', padding: '1.25rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h5 style={{ fontWeight: 700, color: 'var(--hill-blue-bright)' }}>Edit Testimonial: {editingTestimonial.name}</h5>
-                    <button onClick={() => setEditingTestimonial(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><FiX /></button>
-                  </div>
+                <AdminModal
+                  title={`Edit Testimonial: ${editingTestimonial.name}`}
+                  subtitle="Update traveler details, rating, avatar photo, and review text"
+                  maxWidth="800px"
+                  onClose={() => setEditingTestimonial(null)}
+                >
                   <form onSubmit={handleUpdateTestimonial} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
                     <input type="text" value={editingTestimonial.name} onChange={e => setEditingTestimonial({ ...editingTestimonial, name: e.target.value })} style={inputStyle} />
                     <input type="text" value={editingTestimonial.trip || ''} onChange={e => setEditingTestimonial({ ...editingTestimonial, trip: e.target.value })} style={inputStyle} />
@@ -3294,7 +3321,7 @@ function AdminDashboardContent() {
                       <button type="submit" className="btn-primary" style={{ padding: '6px 18px', fontSize: '0.8rem' }}>Save Changes</button>
                     </div>
                   </form>
-                </div>
+                </AdminModal>
               )}
 
               {/* Testimonials Grid */}
@@ -3406,11 +3433,12 @@ function AdminDashboardContent() {
 
               {/* Edit Experience Modal */}
               {editingExperience && (
-                <div style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid var(--hill-blue-bright)', padding: '1.25rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h5 style={{ fontWeight: 700, color: 'var(--hill-blue-bright)' }}>Edit Experience: {editingExperience.title}</h5>
-                    <button onClick={() => setEditingExperience(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><FiX /></button>
-                  </div>
+                <AdminModal
+                  title={`Edit Experience: ${editingExperience.title}`}
+                  subtitle="Update title, location, duration, image, and description"
+                  maxWidth="850px"
+                  onClose={() => setEditingExperience(null)}
+                >
                   <form onSubmit={handleUpdateExperience} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
                     <input type="text" value={editingExperience.title} onChange={e => setEditingExperience({ ...editingExperience, title: e.target.value })} style={inputStyle} />
                     <input type="text" value={editingExperience.location || ''} onChange={e => setEditingExperience({ ...editingExperience, location: e.target.value })} style={inputStyle} placeholder="Location" />
@@ -3432,7 +3460,7 @@ function AdminDashboardContent() {
                       <button type="submit" className="btn-primary" style={{ padding: '6px 18px', fontSize: '0.8rem' }}>Save Changes</button>
                     </div>
                   </form>
-                </div>
+                </AdminModal>
               )}
 
               {/* Experiences Grid */}
@@ -3657,97 +3685,83 @@ function AdminDashboardContent() {
 
             {/* Social Link Form Modal */}
             {(isCreatingSocial || editingSocial) && (
-              <div style={{
-                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                background: 'var(--admin-modal-overlay)', backdropFilter: 'blur(4px)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: 9999, padding: '1rem',
-              }}>
-                <div style={{ ...cardStyle, background: 'var(--admin-modal-bg)', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--admin-modal-border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                    <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 600, color: 'var(--admin-text)' }}>
-                      {editingSocial ? 'Edit Social Link' : 'Add New Social Link'}
-                    </h4>
-                    <button
-                      onClick={() => { setIsCreatingSocial(false); setEditingSocial(null) }}
-                      style={{ background: 'none', border: 'none', color: 'var(--admin-text-muted)', cursor: 'pointer', fontSize: '1.2rem' }}
+              <AdminModal
+                title={editingSocial ? 'Edit Social Link' : 'Add New Social Link'}
+                subtitle="Configure official social channel or messaging URL"
+                maxWidth="600px"
+                onClose={() => { setIsCreatingSocial(false); setEditingSocial(null) }}
+              >
+                <form onSubmit={handleSaveSocial} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '4px' }}>Platform</label>
+                    <select
+                      value={socialForm.platform}
+                      onChange={e => setSocialForm({ ...socialForm, platform: e.target.value })}
+                      style={inputStyle}
                     >
-                      <FiX />
-                    </button>
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="instagram">Instagram</option>
+                      <option value="facebook">Facebook</option>
+                      <option value="youtube">YouTube</option>
+                      <option value="twitter">Twitter / X</option>
+                    </select>
                   </div>
 
-                  <form onSubmit={handleSaveSocial} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '4px' }}>Platform</label>
-                      <select
-                        value={socialForm.platform}
-                        onChange={e => setSocialForm({ ...socialForm, platform: e.target.value })}
-                        style={inputStyle}
-                      >
-                        <option value="whatsapp">WhatsApp</option>
-                        <option value="instagram">Instagram</option>
-                        <option value="facebook">Facebook</option>
-                        <option value="youtube">YouTube</option>
-                        <option value="twitter">Twitter / X</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '4px' }}>
+                      URL (e.g. https://wa.me/... or https://instagram.com/...)
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={socialForm.url}
+                      onChange={e => setSocialForm({ ...socialForm, url: e.target.value })}
+                      style={inputStyle}
+                      required
+                    />
+                  </div>
 
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                     <div>
-                      <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '4px' }}>
-                        URL (e.g. https://wa.me/... or https://instagram.com/...)
-                      </label>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '4px' }}>Display Order</label>
                       <input
-                        type="url"
-                        placeholder="https://..."
-                        value={socialForm.url}
-                        onChange={e => setSocialForm({ ...socialForm, url: e.target.value })}
+                        type="number"
+                        value={socialForm.order}
+                        onChange={e => setSocialForm({ ...socialForm, order: parseInt(e.target.value) || 0 })}
                         style={inputStyle}
-                        required
                       />
                     </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '4px' }}>Display Order</label>
-                        <input
-                          type="number"
-                          value={socialForm.order}
-                          onChange={e => setSocialForm({ ...socialForm, order: parseInt(e.target.value) || 0 })}
-                          style={inputStyle}
-                        />
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.4rem' }}>
-                        <input
-                          type="checkbox"
-                          id="socialActive"
-                          checked={socialForm.active}
-                          onChange={e => setSocialForm({ ...socialForm, active: e.target.checked })}
-                          style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                        />
-                        <label htmlFor="socialActive" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>Active on Site</label>
-                      </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.4rem' }}>
+                      <input
+                        type="checkbox"
+                        id="socialActive"
+                        checked={socialForm.active}
+                        onChange={e => setSocialForm({ ...socialForm, active: e.target.checked })}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="socialActive" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>Active on Site</label>
                     </div>
+                  </div>
 
-                    <div className="admin-form-actions" style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                      <button
-                        type="button"
-                        className="btn-outline-white"
-                        onClick={() => { setIsCreatingSocial(false); setEditingSocial(null) }}
-                        style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="btn-primary"
-                        style={{ padding: '8px 20px', fontSize: '0.85rem' }}
-                      >
-                        {editingSocial ? 'Save Changes' : 'Create Link'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
+                  <div className="admin-form-actions" style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                    <button
+                      type="button"
+                      className="btn-outline-white"
+                      onClick={() => { setIsCreatingSocial(false); setEditingSocial(null) }}
+                      style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      style={{ padding: '8px 20px', fontSize: '0.85rem' }}
+                    >
+                      {editingSocial ? 'Save Changes' : 'Create Link'}
+                    </button>
+                  </div>
+                </form>
+              </AdminModal>
             )}
 
             {/* Desktop Social Links Table (>= md) */}
@@ -4010,32 +4024,12 @@ function AdminDashboardContent() {
 
             {/* SEO Edit Modal */}
             {editingSEO && (
-              <div style={{
-                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                background: 'var(--admin-modal-overlay)', backdropFilter: 'blur(5px)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: 9999, padding: '1rem',
-              }}>
-                <div style={{
-                  ...cardStyle, background: 'var(--admin-modal-bg)', width: '100%', maxWidth: '650px',
-                  maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--admin-modal-border)',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                    <div>
-                      <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 600, color: 'var(--admin-text)' }}>
-                        SEO Configuration
-                      </h4>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--hill-blue-bright)', fontWeight: 600 }}>
-                        Route: {editingSEO.route}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setEditingSEO(null)}
-                      style={{ background: 'none', border: 'none', color: 'var(--admin-text-muted)', cursor: 'pointer', fontSize: '1.2rem' }}
-                    >
-                      <FiX />
-                    </button>
-                  </div>
+              <AdminModal
+                title="SEO Configuration"
+                subtitle={`Route: ${editingSEO.route}`}
+                maxWidth="750px"
+                onClose={() => setEditingSEO(null)}
+              >
 
                   {/* Google Search Live Preview */}
                   <div style={{
@@ -4191,8 +4185,7 @@ function AdminDashboardContent() {
                       </div>
                     </div>
                   </form>
-                </div>
-              </div>
+              </AdminModal>
             )}
 
             {/* Desktop SEO Table (>= md) */}

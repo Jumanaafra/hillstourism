@@ -1,11 +1,14 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
 import { vehicles as defaultVehicles } from '../data/vehicles'
 import { FiUsers, FiBriefcase, FiMap, FiMapPin, FiX } from 'react-icons/fi'
 import { FaCarSide } from 'react-icons/fa'
 import Enquiry from './Enquiry'
+import HorizontalCarousel from './HorizontalCarousel'
+import VehicleCardImageCarousel from './VehicleCardImageCarousel'
 
 /**
  * @param {object} props
@@ -14,6 +17,8 @@ import Enquiry from './Enquiry'
  * @param {(vehicleId: string) => void} [props.onSelectVehicle]
  */
 export default function Vehicles({ id = '', initialVehicles = [], onSelectVehicle = undefined }) {
+  const pathname = usePathname()
+  const isHomePage = pathname === '/'
   const vehicleList = Array.isArray(initialVehicles) && initialVehicles.length > 0 ? initialVehicles : defaultVehicles
   const [selectedVehicleForModal, setSelectedVehicleForModal] = useState(null)
 
@@ -47,6 +52,121 @@ export default function Vehicles({ id = '', initialVehicles = [], onSelectVehicl
     </div>
   )
 
+
+  const renderVehicleCard = (v, i) => (
+    <article
+      key={v.id}
+      className="vehicle-card reveal visible"
+      style={{ transitionDelay: `${i * 0.08}s`, height: '100%', display: 'flex', flexDirection: 'column' }}
+      aria-label={`${v.name} — ${v.type}`}
+    >
+      {/* Vehicle multi-image / single-image carousel */}
+      <VehicleCardImageCarousel vehicle={v} />
+
+      {/* Badges strip */}
+      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.85rem' }}>
+        <span className="badge badge-blue">{v.type}</span>
+        <span className="badge badge-navy" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+          <FiUsers style={{ fontSize: '0.7rem' }} /> {v.capacity} Seats
+        </span>
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          padding: '2px 8px',
+          borderRadius: '100px',
+          fontSize: '0.62rem',
+          fontWeight: 600,
+          background: 'rgba(56, 189, 248, 0.12)',
+          color: 'var(--hill-blue-bright)',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
+        }}>
+          {v.features?.some(f => f.includes('AC')) ? 'AC Included' : 'Non-AC'}
+        </span>
+        {v.driverAvailable && (
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '3px',
+            padding: '2px 8px',
+            borderRadius: '100px',
+            fontSize: '0.62rem',
+            fontWeight: 600,
+            background: 'rgba(34, 197, 94, 0.12)',
+            color: '#16A34A',
+            border: '1px solid rgba(34, 197, 94, 0.25)',
+          }}>
+            <FaCarSide style={{ fontSize: '0.65rem' }} /> Chauffeur Incl.
+          </span>
+        )}
+      </div>
+
+      {/* Name */}
+      <h3 className="heading-sm" style={{ color: 'var(--hill-navy)', marginBottom: '0.25rem' }}>
+        {v.name}
+      </h3>
+      <p style={{ fontSize: '0.75rem', color: 'var(--hill-blue-bright)', fontWeight: 600, marginBottom: '1.25rem' }}>
+        {v.idealFor}
+      </p>
+
+      {/* Specs */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '0.6rem',
+        padding: '1rem',
+        background: 'var(--hill-surface)',
+        borderRadius: '8px',
+        marginBottom: '1.25rem',
+      }}>
+        <Feature icon={<FiUsers />} label={`${v.capacity} Seats`} />
+        <Feature icon={<FiBriefcase />} label={v.luggage} />
+        {v.driverAvailable && <Feature icon={<FaCarSide />} label="Driver Incl." />}
+        {v.localRoutes && <Feature icon={<FiMap />} label="Hill Routes" />}
+        {v.flexiblePickup && <Feature icon={<FiMapPin />} label="Flex Pickup" />}
+      </div>
+
+      {/* Features */}
+      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+        {(v.features || []).map(f => (
+          <span key={f} style={{
+            fontSize: '0.6rem',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            background: 'var(--hill-surface)',
+            border: '1px solid var(--hill-border)',
+            color: 'var(--hill-muted)',
+            fontWeight: 500,
+          }}>
+            {f}
+          </span>
+        ))}
+      </div>
+
+      {/* Price + CTA */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: '1rem',
+        borderTop: '1px solid var(--hill-border)',
+        marginTop: 'auto',
+      }}>
+        <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--hill-navy)' }}>
+          {v.priceNote}
+        </p>
+        <button
+          onClick={(e) => handleChoose(e, v)}
+          className="btn-primary"
+          style={{ padding: '0.6rem 1.1rem', fontSize: '0.7rem', border: 'none', cursor: 'pointer' }}
+          aria-label={`Choose ${v.name}`}
+          type="button"
+        >
+          Choose
+        </button>
+      </div>
+    </article>
+  )
+
   return (
     <section
       id={id}
@@ -71,144 +191,26 @@ export default function Vehicles({ id = '', initialVehicles = [], onSelectVehicl
           </div>
         </div>
 
-        {/* Vehicle grid */}
-        <div style={{
-          display:             'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
-          gap:                 'clamp(1rem,2vw,1.5rem)',
-        }}>
-          {vehicleList.map((v, i) => (
-            <article
-              key={v.id}
-              className="vehicle-card reveal visible"
-              style={{ transitionDelay: `${i * 0.08}s` }}
-              aria-label={`${v.name} — ${v.type}`}
-            >
-              {/* Vehicle image */}
-              <div style={{
-                borderRadius: '10px',
-                overflow:     'hidden',
-                aspectRatio:  '16/9',
-                marginBottom: '1.5rem',
-                background:   'var(--hill-surface)',
-              }}>
-                <img
-                  src={getOptimizedImageUrl(v.image, { width: 640, crop: 'fill' })}
-                  srcSet={generateResponsiveSrcSet(v.image, [360, 480, 640, 768], { crop: 'fill' })}
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
-                  alt={v.name}
-                  width={640}
-                  height={360}
-                  loading="lazy"
-                  decoding="async"
-                  style={{ width:'100%', height:'100%', objectFit:'cover', transition:'transform 0.5s ease' }}
-                  className="vehicle-img"
-                />
-              </div>
-
-              {/* Badges strip */}
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.85rem' }}>
-                <span className="badge badge-blue">{v.type}</span>
-                <span className="badge badge-navy" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                  <FiUsers style={{ fontSize: '0.7rem' }} /> {v.capacity} Seats
-                </span>
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '2px 8px',
-                  borderRadius: '100px',
-                  fontSize: '0.62rem',
-                  fontWeight: 600,
-                  background: 'rgba(56, 189, 248, 0.12)',
-                  color: 'var(--hill-blue-bright)',
-                  border: '1px solid rgba(56, 189, 248, 0.25)',
-                }}>
-                  {v.features?.some(f => f.includes('AC')) ? 'AC Included' : 'Non-AC'}
-                </span>
-                {v.driverAvailable && (
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '3px',
-                    padding: '2px 8px',
-                    borderRadius: '100px',
-                    fontSize: '0.62rem',
-                    fontWeight: 600,
-                    background: 'rgba(34, 197, 94, 0.12)',
-                    color: '#16A34A',
-                    border: '1px solid rgba(34, 197, 94, 0.25)',
-                  }}>
-                    <FaCarSide style={{ fontSize: '0.65rem' }} /> Chauffeur Incl.
-                  </span>
-                )}
-              </div>
-
-              {/* Name */}
-              <h3 className="heading-sm" style={{ color: 'var(--hill-navy)', marginBottom: '0.25rem' }}>
-                {v.name}
-              </h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--hill-blue-bright)', fontWeight: 600, marginBottom: '1.25rem' }}>
-                {v.idealFor}
-              </p>
-
-              {/* Specs */}
-              <div style={{
-                display:    'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap:        '0.6rem',
-                padding:    '1rem',
-                background: 'var(--hill-surface)',
-                borderRadius: '8px',
-                marginBottom: '1.25rem',
-              }}>
-                <Feature icon={<FiUsers />} label={`${v.capacity} Seats`} />
-                <Feature icon={<FiBriefcase />} label={v.luggage} />
-                {v.driverAvailable && <Feature icon={<FaCarSide />} label="Driver Incl." />}
-                {v.localRoutes    && <Feature icon={<FiMap />} label="Hill Routes" />}
-                {v.flexiblePickup && <Feature icon={<FiMapPin />} label="Flex Pickup" />}
-              </div>
-
-              {/* Features */}
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-                {(v.features || []).map(f => (
-                  <span key={f} style={{
-                    fontSize:     '0.6rem',
-                    padding:      '2px 8px',
-                    borderRadius: '4px',
-                    background:   'var(--hill-surface)',
-                    border:       '1px solid var(--hill-border)',
-                    color:        'var(--hill-muted)',
-                    fontWeight:   500,
-                  }}>
-                    {f}
-                  </span>
-                ))}
-              </div>
-
-              {/* Price + CTA */}
-              <div style={{
-                display:        'flex',
-                alignItems:     'center',
-                justifyContent: 'space-between',
-                paddingTop:     '1rem',
-                borderTop:      '1px solid var(--hill-border)',
-              }}>
-                <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--hill-navy)' }}>
-                  {v.priceNote}
-                </p>
-                <button
-                  onClick={(e) => handleChoose(e, v)}
-                  className="btn-primary"
-                  style={{ padding: '0.6rem 1.1rem', fontSize: '0.7rem', border: 'none', cursor: 'pointer' }}
-                  aria-label={`Choose ${v.name}`}
-                  type="button"
-                >
-                  Choose
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
+        {/* Vehicles: carousel only on Home, normal grid on Vehicles page */}
+        {isHomePage ? (
+          <HorizontalCarousel
+            items={vehicleList}
+            ariaLabel="Transportation fleet carousel"
+            renderItem={(v, i) => renderVehicleCard(v, i)}
+          />
+        ) : (
+          <div
+            className="vehicle-list-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
+              gap: '1.5rem',
+              alignItems: 'stretch',
+            }}
+          >
+            {vehicleList.map((v, i) => renderVehicleCard(v, i))}
+          </div>
+        )}
 
         {/* Note */}
         <div className="reveal visible" style={{ textAlign: 'center', marginTop: '2.5rem', transitionDelay: '0.3s' }}>
@@ -244,7 +246,7 @@ export default function Vehicles({ id = '', initialVehicles = [], onSelectVehicl
               position: 'relative',
               width: '100%',
               maxWidth: '1500px',
-              maxHeight: '100vh',
+              maxHeight: '96vh',
               overflowY: 'auto',
               borderRadius: '20px',
               background: 'var(--hill-navy-deep)',

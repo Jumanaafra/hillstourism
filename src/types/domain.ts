@@ -119,6 +119,7 @@ export interface Vehicle {
   description?: string
   media?: MediaItem[]
   image?: string
+  images?: string[]
   active: boolean
   seo?: SEOData
   createdAt?: string | Date
