@@ -2,6 +2,8 @@ import 'server-only'
 import admin from 'firebase-admin'
 
 let initializedAdmin: typeof admin | null = null
+let firestoreCircuitBreakerUntil = 0
+const CIRCUIT_BREAKER_COOLDOWN_MS = 15000 // 15s cooldown if Firestore times out in dev/fallback mode
 
 export function getFirebaseAdmin() {
   if (initializedAdmin) {
@@ -89,12 +91,21 @@ export function allowMemoryFallback(): boolean {
   return false
 }
 
-export const FIRESTORE_TIMEOUT_MS = 15000
+export function recordFirestoreFailure() {
+  if (allowMemoryFallback()) {
+    firestoreCircuitBreakerUntil = Date.now() + CIRCUIT_BREAKER_COOLDOWN_MS
+  }
+}
+
+export function isFirestoreCircuitOpen(): boolean {
+  return allowMemoryFallback() && Date.now() < firestoreCircuitBreakerUntil
+}
+
+export const FIRESTORE_TIMEOUT_MS = 2500
 
 /**
- * Executes a Firestore promise with a sensible database timeout (default 15000ms / 15s).
- * Allows cold-start TLS/OAuth2/gRPC handshakes (~2-5s, up to 10s during heavy CPU builds)
- * to complete normally while protecting against indefinite gRPC hangs.
+ * Executes a Firestore promise with a sensible database timeout (default 2500ms).
+ * Allows fast fallback to memory in development/test when gRPC connection stalls.
  */
 export async function withFirestoreTimeout<T>(
   operation: Promise<T>,
@@ -125,6 +136,7 @@ export async function withFirestoreTimeout<T>(
     return result
   } catch (err) {
     clearTimeout(timer!)
+    recordFirestoreFailure()
     throw err
   }
 }
@@ -132,7 +144,7 @@ export async function withFirestoreTimeout<T>(
 let firestoreSettingsConfigured = false
 
 export function getFirestoreDB() {
-  if (process.env.DISABLE_FIRESTORE === 'true') {
+  if (process.env.DISABLE_FIRESTORE === 'true' || isFirestoreCircuitOpen()) {
     return null
   }
 

@@ -139,14 +139,14 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
           <ul className="desktop-nav">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
-                <a
+                <Link
                   href={link.href}
                   className={`nav-link${isActive(link.href) ? ' nav-link-active' : ''}`}
-                  onClick={(e) => { e.preventDefault(); handleNavClick(link.href) }}
+                  onClick={() => { setMenuOpen(false); document.body.style.overflow = ''; }}
                   aria-current={isActive(link.href) ? 'page' : undefined}
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

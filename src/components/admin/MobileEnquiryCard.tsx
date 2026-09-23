@@ -38,6 +38,22 @@ export interface EnquiryData {
     groupSize?: number
     tripType?: string
   }
+  bookingDetails?: {
+    checkIn?: string
+    checkOut?: string
+    nights?: number
+    selectedRooms?: Array<{
+      roomId: string
+      roomNumber: string
+      name: string
+      category: string
+      capacity: number
+      pricePerNight: number
+    }>
+    roomCount?: number
+    categorySummary?: Record<string, number>
+    estimatedAmount?: number
+  }
   message?: string
   status?: string
   integrations?: {

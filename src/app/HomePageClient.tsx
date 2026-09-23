@@ -1,3 +1,6 @@
+'use client'
+
+import React, { useState } from 'react'
 import type { Package, Hotel, Vehicle, SiteSettings, Category, Experience, Testimonial } from '@/types/domain'
 import type { GalleryPhoto } from '@/lib/repositories/gallery.repo'
 // Layout & Section components — static imports to preserve full SSR document height
@@ -40,9 +43,18 @@ export default function HomePageClient({
   initialExperiences,
   initialTestimonials,
 }: HomePageClientProps) {
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('')
+
+  const handleSelectVehicle = (vehicleId: string) => {
+    setSelectedVehicleId(vehicleId)
+    const el = document.getElementById('contact')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   return (
     <>
-
       {/* Navigation */}
       <Navbar whatsappUrl={initialSettings?.whatsappNumber ? `https://wa.me/${initialSettings.whatsappNumber.replace(/[^0-9]/g, '')}` : undefined} />
 
@@ -84,11 +96,16 @@ export default function HomePageClient({
         <SmartStayMatcher id="smart-stay" initialHotels={initialHotels} />
 
         {/* 13. Vehicles */}
-        <Vehicles id="vehicles" initialVehicles={initialVehicles} />
+        <Vehicles
+          id="vehicles"
+          initialVehicles={initialVehicles}
+          onSelectVehicle={handleSelectVehicle}
+        />
 
         {/* 14. Trip Enquiry */}
         <Enquiry
           id="contact"
+          initialVehicleId={selectedVehicleId}
           initialPackages={initialPackages}
           initialHotels={initialHotels}
           initialVehicles={initialVehicles}

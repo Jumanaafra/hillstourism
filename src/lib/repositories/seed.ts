@@ -424,6 +424,7 @@ export const seedHotels: Hotel[] = rawStays.map(s => ({
   pricePerNight: s.pricePerNight,
   description: s.description,
   amenities: s.amenities,
+  rooms: (s as any).rooms || [],
   image: s.image,
   active: true,
   createdAt: new Date().toISOString(),

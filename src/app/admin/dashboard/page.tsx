@@ -2408,6 +2408,222 @@ function AdminDashboardContent() {
                       </div>
                     </div>
                   </div>
+                  {/* Manage Rooms / Cottages Section */}
+                  <div style={{ gridColumn: '1 / -1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      <div>
+                        <h5 style={{ fontSize: '0.9rem', color: 'var(--hill-blue-bright)', fontWeight: 700, textTransform: 'uppercase' }}>
+                          Manage Rooms / Cottages ({(editingHotel.rooms || []).length})
+                        </h5>
+                        <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)' }}>
+                          Configure cottage numbers, categories, guest capacity, rates, and visual property layout.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const rooms = editingHotel.rooms || []
+                          const nextNum = `C0${rooms.length + 1}`
+                          const newR = {
+                            id: `room-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                            roomNumber: nextNum,
+                            name: 'Deluxe Cottage',
+                            category: 'Deluxe',
+                            capacity: 2,
+                            pricePerNight: 4500,
+                            status: 'available' as const,
+                            layoutOrder: rooms.length + 1,
+                            row: Math.floor(rooms.length / 2) + 1,
+                            column: (rooms.length % 2) + 1,
+                          }
+                          setEditingHotel({ ...editingHotel, rooms: [...rooms, newR] })
+                        }}
+                        style={{ padding: '6px 12px', borderRadius: '6px', background: 'rgba(8, 120, 255, 0.15)', border: '1px solid rgba(8, 120, 255, 0.3)', color: 'var(--hill-blue-bright)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <FiPlus size={14} /> Add Cottage / Room
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto' }}>
+                      {(editingHotel.rooms || []).map((room, rIdx) => (
+                        <div key={room.id || rIdx} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0.85rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 110px), 1fr))', gap: '0.6rem', alignItems: 'center' }}>
+                          <div>
+                            <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>Number</label>
+                            <input
+                              type="text"
+                              value={room.roomNumber}
+                              onChange={e => {
+                                const rooms = [...(editingHotel.rooms || [])]
+                                rooms[rIdx] = { ...rooms[rIdx], roomNumber: e.target.value }
+                                setEditingHotel({ ...editingHotel, rooms })
+                              }}
+                              style={{ ...inputStyle, padding: '4px 8px', fontSize: '0.8rem' }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>Display Name</label>
+                            <input
+                              type="text"
+                              value={room.name}
+                              onChange={e => {
+                                const rooms = [...(editingHotel.rooms || [])]
+                                rooms[rIdx] = { ...rooms[rIdx], name: e.target.value }
+                                setEditingHotel({ ...editingHotel, rooms })
+                              }}
+                              style={{ ...inputStyle, padding: '4px 8px', fontSize: '0.8rem' }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>Category</label>
+                            <input
+                              type="text"
+                              value={room.category}
+                              onChange={e => {
+                                const rooms = [...(editingHotel.rooms || [])]
+                                rooms[rIdx] = { ...rooms[rIdx], category: e.target.value }
+                                setEditingHotel({ ...editingHotel, rooms })
+                              }}
+                              style={{ ...inputStyle, padding: '4px 8px', fontSize: '0.8rem' }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>Cots / Guests</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={room.capacity}
+                              onChange={e => {
+                                const rooms = [...(editingHotel.rooms || [])]
+                                rooms[rIdx] = { ...rooms[rIdx], capacity: parseInt(e.target.value) || 1 }
+                                setEditingHotel({ ...editingHotel, rooms })
+                              }}
+                              style={{ ...inputStyle, padding: '4px 8px', fontSize: '0.8rem' }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>Rate / Night (₹)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={room.pricePerNight}
+                              onChange={e => {
+                                const rooms = [...(editingHotel.rooms || [])]
+                                rooms[rIdx] = { ...rooms[rIdx], pricePerNight: parseFloat(e.target.value) || 0 }
+                                setEditingHotel({ ...editingHotel, rooms })
+                              }}
+                              style={{ ...inputStyle, padding: '4px 8px', fontSize: '0.8rem' }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>Status</label>
+                            <select
+                              value={room.status}
+                              onChange={e => {
+                                const rooms = [...(editingHotel.rooms || [])]
+                                rooms[rIdx] = { ...rooms[rIdx], status: e.target.value as any }
+                                setEditingHotel({ ...editingHotel, rooms })
+                              }}
+                              style={{ ...inputStyle, padding: '4px 6px', fontSize: '0.8rem', background: '#001040' }}
+                            >
+                              <option value="available">Available</option>
+                              <option value="maintenance">Maintenance</option>
+                              <option value="hidden">Hidden</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>Row / Col</label>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <input
+                                type="number"
+                                title="Row"
+                                min="1"
+                                value={room.row || 1}
+                                onChange={e => {
+                                  const rooms = [...(editingHotel.rooms || [])]
+                                  rooms[rIdx] = { ...rooms[rIdx], row: parseInt(e.target.value) || 1 }
+                                  setEditingHotel({ ...editingHotel, rooms })
+                                }}
+                                style={{ ...inputStyle, padding: '4px', fontSize: '0.75rem', width: '38px' }}
+                              />
+                              <input
+                                type="number"
+                                title="Column"
+                                min="1"
+                                value={room.column || 1}
+                                onChange={e => {
+                                  const rooms = [...(editingHotel.rooms || [])]
+                                  rooms[rIdx] = { ...rooms[rIdx], column: parseInt(e.target.value) || 1 }
+                                  setEditingHotel({ ...editingHotel, rooms })
+                                }}
+                                style={{ ...inputStyle, padding: '4px', fontSize: '0.75rem', width: '38px' }}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ gridColumn: '1 / -1', marginTop: '0.25rem', paddingTop: '0.5rem', borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
+                            <label style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '4px' }}>Cottage Photos Gallery</label>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                              {(room.images || (room.image ? [room.image] : [])).map((imgUrl, imgIdx) => (
+                                <div key={imgIdx} style={{ position: 'relative', width: '50px', height: '38px', borderRadius: '4px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.2)' }}>
+                                  <img src={getOptimizedImageUrl(imgUrl, { width: 100, height: 76, crop: 'fill' })} alt={`Room ${room.roomNumber} photo ${imgIdx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const rooms = [...(editingHotel.rooms || [])]
+                                      const currentImgs = [...(rooms[rIdx].images || (rooms[rIdx].image ? [rooms[rIdx].image] : []))]
+                                      currentImgs.splice(imgIdx, 1)
+                                      rooms[rIdx] = { ...rooms[rIdx], images: currentImgs, image: currentImgs[0] || '' }
+                                      setEditingHotel({ ...editingHotel, rooms })
+                                    }}
+                                    style={{ position: 'absolute', top: 1, right: 1, background: 'rgba(0,0,0,0.7)', color: '#EF4444', border: 'none', borderRadius: '50%', width: '14px', height: '14px', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                    title="Remove photo"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <ImageUploadField
+                              folder="rooms"
+                              token={token}
+                              placeholder="Upload or paste image URL to add to cottage gallery"
+                              onChange={(url) => {
+                                if (url) {
+                                  const rooms = [...(editingHotel.rooms || [])]
+                                  const currentImgs = [...(rooms[rIdx].images || (rooms[rIdx].image ? [rooms[rIdx].image] : []))]
+                                  currentImgs.push(url)
+                                  rooms[rIdx] = { ...rooms[rIdx], images: currentImgs, image: currentImgs[0] || url }
+                                  setEditingHotel({ ...editingHotel, rooms })
+                                }
+                              }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gridColumn: '1 / -1' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!confirm(`Delete room ${room.roomNumber}?`)) return
+                                const rooms = (editingHotel.rooms || []).filter((_, idx) => idx !== rIdx)
+                                setEditingHotel({ ...editingHotel, rooms })
+                              }}
+                              style={{ padding: '6px 12px', borderRadius: '4px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#FCA5A5', cursor: 'pointer', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              title="Delete Room"
+                            >
+                              <FiTrash2 size={13} /> Delete Cottage
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
                       type="checkbox"

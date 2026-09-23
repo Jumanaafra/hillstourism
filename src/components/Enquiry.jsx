@@ -66,7 +66,9 @@ export default function Enquiry({
     _hp: '', // Honeypot anti-spam
   })
 
-  // Synchronize when initial props change
+  const [roomBooking, setRoomBooking] = useState(null)
+
+  // Synchronize when initial props change or room selection event fires
   useEffect(() => {
     setForm(prev => ({
       ...prev,
@@ -74,6 +76,26 @@ export default function Enquiry({
       hotelId: initialHotelId !== undefined && initialHotelId !== '' ? initialHotelId : prev.hotelId,
       vehicleId: initialVehicleId !== undefined && initialVehicleId !== '' ? initialVehicleId : prev.vehicleId,
     }))
+
+    const handleRoomSelection = (evt) => {
+      if (!evt.detail) return
+      const { hotelId, checkIn, checkOut, nights, roomIds, selectedRooms, estimatedAmount } = evt.detail
+      setRoomBooking({ checkIn, checkOut, nights, roomIds, selectedRooms, estimatedAmount })
+      
+      const totalCapacity = (selectedRooms || []).reduce((acc, r) => acc + (r.capacity || 2), 0)
+
+      setForm(prev => ({
+        ...prev,
+        hotelId: hotelId || prev.hotelId,
+        travelDate: checkIn || prev.travelDate,
+        groupSize: totalCapacity > 0 ? String(totalCapacity) : prev.groupSize,
+        tripType: prev.tripType || 'Couple Getaway',
+        message: prev.message || `Selected Cottages: ${(selectedRooms || []).map(r => r.roomNumber + ' (' + r.name + ')').join(', ')} for ${nights} nights (Est: ₹${(estimatedAmount || 0).toLocaleString()})`
+      }))
+    }
+
+    window.addEventListener('hillstourism_room_selected', handleRoomSelection)
+    return () => window.removeEventListener('hillstourism_room_selected', handleRoomSelection)
   }, [initialPackageId, initialHotelId, initialVehicleId])
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState('')
@@ -139,8 +161,12 @@ export default function Enquiry({
           packageId: form.packageId || undefined,
           hotelId: form.hotelId || undefined,
           vehicleId: form.vehicleId || undefined,
+          checkIn: roomBooking?.checkIn || undefined,
+          checkOut: roomBooking?.checkOut || undefined,
+          nights: roomBooking?.nights || undefined,
+          roomIds: roomBooking?.roomIds || undefined,
           message: form.message.trim() || undefined,
-          source: 'website_enquiry_form',
+          source: roomBooking ? 'stay_details_room_selection' : 'website_enquiry_form',
           _hp: form._hp,
         }),
       })
