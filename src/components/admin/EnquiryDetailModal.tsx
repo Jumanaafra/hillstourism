@@ -461,32 +461,57 @@ export default function EnquiryDetailModal({
                 </div>
               </div>
 
-              {/* Section 3: Travel Preferences & Dates */}
-              <div style={cardSectionStyle}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--hill-blue-bright)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Travel Preferences
-                </span>
+              {/* Section 3b: Selected Cottage / Room Booking Breakdown */}
+              {enquiry.bookingDetails && (
+                <div style={{ ...cardSectionStyle, border: '1px solid rgba(8, 120, 255, 0.35)', background: 'rgba(8, 120, 255, 0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--hill-blue-bright)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Cottage / Room Selection Details
+                    </span>
+                    <span style={{ fontSize: '0.7rem', background: 'rgba(8, 120, 255, 0.2)', color: 'var(--hill-blue-bright)', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                      {enquiry.bookingDetails.nights} Nights Stay
+                    </span>
+                  </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <FiCalendar size={15} color="var(--admin-text-muted)" />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem', margin: '8px 0' }}>
                     <div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)' }}>Travel Date</div>
-                      <div style={{ fontWeight: 600, color: 'var(--admin-text)' }}>{enquiry.travel?.date || 'Flexible'}</div>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', display: 'block' }}>Check-in</span>
+                      <strong style={{ color: 'var(--admin-text)' }}>{enquiry.bookingDetails.checkIn}</strong>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', display: 'block' }}>Check-out</span>
+                      <strong style={{ color: 'var(--admin-text)' }}>{enquiry.bookingDetails.checkOut}</strong>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <FiUsers size={15} color="var(--admin-text-muted)" />
-                    <div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)' }}>Group Size</div>
-                      <div style={{ fontWeight: 600, color: 'var(--admin-text)' }}>
-                        {enquiry.travel?.groupSize ? `${enquiry.travel.groupSize} Guests` : 'Not specified'}
+                  {/* Room List */}
+                  {Array.isArray(enquiry.bookingDetails.selectedRooms) && enquiry.bookingDetails.selectedRooms.length > 0 && (
+                    <div style={{ marginTop: '8px', borderTop: '1px solid var(--admin-border)', paddingTop: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', display: 'block', marginBottom: '4px' }}>Selected Cottages/Rooms ({enquiry.bookingDetails.selectedRooms.length}):</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {enquiry.bookingDetails.selectedRooms.map((sr: any, idx: number) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', background: 'var(--admin-card)', padding: '6px 10px', borderRadius: '6px' }}>
+                            <div>
+                              <strong style={{ color: 'var(--hill-blue-bright)', marginRight: 6 }}>{sr.roomNumber}</strong>
+                              <span>{sr.name}</span>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', marginLeft: 6 }}>({sr.category} · {sr.capacity} Guests)</span>
+                            </div>
+                            <strong>₹{(sr.pricePerNight || 0).toLocaleString()}/night</strong>
+                          </div>
+                        ))}
                       </div>
                     </div>
+                  )}
+
+                  {/* Estimated Amount */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', borderTop: '1px solid var(--admin-border)', paddingTop: '8px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--admin-text-muted)' }}>Total Estimated Amount:</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 800, color: '#F59E0B' }}>
+                      ₹{(enquiry.bookingDetails.estimatedAmount || 0).toLocaleString()}
+                    </span>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Section 4: Customer Message */}
               {enquiry.message && (

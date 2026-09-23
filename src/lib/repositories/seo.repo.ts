@@ -186,7 +186,7 @@ export async function getAllPageSEO(): Promise<PageSEO[]> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const snapshot = await withFirestoreTimeout(db.collection('seo_pages').get(), 15000, 'getAllPageSEO')
+      const snapshot = await withFirestoreTimeout(db.collection('seo_pages').get(), 4000, 'getAllPageSEO')
       const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PageSEO))
       // Merge with defaults to ensure all routes exist
       const map = new Map<string, PageSEO>()
@@ -218,7 +218,7 @@ export async function getSeoByRoute(route: string): Promise<PageSEO | null> {
     try {
       const snapshot = await withFirestoreTimeout(
         db.collection('seo_pages').where('route', '==', normalizedRoute).limit(1).get(),
-        15000,
+        4000,
         `getSeoByRoute:${normalizedRoute}`
       )
       if (!snapshot.empty) {

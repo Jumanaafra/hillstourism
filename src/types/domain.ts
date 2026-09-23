@@ -60,6 +60,27 @@ export interface Package {
   updatedAt?: string | Date
 }
 
+export type RoomStatus = 'available' | 'maintenance' | 'hidden'
+
+export interface Room {
+  id: string
+  roomNumber: string // e.g. "C01"
+  name: string       // e.g. "Premium Cottage"
+  category: string   // e.g. "Premium", "Deluxe", "Family", "Special", "Normal"
+  capacity: number   // Guest/cot capacity (e.g. 2, 4, 6)
+  pricePerNight: number // e.g. 4500
+  status: RoomStatus
+  layoutOrder: number
+  row: number
+  column: number
+  image?: string
+  images?: string[]
+  description?: string
+  amenities?: string[]
+  createdAt?: string | Date
+  updatedAt?: string | Date
+}
+
 export interface Hotel {
   id: string
   name: string
@@ -71,6 +92,7 @@ export interface Hotel {
   pricePerNight?: string
   description?: string
   amenities: string[]
+  rooms?: Room[]
   media?: MediaItem[]
   image?: string
   active: boolean
@@ -224,6 +246,25 @@ export interface AuditLogEntry {
   timestamp: string
 }
 
+export interface SelectedRoomDetail {
+  roomId: string
+  roomNumber: string
+  name: string
+  category: string
+  capacity: number
+  pricePerNight: number
+}
+
+export interface EnquiryBookingDetails {
+  checkIn: string
+  checkOut: string
+  nights: number
+  selectedRooms: SelectedRoomDetail[]
+  roomCount: number
+  categorySummary: Record<string, number>
+  estimatedAmount: number
+}
+
 export interface Enquiry {
   id: string
   customer: EnquiryCustomer
@@ -231,6 +272,7 @@ export interface Enquiry {
   hotel?: EnquiryEntitySnapshot
   vehicle?: EnquiryEntitySnapshot
   travel: EnquiryTravel
+  bookingDetails?: EnquiryBookingDetails
   message?: string
   source?: string
   status: EnquiryStatus

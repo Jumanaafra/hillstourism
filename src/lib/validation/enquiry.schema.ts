@@ -14,6 +14,10 @@ export const EnquiryInputSchema = z.object({
   tripType: z.string().trim().optional().or(z.literal('')),
   message: z.string().trim().max(2000, 'Message cannot exceed 2000 characters').optional().or(z.literal('')),
   source: z.string().trim().max(100).optional().default('website'),
+  checkIn: z.string().trim().optional().or(z.literal('')),
+  checkOut: z.string().trim().optional().or(z.literal('')),
+  nights: z.coerce.number().int().min(0).optional(),
+  roomIds: z.array(z.string()).optional(),
   // Honeypot field for anti-spam (must remain empty for real human submissions)
   _hp: z.string().max(0, 'Spam detected').optional().default(''),
   idempotencyKey: z.string().trim().max(128).optional(),

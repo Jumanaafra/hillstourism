@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getHotels } from '@/lib/repositories/hotels.repo'
+import { getHotels, getHotelById } from '@/lib/repositories/hotels.repo'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import LazyHillGuide from '@/components/LazyHillGuide'
@@ -26,8 +26,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const hotels = await getHotels(false)
-  const hotel = hotels.find(h => h.slug === params.slug || h.id === params.slug)
+  const hotel = await getHotelById(params.slug)
   if (!hotel) return { title: 'Hotel Not Found — Hills Tourism' }
 
   const pageCanonical = hotel.seo?.canonicalUrl || getCanonicalUrl(`/hotels/${params.slug}`)
@@ -61,9 +60,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+import RoomSelector from '@/components/RoomSelector'
+
 export default async function HotelDetailPage({ params }: Props) {
-  const hotels = await getHotels(false)
-  const hotel = hotels.find(h => h.slug === params.slug || h.id === params.slug)
+  const hotel = await getHotelById(params.slug)
   if (!hotel) {
     notFound()
   }
@@ -176,7 +176,7 @@ export default async function HotelDetailPage({ params }: Props) {
               Curated Amenities
             </h2>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              {hotel.amenities.map(a => (
+              {hotel.amenities.map((a: string) => (
                 <div key={a} style={{
                   padding: '10px 18px',
                   borderRadius: '8px',
@@ -194,7 +194,10 @@ export default async function HotelDetailPage({ params }: Props) {
           </section>
         )}
 
-        <Enquiry id="contact" />
+        {/* Room / Cottage Availability & Interactive Map */}
+        <RoomSelector hotel={hotel} />
+
+        <Enquiry id="contact" initialHotelId={hotel.id} />
       </main>
 
       <Footer id="footer" />

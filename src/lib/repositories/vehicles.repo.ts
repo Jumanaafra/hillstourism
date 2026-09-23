@@ -18,7 +18,7 @@ export async function getVehicles(onlyActive = true): Promise<Vehicle[]> {
       if (onlyActive) {
         query = query.where('active', '==', true)
       }
-      const snapshot = await withFirestoreTimeout(query.get(), 15000, 'vehicles.get')
+      const snapshot = await withFirestoreTimeout(query.get(), 4000, 'vehicles.get')
       memoryVehicles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vehicle))
       lastFirestoreSync = now
     } catch (err) {
@@ -38,7 +38,7 @@ export async function getVehicleById(id: string): Promise<Vehicle | null> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const doc = await withFirestoreTimeout(db.collection('vehicles').doc(id).get(), 15000, `vehicles.getById:${id}`)
+      const doc = await withFirestoreTimeout(db.collection('vehicles').doc(id).get(), 4000, `vehicles.getById:${id}`)
       if (doc.exists) {
         return { id: doc.id, ...doc.data() } as Vehicle
       }
@@ -65,7 +65,7 @@ export async function findVehicleByNormalizedPlate(normalizedPlate: string, excl
           .where('normalizedNumberPlate', '==', normalizedPlate)
           .limit(1)
           .get(),
-        15000,
+        4000,
         'vehicles.lookupPlate'
       )
 

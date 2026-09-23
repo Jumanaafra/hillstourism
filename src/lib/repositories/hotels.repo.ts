@@ -9,6 +9,16 @@ let memoryHotels: Hotel[] = [...seedHotels]
 let lastFirestoreSync = 0
 const SYNC_INTERVAL = 15000 // 15s TTL
 
+function enrichHotelRooms(hotel: Hotel): Hotel {
+  if (!hotel.rooms || hotel.rooms.length === 0) {
+    const seed = seedHotels.find(s => s.id === hotel.id || s.slug === hotel.slug || s.normalizedName === hotel.normalizedName)
+    if (seed && seed.rooms && seed.rooms.length > 0) {
+      return { ...hotel, rooms: seed.rooms }
+    }
+  }
+  return hotel
+}
+
 export async function getHotels(onlyActive = true): Promise<Hotel[]> {
   const now = Date.now()
   const db = getFirestoreDB()
@@ -19,8 +29,8 @@ export async function getHotels(onlyActive = true): Promise<Hotel[]> {
       if (onlyActive) {
         query = query.where('active', '==', true)
       }
-      const snapshot = await withFirestoreTimeout(query.get(), 15000, 'getHotels')
-      memoryHotels = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hotel))
+      const snapshot = await withFirestoreTimeout(query.get(), 4000, 'getHotels')
+      memoryHotels = snapshot.docs.map(doc => enrichHotelRooms({ id: doc.id, ...doc.data() } as Hotel))
       lastFirestoreSync = now
     } catch (err) {
       console.error('[Hotels Repo] Firestore fetch failed:', err)
@@ -32,26 +42,27 @@ export async function getHotels(onlyActive = true): Promise<Hotel[]> {
     throw new Error('Database is required in production but Firestore is not configured.')
   }
 
-  return onlyActive ? memoryHotels.filter(h => h.active) : [...memoryHotels]
+  const list = memoryHotels.map(enrichHotelRooms)
+  return onlyActive ? list.filter(h => h.active) : [...list]
 }
 
 export async function getHotelById(id: string): Promise<Hotel | null> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const doc = await withFirestoreTimeout(db.collection('hotels').doc(id).get(), 15000, `getHotelById:${id}`)
+      const doc = await withFirestoreTimeout(db.collection('hotels').doc(id).get(), 4000, `getHotelById:${id}`)
       if (doc.exists) {
-        return { id: doc.id, ...doc.data() } as Hotel
+        return enrichHotelRooms({ id: doc.id, ...doc.data() } as Hotel)
       }
       // Also check slug
       const slugSnap = await withFirestoreTimeout(
         db.collection('hotels').where('slug', '==', id).limit(1).get(),
-        15000,
+        4000,
         `getHotelById:slug:${id}`
       )
       if (!slugSnap.empty) {
         const d = slugSnap.docs[0]
-        return { id: d.id, ...d.data() } as Hotel
+        return enrichHotelRooms({ id: d.id, ...d.data() } as Hotel)
       }
       return null
     } catch (err) {
@@ -64,7 +75,8 @@ export async function getHotelById(id: string): Promise<Hotel | null> {
     throw new Error('Database is required in production but Firestore is not configured.')
   }
 
-  return memoryHotels.find(h => h.id === id || h.slug === id) || null
+  const found = memoryHotels.find(h => h.id === id || h.slug === id)
+  return found ? enrichHotelRooms(found) : null
 }
 
 /**
@@ -80,7 +92,7 @@ export async function findHotelByNormalizedName(normalizedName: string, excludeI
           .where('normalizedName', '==', normalizedName)
           .limit(1)
           .get(),
-        15000,
+        4000,
         `findHotelByNormalizedName:${normalizedName}`
       )
 
@@ -117,7 +129,7 @@ export async function findHotelBySlug(slug: string, excludeId?: string): Promise
     try {
       const snapshot = await withFirestoreTimeout(
         db.collection('hotels').where('slug', '==', slug).limit(1).get(),
-        15000,
+        4000,
         `findHotelBySlug:${slug}`
       )
       if (!snapshot.empty) {

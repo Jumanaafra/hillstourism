@@ -37,6 +37,7 @@ function buildHotelUpdatePayload(body: Record<string, any>) {
   if (body.pricePerNight !== undefined) allowed.pricePerNight = String(body.pricePerNight).trim()
   if (body.description !== undefined)   allowed.description = String(body.description).trim()
   if (body.amenities !== undefined)     allowed.amenities = Array.isArray(body.amenities) ? body.amenities : []
+  if (body.rooms !== undefined)         allowed.rooms = Array.isArray(body.rooms) ? body.rooms : []
   if (body.image !== undefined)         allowed.image = String(body.image).trim()
   if (body.media !== undefined)         allowed.media = Array.isArray(body.media) ? body.media : []
   if (body.active !== undefined)        allowed.active = Boolean(body.active)
