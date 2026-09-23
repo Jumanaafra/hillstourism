@@ -27,7 +27,7 @@ export async function getPackages(onlyActive = true): Promise<Package[]> {
       if (onlyActive) {
         query = query.where('active', '==', true)
       }
-      const snapshot = await withFirestoreTimeout(query.get(), 15000, 'getPackages')
+      const snapshot = await withFirestoreTimeout(query.get(), 4000, 'getPackages')
       memoryPackages = snapshot.docs.map(doc => normalizePackage({ id: doc.id, ...doc.data() } as Package))
       lastFirestoreSync = now
     } catch (err) {
@@ -49,13 +49,13 @@ export async function getPackageById(id: string): Promise<Package | null> {
   const db = getFirestoreDB()
   if (db) {
     try {
-      const doc = await withFirestoreTimeout(db.collection('packages').doc(id).get(), 15000, `getPackageById:${id}`)
+      const doc = await withFirestoreTimeout(db.collection('packages').doc(id).get(), 4000, `getPackageById:${id}`)
       if (doc.exists) {
         return normalizePackage({ id: doc.id, ...doc.data() } as Package)
       }
       const snapshot = await withFirestoreTimeout(
         db.collection('packages').where('slug', '==', id).limit(1).get(),
-        15000,
+        4000,
         `getPackageById:slug:${id}`
       )
       if (!snapshot.empty) {
@@ -83,7 +83,7 @@ export async function getPackageBySlug(slug: string): Promise<Package | null> {
     try {
       const snapshot = await withFirestoreTimeout(
         db.collection('packages').where('slug', '==', slug).limit(1).get(),
-        15000,
+        4000,
         `getPackageBySlug:${slug}`
       )
       if (!snapshot.empty) {
@@ -116,7 +116,7 @@ export async function findPackageBySlug(slug: string, excludeId?: string): Promi
     try {
       const snapshot = await withFirestoreTimeout(
         db.collection('packages').where('slug', '==', slug).limit(1).get(),
-        15000,
+        4000,
         `findPackageBySlug:${slug}`
       )
       if (!snapshot.empty) {

@@ -137,6 +137,8 @@ export async function POST(req: NextRequest) {
     }
 
     let hotelSnapshot: { id: string; nameSnapshot?: string } | undefined
+    let bookingDetailsPayload: any = undefined
+
     if (data.hotelId) {
       const hotel = await getHotelById(data.hotelId)
       if (!hotel) {
@@ -152,6 +154,64 @@ export async function POST(req: NextRequest) {
         )
       }
       hotelSnapshot = { id: hotel.id, nameSnapshot: hotel.name }
+
+      // Validate room selection & dates server-side if provided
+      if (Array.isArray(data.roomIds) && data.roomIds.length > 0 && data.checkIn && data.checkOut) {
+        const { calculateStayAvailability, calculateNights } = await import('@/lib/services/availability.service')
+        const availability = await calculateStayAvailability(hotel.id, data.checkIn, data.checkOut)
+        
+        const requestedRooms = availability.rooms.filter(r => data.roomIds!.includes(r.id))
+        if (requestedRooms.length !== data.roomIds.length) {
+          return enquiryResponse(
+            { success: false, error: { code: 'INVALID_ROOMS', message: 'One or more selected rooms are invalid.' } },
+            { status: 400 }
+          )
+        }
+
+        const unavailableRoom = requestedRooms.find(r => !r.isAvailable)
+        if (unavailableRoom) {
+          return enquiryResponse(
+            { success: false, error: { code: 'ROOM_UNAVAILABLE', message: `Room ${unavailableRoom.roomNumber} (${unavailableRoom.name}) is no longer available for the selected dates.` } },
+            { status: 400 }
+          )
+        }
+
+        const nights = calculateNights(data.checkIn, data.checkOut)
+        if (nights <= 0) {
+          return enquiryResponse(
+            { success: false, error: { code: 'INVALID_DATES', message: 'Check-in date must be before check-out date.' } },
+            { status: 400 }
+          )
+        }
+
+        const categorySummary: Record<string, number> = {}
+        let perNightTotal = 0
+
+        const selectedRooms = requestedRooms.map(r => {
+          categorySummary[r.category] = (categorySummary[r.category] || 0) + 1
+          perNightTotal += r.pricePerNight
+          return {
+            roomId: r.id,
+            roomNumber: r.roomNumber,
+            name: r.name,
+            category: r.category,
+            capacity: r.capacity,
+            pricePerNight: r.pricePerNight,
+          }
+        })
+
+        const estimatedAmount = perNightTotal * nights
+
+        bookingDetailsPayload = {
+          checkIn: data.checkIn,
+          checkOut: data.checkOut,
+          nights,
+          selectedRooms,
+          roomCount: selectedRooms.length,
+          categorySummary,
+          estimatedAmount,
+        }
+      }
     }
 
     let vehicleSnapshot: { id: string; nameSnapshot?: string; numberPlateSnapshot?: string } | undefined
@@ -183,10 +243,11 @@ export async function POST(req: NextRequest) {
       hotel: hotelSnapshot,
       vehicle: vehicleSnapshot,
       travel: {
-        date: data.travelDate || undefined,
+        date: data.travelDate || data.checkIn || undefined,
         groupSize: typeof data.groupSize === 'number' ? data.groupSize : undefined,
         tripType: data.tripType || undefined,
       },
+      bookingDetails: bookingDetailsPayload,
       message: data.message || undefined,
       source: data.source || 'website',
       status: 'new',

@@ -1,11 +1,44 @@
-import React from 'react'
-import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
-import { vehicles } from '../data/vehicles'
-import { FiUsers, FiBriefcase, FiMap, FiMapPin } from 'react-icons/fi'
-import { FaCarSide } from 'react-icons/fa'
+'use client'
 
-export default function Vehicles({ id, initialVehicles }) {
-  const vehicleList = Array.isArray(initialVehicles) && initialVehicles.length > 0 ? initialVehicles : vehicles
+import React, { useState, useEffect } from 'react'
+import { getOptimizedImageUrl, generateResponsiveSrcSet } from '../lib/cloudinary/transform'
+import { vehicles as defaultVehicles } from '../data/vehicles'
+import { FiUsers, FiBriefcase, FiMap, FiMapPin, FiX } from 'react-icons/fi'
+import { FaCarSide } from 'react-icons/fa'
+import Enquiry from './Enquiry'
+
+/**
+ * @param {object} props
+ * @param {string} [props.id]
+ * @param {any[]} [props.initialVehicles]
+ * @param {(vehicleId: string) => void} [props.onSelectVehicle]
+ */
+export default function Vehicles({ id = '', initialVehicles = [], onSelectVehicle = undefined }) {
+  const vehicleList = Array.isArray(initialVehicles) && initialVehicles.length > 0 ? initialVehicles : defaultVehicles
+  const [selectedVehicleForModal, setSelectedVehicleForModal] = useState(null)
+
+  useEffect(() => {
+    if (selectedVehicleForModal) {
+      document.body.style.overflow = 'hidden'
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') setSelectedVehicleForModal(null)
+      }
+      window.addEventListener('keydown', handleKeyDown)
+      return () => {
+        document.body.style.overflow = ''
+        window.removeEventListener('keydown', handleKeyDown)
+      }
+    }
+  }, [selectedVehicleForModal])
+
+  const handleChoose = (e, vehicle) => {
+    e.preventDefault()
+    if (onSelectVehicle) {
+      onSelectVehicle(vehicle.id)
+    } else {
+      setSelectedVehicleForModal(vehicle)
+    }
+  }
 
   const Feature = ({ icon, label }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -20,7 +53,7 @@ export default function Vehicles({ id, initialVehicles }) {
       aria-label="Hillstourism vehicles"
       style={{
         background: 'var(--hill-white)',
-        padding:    'clamp(4rem,8vw,7rem) clamp(1.25rem,5vw,5rem)',
+        padding:    'clamp(4rem,8vw,5rem) clamp(1.25rem,5vw,5rem)',
       }}
     >
       <div style={{ maxWidth: 'var(--container-w)', margin: '0 auto' }}>
@@ -41,7 +74,7 @@ export default function Vehicles({ id, initialVehicles }) {
         {/* Vehicle grid */}
         <div style={{
           display:             'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
           gap:                 'clamp(1rem,2vw,1.5rem)',
         }}>
           {vehicleList.map((v, i) => (
@@ -163,14 +196,15 @@ export default function Vehicles({ id, initialVehicles }) {
                 <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--hill-navy)' }}>
                   {v.priceNote}
                 </p>
-                <a
-                  href="#contact"
+                <button
+                  onClick={(e) => handleChoose(e, v)}
                   className="btn-primary"
-                  style={{ padding: '0.6rem 1.1rem', fontSize: '0.7rem', display: 'inline-block', textDecoration: 'none' }}
+                  style={{ padding: '0.6rem 1.1rem', fontSize: '0.7rem', border: 'none', cursor: 'pointer' }}
                   aria-label={`Choose ${v.name}`}
+                  type="button"
                 >
                   Choose
-                </a>
+                </button>
               </div>
             </article>
           ))}
@@ -184,9 +218,85 @@ export default function Vehicles({ id, initialVehicles }) {
         </div>
       </div>
 
+      {/* Modal Popup for Vehicles Page */}
+      {selectedVehicleForModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            background: 'rgba(0, 9, 31, 0.75)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+          onClick={() => setSelectedVehicleForModal(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Enquire for ${selectedVehicleForModal.name}`}
+        >
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: '1500px',
+              maxHeight: '100vh',
+              overflowY: 'auto',
+              borderRadius: '20px',
+              background: 'var(--hill-navy-deep)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedVehicleForModal(null)}
+              aria-label="Close enquiry modal"
+              type="button"
+              style={{
+                position: 'absolute',
+                top: '1.25rem',
+                right: '1.25rem',
+                zIndex: 10,
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.12)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
+            >
+              <FiX style={{ fontSize: '1.2rem' }} />
+            </button>
+
+            {/* Render embedded Enquiry component */}
+            <Enquiry
+              initialVehicleId={selectedVehicleForModal.id}
+              initialVehicles={vehicleList}
+            />
+          </div>
+        </div>
+      )}
+
       <style>{`
         .vehicle-card:hover .vehicle-img {
           transform: scale(1.05);
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.98); }
+          to { opacity: 1; transform: scale(1); }
         }
       `}</style>
     </section>
