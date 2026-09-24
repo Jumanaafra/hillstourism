@@ -9,6 +9,7 @@ export interface AdminModalProps {
   title: string
   subtitle?: string
   maxWidth?: string
+  headerActions?: React.ReactNode
   children: React.ReactNode
 }
 
@@ -21,6 +22,7 @@ export default function AdminModal({
   title,
   subtitle,
   maxWidth = '960px',
+  headerActions,
   children,
 }: AdminModalProps) {
   useEffect(() => {
@@ -83,6 +85,7 @@ export default function AdminModal({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: '1rem',
             background: 'rgba(0, 16, 64, 0.5)',
           }}
         >
@@ -111,28 +114,31 @@ export default function AdminModal({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close modal"
-            style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
-          >
-            <FiX style={{ fontSize: '1.1rem' }} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+            {headerActions}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close modal"
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
+            >
+              <FiX style={{ fontSize: '1.1rem' }} />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Content Body */}

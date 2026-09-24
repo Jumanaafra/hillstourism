@@ -17,7 +17,7 @@ import ThemeToggle from '@/components/admin/ThemeToggle'
 import { useAdminTheme } from '@/context/AdminThemeContext'
 import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
 import ToastProvider, { useAdminToast } from '@/components/admin/ToastProvider'
-import { FiCheck, FiAlertTriangle, FiMail, FiBarChart2, FiStar, FiCalendar, FiArrowUpRight, FiX, FiArrowRight, FiPlus, FiTrash2, FiEdit2, FiCopy, FiGlobe, FiShare2, FiExternalLink, FiRefreshCw, FiPhone, FiEye, FiMapPin, FiUser, FiSend, FiClock, FiActivity, FiShield, FiTrendingUp } from 'react-icons/fi'
+import { FiCheck, FiAlertTriangle, FiMail, FiBarChart2, FiStar, FiCalendar, FiArrowUpRight, FiX, FiArrowRight, FiPlus, FiTrash2, FiEdit2, FiCopy, FiGlobe, FiShare2, FiExternalLink, FiRefreshCw, FiPhone, FiEye, FiMapPin, FiUser, FiSend, FiClock, FiActivity, FiShield, FiTrendingUp, FiDownload } from 'react-icons/fi'
 import { FaStar, FaWhatsapp, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from 'react-icons/fa'
 
 type Tab = 'overview' | 'enquiries' | 'packages' | 'hotels' | 'vehicles' | 'gallery' | 'content' | 'knowledge' | 'library' | 'social' | 'seo' | 'settings'
@@ -55,6 +55,22 @@ function AdminDashboardContent() {
 
   // Package editor state
   const [editingPackage, setEditingPackage] = useState<Package | null>(null)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+
+  const handleDownloadPackagePdf = async () => {
+    if (!editingPackage) return
+    setIsGeneratingPdf(true)
+    try {
+      const { generatePackagePDF } = await import('@/lib/pdf/generatePackagePdf')
+      generatePackagePDF(editingPackage, hotels, vehicles)
+      toast.success('Package details PDF downloaded successfully')
+    } catch (err) {
+      console.error('Failed to generate Package PDF:', err)
+      toast.error('Failed to generate PDF. Please try again.')
+    } finally {
+      setIsGeneratingPdf(false)
+    }
+  }
 
   // Hotel editor state
   const [editingHotel, setEditingHotel] = useState<Hotel | null>(null)
@@ -1624,6 +1640,38 @@ function AdminDashboardContent() {
                 subtitle="Configure basic details, itinerary days, inclusions, exclusions, and connected stays/vehicles"
                 maxWidth="1100px"
                 onClose={() => setEditingPackage(null)}
+                headerActions={
+                  <button
+                    type="button"
+                    onClick={handleDownloadPackagePdf}
+                    disabled={isGeneratingPdf}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '6px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      color: '#ffffff',
+                      cursor: isGeneratingPdf ? 'not-allowed' : 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      opacity: isGeneratingPdf ? 0.7 : 1,
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isGeneratingPdf) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isGeneratingPdf) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
+                    }}
+                    title="Download PDF containing current form values"
+                  >
+                    <FiDownload style={{ fontSize: '0.95rem' }} />
+                    <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download'}</span>
+                  </button>
+                }
               >
 
                 <form onSubmit={handleSavePackage} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
