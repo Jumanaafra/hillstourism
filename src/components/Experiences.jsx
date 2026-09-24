@@ -43,16 +43,16 @@ export default function Experiences({ id, initialExperiences }) {
       aria-label="Hillstourism experiences"
       style={{
         background: 'var(--hill-navy-deep)',
-        padding:    'clamp(4rem,8vw,7rem) clamp(1.25rem,5vw,5rem)',
+        padding:    'clamp(3rem,5vw,4.5rem) clamp(1.25rem,5vw,5rem)',
         overflow:   'hidden',
       }}
     >
       <div style={{ maxWidth: 'var(--container-w)', margin: '0 auto' }}>
 
         {/* Header */}
-        <div className="reveal" style={{ marginBottom: 'clamp(2.5rem,5vw,4rem)' }}>
+        <div className="reveal" style={{ marginBottom: 'clamp(2rem,4vw,3rem)' }}>
           <p className="eyebrow-light" style={{ marginBottom: '0.85rem' }}>Beyond the Trail</p>
-          <h2 className="heading-xl" style={{ color: '#ffffff', maxWidth: '540px' }}>
+          <h2 className="heading-xl experiences-title" style={{ color: '#ffffff', maxWidth: '100%' }}>
             Experiences that{' '}
             <span style={{ color: 'var(--hill-blue-bright)' }}>stay with you.</span>
           </h2>
@@ -267,6 +267,14 @@ export default function Experiences({ id, initialExperiences }) {
       </div>
 
       <style>{`
+        .experiences-title {
+          white-space: normal;
+        }
+        @media (min-width: 768px) {
+          .experiences-title {
+            white-space: nowrap;
+          }
+        }
         .experiences-grid {
           display: grid;
           grid-template-columns: 1fr 420px;

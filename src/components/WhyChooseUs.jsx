@@ -67,10 +67,10 @@ export default function WhyChooseUs({ id }) {
       <div style={{ maxWidth: 'var(--container-w)', margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
         {/* Header */}
-        <div className="reveal visible" style={{ marginBottom: 'clamp(3rem,6vw,5rem)', maxWidth: '640px' }}>
+        <div className="reveal visible" style={{ marginBottom: 'clamp(3rem,6vw,3rem)', maxWidth: '640px' }}>
           <p className="eyebrow-light" style={{ marginBottom: '1rem' }}>Our Promise</p>
           <h2 className="heading-xl" style={{ color: '#ffffff', marginBottom: '1rem' }}>
-            Travel the hills<br />like a local.
+            Travel the hills like a local.
           </h2>
           <div className="divider-blue" />
           <p className="body-lg" style={{ color: 'rgba(255,255,255,0.55)', marginTop: '1rem', maxWidth: '480px' }}>
