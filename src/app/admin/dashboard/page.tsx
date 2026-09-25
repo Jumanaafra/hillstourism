@@ -17,10 +17,11 @@ import ThemeToggle from '@/components/admin/ThemeToggle'
 import { useAdminTheme } from '@/context/AdminThemeContext'
 import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
 import ToastProvider, { useAdminToast } from '@/components/admin/ToastProvider'
+import ItineraryBuilder from '@/components/admin/ItineraryBuilder'
 import { FiCheck, FiAlertTriangle, FiMail, FiBarChart2, FiStar, FiCalendar, FiArrowUpRight, FiX, FiArrowRight, FiPlus, FiTrash2, FiEdit2, FiCopy, FiGlobe, FiShare2, FiExternalLink, FiRefreshCw, FiPhone, FiEye, FiMapPin, FiUser, FiSend, FiClock, FiActivity, FiShield, FiTrendingUp, FiDownload } from 'react-icons/fi'
 import { FaStar, FaWhatsapp, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from 'react-icons/fa'
 
-type Tab = 'overview' | 'enquiries' | 'packages' | 'hotels' | 'vehicles' | 'gallery' | 'content' | 'knowledge' | 'library' | 'social' | 'seo' | 'settings'
+type Tab = 'overview' | 'enquiries' | 'packages' | 'itinerary' | 'hotels' | 'vehicles' | 'gallery' | 'content' | 'knowledge' | 'library' | 'social' | 'seo' | 'settings'
 
 function AdminDashboardContent() {
   const initialTabEffect = useRef(true)
@@ -1079,6 +1080,7 @@ function AdminDashboardContent() {
     { key: 'overview', label: 'Overview' },
     { key: 'enquiries', label: 'Enquiries' },
     { key: 'packages', label: 'Packages' },
+    { key: 'itinerary', label: 'Itinerary' },
     { key: 'hotels', label: 'Hotels' },
     { key: 'vehicles', label: 'Vehicles' },
     { key: 'gallery', label: 'Gallery' },
@@ -1640,38 +1642,6 @@ function AdminDashboardContent() {
                 subtitle="Configure basic details, itinerary days, inclusions, exclusions, and connected stays/vehicles"
                 maxWidth="1100px"
                 onClose={() => setEditingPackage(null)}
-                headerActions={
-                  <button
-                    type="button"
-                    onClick={handleDownloadPackagePdf}
-                    disabled={isGeneratingPdf}
-                    style={{
-                      padding: '6px 14px',
-                      borderRadius: '6px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      color: '#ffffff',
-                      cursor: isGeneratingPdf ? 'not-allowed' : 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      opacity: isGeneratingPdf ? 0.7 : 1,
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isGeneratingPdf) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isGeneratingPdf) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
-                    }}
-                    title="Download PDF containing current form values"
-                  >
-                    <FiDownload style={{ fontSize: '0.95rem' }} />
-                    <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download'}</span>
-                  </button>
-                }
               >
 
                 <form onSubmit={handleSavePackage} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -2333,6 +2303,15 @@ function AdminDashboardContent() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* ── ITINERARY TAB ── */}
+        {activeTab === 'itinerary' && (
+          <ItineraryBuilder
+            packages={packages}
+            hotels={hotels}
+            vehicles={vehicles}
+          />
         )}
 
         {/* ── HOTELS TAB ── */}
