@@ -49,10 +49,10 @@ function getSocialIcon(platform) {
 }
 
 const DEFAULT_FOOTER_SOCIALS = [
-  { id: 'social-instagram', platform: 'instagram', url: 'https://instagram.com/hillstourism', label: '@hillstourism' },
+  { id: 'social-instagram', platform: 'instagram', url: 'https://www.instagram.com/hillstourism.in?utm_source=qr&stkn=MW4wNmV6enFlZ3Fzdg%3D%3D', label: '@hillstourism' },
   { id: 'social-facebook', platform: 'facebook', url: 'https://facebook.com/hillstourism', label: 'facebook.com/hillstourism' },
-  { id: 'social-whatsapp', platform: 'whatsapp', url: "https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism.", label: '+91 99990 00000' },
-]
+    { id: 'social-whatsapp', platform: 'whatsapp', url: "https://wa.me/917358986704", label: '+91 73589 86704' },
+  ]
 
 /**
  * @param {{
@@ -66,10 +66,10 @@ export default function Footer({
   id,
   settings = null,
   socialLinks = DEFAULT_FOOTER_SOCIALS,
-  whatsappUrl = "https://wa.me/919999000000?text=Hi!%20I'd%20like%20to%20plan%20a%20hill%20trip%20with%20Hillstourism."
+  whatsappUrl = "https://wa.me/917358986704"
 }) {
   const displayAddress = settings?.address || '12 Mountain View Rd, Nilgiri Highlands, India'
-  const displayPhone = settings?.contactPhone || '+91 99990 00000'
+  const displayPhone = settings?.contactPhone || '+91 73589 86704'
   const cleanPhone = displayPhone.replace(/[^0-9+]/g, '')
   const displayEmail = settings?.contactEmail || 'contact@hillstourism.com'
   const computedWhatsappUrl = settings?.whatsappNumber
