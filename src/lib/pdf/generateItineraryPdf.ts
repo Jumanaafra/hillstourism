@@ -126,7 +126,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(8)
     doc.setTextColor(11, 37, 69) // #0B2545
-    doc.text('HILLSTOURISM — TRAVEL ITINERARY', margin + (logoBase64 ? 17 : 0), y + 5)
+    doc.text(' TRAVEL ITINERARY', margin + (logoBase64 ? 17 : 0), y + 5)
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
@@ -194,7 +194,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(14)
   doc.setTextColor(11, 37, 69)
-  doc.text('HILLSTOURISM', pageWidth / 2, y, { align: 'center' })
+  doc.text('', pageWidth / 2, y, { align: 'center' })
   y += 4.5
 
   doc.setFont('helvetica', 'bold')
