@@ -47,6 +47,13 @@ export interface ItineraryPdfData {
   adultsCount: number
   childrenCount: number
   estimatedTotalCost: string | number
+  customerPhone?: string
+  customerEmail?: string
+  pickupPoint?: string
+  specialRequests?: string
+  infantsCount?: number
+  payment?: { status: 'pending' | 'partial' | 'full'; advanceAmount?: string; balanceDue?: string; mode?: string; transactionId?: string }
+  theme?: { preset: 'sky' | 'dark'; accentColor?: string; backgroundUrl?: string }
   days: ItineraryPdfDay[]
   stay?: ItineraryPdfStay
   vehicle?: ItineraryPdfVehicle
@@ -86,10 +93,12 @@ async function fetchImageAsBase64(url: string | undefined): Promise<string | nul
  * Generates and downloads a clean, professional, selectable-text PDF
  * following the reference design of Hillstourism Travel Itinerary.
  */
-export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void> {
+export async function generateItineraryPDF(data: ItineraryPdfData, options: { download?: boolean } = {}): Promise<jsPDF> {
+  const pdfMoney = (value: string | number | undefined) => String(value || 'To be confirmed').replace(/₹\s*/g, 'INR ')
   // Pre-load images concurrently
-  const [logoBase64, stayImgBase64, vehicleImgBase64, ...dayImagesBase64] = await Promise.all([
+  const [logoBase64, coverBase64, stayImgBase64, vehicleImgBase64, ...dayImagesBase64] = await Promise.all([
     fetchImageAsBase64('/logo.png'),
+    fetchImageAsBase64(data.theme?.backgroundUrl),
     fetchImageAsBase64(data.stay?.imageUrl),
     fetchImageAsBase64(data.vehicle?.imageUrl),
     ...data.days.map((d) => fetchImageAsBase64(d.imageUrl)),
@@ -106,6 +115,66 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   const margin = 12
   const contentWidth = pageWidth - margin * 2 // 186mm
   let y = margin
+  const darkTheme = data.theme?.preset === 'dark'
+  const accentHex = /^#[0-9a-fA-F]{6}$/.test(data.theme?.accentColor || '') ? data.theme!.accentColor! : (darkTheme ? '#4BAEFF' : '#0878FF')
+  const accent = [1, 3, 5].map((start) => parseInt(accentHex.slice(start, start + 2), 16)) as [number, number, number]
+
+  // A self-contained branded cover makes the selected theme visible in the downloaded file.
+  if (darkTheme) doc.setFillColor(5, 18, 43)
+  else doc.setFillColor(221, 242, 255)
+  doc.rect(0, 0, pageWidth, pageHeight, 'F')
+  if (darkTheme) doc.setFillColor(9, 42, 89)
+  else doc.setFillColor(159, 217, 255)
+  doc.rect(0, 0, pageWidth, 92, 'F')
+  doc.setFillColor(...accent)
+  doc.rect(0, 90, pageWidth, 3, 'F')
+  if (coverBase64) {
+    try {
+      const format = coverBase64.startsWith('data:image/png') ? 'PNG' : 'JPEG'
+      doc.addImage(coverBase64, format, 12, 104, 186, 88)
+    } catch { /* The vector theme remains available if an image cannot be embedded. */ }
+  } else {
+    // Layered mountains echo the blue mountain landscape in the Hills Tourism logo.
+    if (darkTheme) doc.setFillColor(13, 57, 119)
+    else doc.setFillColor(111, 179, 223)
+    doc.triangle(0, 258, 52, 182, 116, 258, 'F')
+    doc.triangle(75, 258, 143, 172, 210, 258, 'F')
+    if (darkTheme) doc.setFillColor(18, 87, 164)
+    else doc.setFillColor(35, 112, 176)
+    doc.triangle(0, 275, 82, 205, 160, 275, 'F')
+    doc.triangle(102, 275, 172, 196, 210, 275, 'F')
+    doc.setFillColor(230, 246, 255)
+    doc.triangle(44, 194, 52, 182, 62, 195, 'F')
+    doc.triangle(133, 184, 143, 172, 153, 185, 'F')
+  }
+  if (logoBase64) {
+    try { doc.addImage(logoBase64, 'PNG', 78, 9, 54, 36) } catch { /* Keep the title visible. */ }
+  }
+  doc.setFont('helvetica', 'bold')
+  if (darkTheme) doc.setTextColor(255, 255, 255)
+  else doc.setTextColor(5, 31, 73)
+  doc.setFontSize(10)
+  doc.text('HILLS TOURISM  |  TRAVEL ITINERARY', pageWidth / 2, 51, { align: 'center' })
+  doc.setFontSize(21)
+  const coverTitle = doc.splitTextToSize(data.packageName || 'Travel Itinerary', 176).slice(0, 2)
+  doc.text(coverTitle, pageWidth / 2, 64, { align: 'center' })
+  const infoY = coverBase64 ? 209 : 127
+  if (darkTheme) doc.setFillColor(10, 39, 78)
+  else doc.setFillColor(255, 255, 255)
+  doc.roundedRect(12, infoY, 186, 47, 4, 4, 'F')
+  if (darkTheme) doc.setTextColor(221, 242, 255)
+  else doc.setTextColor(11, 37, 69)
+  doc.setFontSize(11)
+  doc.text(data.destination || 'Destination', 20, infoY + 12)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.text(`Dates: ${data.travelDatesText || 'Flexible'}`, 20, infoY + 22)
+  doc.text(`Travelers: ${data.travelersText || 'Not specified'}`, 20, infoY + 30)
+  doc.setFont('helvetica', 'bold')
+  doc.text(`Per person: ${pdfMoney(data.pricePerPerson)}`, 20, infoY + 39)
+  doc.text(`Estimated total: ${pdfMoney(data.estimatedTotalCost)}`, 190, infoY + 39, { align: 'right' })
+  doc.addPage()
+  y = margin
 
   // Page break checker helper
   const checkAddPage = (neededHeight: number = 15) => {
@@ -125,7 +194,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     }
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(8)
-    doc.setTextColor(11, 37, 69) // #0B2545
+    doc.setTextColor(...accent)
     doc.text(' TRAVEL ITINERARY', margin + (logoBase64 ? 17 : 0), y + 5)
 
     doc.setFont('helvetica', 'normal')
@@ -148,13 +217,15 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
       const footerY = pageHeight - 10
 
       // Mountain line graphics symbol
-      doc.setDrawColor(11, 37, 69)
+      if (i === 1 && darkTheme) doc.setDrawColor(203, 231, 255)
+      else doc.setDrawColor(11, 37, 69)
       doc.setLineWidth(0.4)
       doc.line(pageWidth / 2 - 25, footerY - 4, pageWidth / 2 - 8, footerY - 4)
       doc.line(pageWidth / 2 + 8, footerY - 4, pageWidth / 2 + 25, footerY - 4)
       
       // Triangle mountain peak symbol
-      doc.setFillColor(11, 37, 69)
+      if (i === 1 && darkTheme) doc.setFillColor(203, 231, 255)
+      else doc.setFillColor(11, 37, 69)
       doc.triangle(
         pageWidth / 2 - 4, footerY - 3,
         pageWidth / 2, footerY - 7,
@@ -164,7 +235,8 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
 
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(8)
-      doc.setTextColor(11, 37, 69)
+      if (i === 1 && darkTheme) doc.setTextColor(203, 231, 255)
+      else doc.setTextColor(11, 37, 69)
       doc.text('Thank you for choosing Hillstourism', pageWidth / 2, footerY + 0.5, { align: 'center' })
 
       doc.setFont('helvetica', 'normal')
@@ -199,7 +271,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8.5)
-  doc.setTextColor(8, 120, 255)
+  doc.setTextColor(...accent)
   doc.text('TRAVEL ITINERARY', pageWidth / 2, y, { align: 'center' })
   y += 5
 
@@ -264,6 +336,30 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
 
   y = badgeY + badgeH + 8
 
+  const customerLines = [
+    data.customerPhone?.trim() ? `Phone: ${data.customerPhone.trim()}` : '',
+    data.customerEmail?.trim() ? `Email: ${data.customerEmail.trim()}` : '',
+    data.pickupPoint?.trim() ? `Pickup: ${data.pickupPoint.trim()}` : '',
+    data.specialRequests?.trim() ? `Special requests: ${data.specialRequests.trim()}` : '',
+  ].filter(Boolean)
+  if (customerLines.length) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(...accent)
+    doc.text('CUSTOMER & PICKUP DETAILS', margin, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(30, 41, 59)
+    customerLines.forEach((line) => {
+      const wrapped = doc.splitTextToSize(line, contentWidth)
+      checkAddPage(wrapped.length * 4 + 3)
+      doc.text(wrapped, margin, y)
+      y += wrapped.length * 4 + 2
+    })
+    y += 3
+  }
+
   // ==========================================
   // DAY WISE ITINERARY SECTION
   // ==========================================
@@ -305,7 +401,8 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
       const startY = y
 
       // Left Column: Day Pill & Date
-      doc.setFillColor(11, 37, 69) // Dark navy
+      if (darkTheme) doc.setFillColor(5, 18, 43)
+      else doc.setFillColor(11, 37, 69)
       doc.roundedRect(margin, y, 22, 7, 2, 2, 'F')
 
       doc.setFont('helvetica', 'bold')
@@ -328,7 +425,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
       }
 
       // Vertical timeline node dot
-      doc.setFillColor(8, 120, 255) // bright blue
+      doc.setFillColor(...accent)
       doc.circle(timelineLineX, y + 3.5, 1.8, 'F')
 
       // Right Column: Title & Description
@@ -367,7 +464,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
             if (!sch.activity && !sch.time) return
             doc.setFont('helvetica', 'bold')
             doc.setFontSize(7)
-            doc.setTextColor(8, 120, 255)
+            doc.setTextColor(...accent)
             if (sch.time) {
               doc.text(sch.time, dayRightX + 4, itemY)
             }
@@ -457,7 +554,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
 
   renderSumRow(sumBoxY + 5, 'Package Name :', data.packageName, 'Travelers :', data.travelersText)
   renderSumRow(sumBoxY + 10, 'Destination :', data.destination, 'Category :', data.category || 'Family')
-  renderSumRow(sumBoxY + 15, 'Duration :', data.duration, 'Price :', data.pricePerPerson)
+  renderSumRow(sumBoxY + 15, 'Duration :', data.duration, 'Price :', pdfMoney(data.pricePerPerson))
   renderSumRow(sumBoxY + 19.5, 'Travel Dates :', data.travelDatesText, 'Price Note :', data.priceNote || 'per person')
 
   y = sumBoxY + sumBoxH + 7
@@ -663,7 +760,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8)
   doc.setTextColor(11, 37, 69)
-  doc.text(`:  ${data.pricePerPerson || '₹12,999'}`, margin + 55, costBoxY + 5.5)
+  doc.text(`:  ${pdfMoney(data.pricePerPerson)}`, margin + 55, costBoxY + 5.5)
   const totalTravelersCount = (data.adultsCount || 0) + (data.childrenCount || 0) || 1
   doc.text(`:  ${totalTravelersCount} (${data.travelersText || '2 Adults, 1 Child'})`, margin + 55, costBoxY + 10.5)
 
@@ -676,9 +773,29 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   doc.setFontSize(9)
   doc.setTextColor(29, 78, 216) // Blue
   doc.text('Estimated Total Cost', margin + 6, costBoxY + 18)
-  doc.text(`:  ${data.estimatedTotalCost || '₹38,997'}`, margin + 55, costBoxY + 18)
+  doc.text(`:  ${pdfMoney(data.estimatedTotalCost)}`, margin + 55, costBoxY + 18)
 
   y = costBoxY + costBoxH + 6
+
+  if (data.payment && (data.payment.status !== 'pending' || data.payment.advanceAmount || data.payment.balanceDue || data.payment.mode || data.payment.transactionId)) {
+    checkAddPage(35)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(...accent)
+    doc.text('PAYMENT DETAILS', margin, y)
+    y += 6
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(30, 41, 59)
+    const paymentLines = [
+      `Status: ${data.payment.status}`,
+      data.payment.advanceAmount ? `Advance: ${pdfMoney(data.payment.advanceAmount)}` : '',
+      data.payment.balanceDue ? `Balance: ${pdfMoney(data.payment.balanceDue)}` : '',
+      data.payment.mode ? `Mode: ${data.payment.mode}` : '',
+      data.payment.transactionId ? `Transaction ID: ${data.payment.transactionId}` : '',
+    ].filter(Boolean)
+    paymentLines.forEach((line) => { doc.text(line, margin, y); y += 4.5 })
+  }
 
   // Render footers across all pages
   renderFooters()
@@ -690,5 +807,6 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'travel-itinerary'
 
-  doc.save(`${safeFilename}-travel-itinerary.pdf`)
+  if (options.download !== false) doc.save(`${safeFilename}-travel-itinerary.pdf`)
+  return doc
 }
