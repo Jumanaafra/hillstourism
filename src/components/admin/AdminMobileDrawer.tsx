@@ -18,6 +18,7 @@ import {
   FiExternalLink,
   FiLogOut,
   FiArrowRight,
+  FiCalendar,
 } from 'react-icons/fi'
 import ThemeToggle from './ThemeToggle'
 
@@ -25,6 +26,7 @@ export type TabKey =
   | 'overview'
   | 'enquiries'
   | 'packages'
+  | 'itinerary'
   | 'hotels'
   | 'vehicles'
   | 'gallery'
@@ -100,6 +102,11 @@ export default function AdminMobileDrawer({
       label: 'Packages',
       icon: FiPackage,
       count: totalPackagesCount > 0 ? totalPackagesCount : undefined,
+    },
+    {
+      key: 'itinerary',
+      label: 'Itinerary Builder',
+      icon: FiCalendar,
     },
     {
       key: 'hotels',

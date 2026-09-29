@@ -17,10 +17,11 @@ import ThemeToggle from '@/components/admin/ThemeToggle'
 import { useAdminTheme } from '@/context/AdminThemeContext'
 import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
 import ToastProvider, { useAdminToast } from '@/components/admin/ToastProvider'
-import { FiCheck, FiAlertTriangle, FiMail, FiBarChart2, FiStar, FiCalendar, FiArrowUpRight, FiX, FiArrowRight, FiPlus, FiTrash2, FiEdit2, FiCopy, FiGlobe, FiShare2, FiExternalLink, FiRefreshCw, FiPhone, FiEye, FiMapPin, FiUser, FiSend, FiClock, FiActivity, FiShield, FiTrendingUp } from 'react-icons/fi'
+import ItineraryBuilder from '@/components/admin/ItineraryBuilder'
+import { FiCheck, FiAlertTriangle, FiMail, FiBarChart2, FiStar, FiCalendar, FiArrowUpRight, FiX, FiArrowRight, FiPlus, FiTrash2, FiEdit2, FiCopy, FiGlobe, FiShare2, FiExternalLink, FiRefreshCw, FiPhone, FiEye, FiMapPin, FiUser, FiSend, FiClock, FiActivity, FiShield, FiTrendingUp, FiDownload } from 'react-icons/fi'
 import { FaStar, FaWhatsapp, FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from 'react-icons/fa'
 
-type Tab = 'overview' | 'enquiries' | 'packages' | 'hotels' | 'vehicles' | 'gallery' | 'content' | 'knowledge' | 'library' | 'social' | 'seo' | 'settings'
+type Tab = 'overview' | 'enquiries' | 'packages' | 'itinerary' | 'hotels' | 'vehicles' | 'gallery' | 'content' | 'knowledge' | 'library' | 'social' | 'seo' | 'settings'
 
 function AdminDashboardContent() {
   const initialTabEffect = useRef(true)
@@ -55,6 +56,22 @@ function AdminDashboardContent() {
 
   // Package editor state
   const [editingPackage, setEditingPackage] = useState<Package | null>(null)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+
+  const handleDownloadPackagePdf = async () => {
+    if (!editingPackage) return
+    setIsGeneratingPdf(true)
+    try {
+      const { generatePackagePDF } = await import('@/lib/pdf/generatePackagePdf')
+      generatePackagePDF(editingPackage, hotels, vehicles)
+      toast.success('Package details PDF downloaded successfully')
+    } catch (err) {
+      console.error('Failed to generate Package PDF:', err)
+      toast.error('Failed to generate PDF. Please try again.')
+    } finally {
+      setIsGeneratingPdf(false)
+    }
+  }
 
   // Hotel editor state
   const [editingHotel, setEditingHotel] = useState<Hotel | null>(null)
@@ -1063,6 +1080,7 @@ function AdminDashboardContent() {
     { key: 'overview', label: 'Overview' },
     { key: 'enquiries', label: 'Enquiries' },
     { key: 'packages', label: 'Packages' },
+    { key: 'itinerary', label: 'Itinerary' },
     { key: 'hotels', label: 'Hotels' },
     { key: 'vehicles', label: 'Vehicles' },
     { key: 'gallery', label: 'Gallery' },
@@ -2285,6 +2303,15 @@ function AdminDashboardContent() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* ── ITINERARY TAB ── */}
+        {activeTab === 'itinerary' && (
+          <ItineraryBuilder
+            packages={packages}
+            hotels={hotels}
+            vehicles={vehicles}
+          />
         )}
 
         {/* ── HOTELS TAB ── */}
