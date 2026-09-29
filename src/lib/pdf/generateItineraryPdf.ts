@@ -222,7 +222,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData, options: { do
       doc.setLineWidth(0.4)
       doc.line(pageWidth / 2 - 25, footerY - 4, pageWidth / 2 - 8, footerY - 4)
       doc.line(pageWidth / 2 + 8, footerY - 4, pageWidth / 2 + 25, footerY - 4)
-      
+
       // Triangle mountain peak symbol
       if (i === 1 && darkTheme) doc.setFillColor(203, 231, 255)
       else doc.setFillColor(11, 37, 69)
