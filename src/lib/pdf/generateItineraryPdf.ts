@@ -47,6 +47,13 @@ export interface ItineraryPdfData {
   adultsCount: number
   childrenCount: number
   estimatedTotalCost: string | number
+  customerPhone?: string
+  customerEmail?: string
+  pickupPoint?: string
+  specialRequests?: string
+  infantsCount?: number
+  payment?: { status: 'pending' | 'partial' | 'full'; advanceAmount?: string; balanceDue?: string; mode?: string; transactionId?: string }
+  theme?: { preset: 'sky' | 'dark'; accentColor?: string; backgroundUrl?: string }
   days: ItineraryPdfDay[]
   stay?: ItineraryPdfStay
   vehicle?: ItineraryPdfVehicle
@@ -101,6 +108,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     fetchImageAsBase64('/itinerary/front-page-template.png'),
     fetchImageAsBase64('/itinerary/second-page-template.png'),
     fetchImageAsBase64('/logo.png'),
+    fetchImageAsBase64(data.theme?.backgroundUrl),
     fetchImageAsBase64(data.stay?.imageUrl),
     fetchImageAsBase64(data.vehicle?.imageUrl),
     ...data.days.map((d) => fetchImageAsBase64(d.imageUrl)),
@@ -320,7 +328,8 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
       if (!isFrontPageDay) checkAddPage(neededH)
       const startY = y
       // Left Column: Day Pill & Date
-      doc.setFillColor(11, 37, 69) // Dark navy
+      if (darkTheme) doc.setFillColor(5, 18, 43)
+      else doc.setFillColor(11, 37, 69)
       doc.roundedRect(margin, y, 22, 7, 2, 2, 'F')
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(8)
@@ -348,7 +357,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
         }
       }
       // Vertical timeline node dot
-      doc.setFillColor(8, 120, 255) // bright blue
+      doc.setFillColor(...accent)
       doc.circle(timelineLineX, y + 3.5, 1.8, 'F')
       // Right Column: Title & Description
       doc.setFont('helvetica', 'bold')

@@ -1,10 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Package, Hotel, Vehicle, ItineraryDay } from '@/types/domain'
 import { getOptimizedImageUrl } from '@/lib/cloudinary/transform'
 import ImageUploadField from '@/components/admin/ImageUploadField'
 import { generateItineraryPDF, type ItineraryPdfData, type ItineraryPdfDay } from '@/lib/pdf/generateItineraryPdf'
+import { parsePerPersonPrice } from '@/lib/itineraryPricing'
 import { useAdminToast } from '@/components/admin/ToastProvider'
 import {
   FiCalendar,
@@ -26,6 +28,11 @@ import {
   FiHome,
   FiTruck,
   FiInfo,
+  FiPhone,
+  FiMail,
+  FiImage,
+  FiEye,
+  FiEyeOff,
 } from 'react-icons/fi'
 
 interface ItineraryBuilderProps {
@@ -176,6 +183,44 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
   const [newInclusionText, setNewInclusionText] = useState('')
   const [newExclusionText, setNewExclusionText] = useState('')
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+  const [editorOpen, setEditorOpen] = useState(false)
+
+  // ── NOT MENTIONED TOGGLES ──
+  const [stayNotMentioned, setStayNotMentioned] = useState(false)
+  const [vehicleNotMentioned, setVehicleNotMentioned] = useState(false)
+
+  // ── CUSTOMER DETAILS ──
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [customerEmail, setCustomerEmail] = useState('')
+  const [pickupPoint, setPickupPoint] = useState('')
+  const [specialRequests, setSpecialRequests] = useState('')
+  const [infantsCount, setInfantsCount] = useState(0)
+
+  // ── PAYMENT DETAILS ──
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'partial' | 'full'>('pending')
+  const [advanceAmount, setAdvanceAmount] = useState('')
+  const [balanceDue, setBalanceDue] = useState('')
+  const [paymentMode, setPaymentMode] = useState('')
+  const [transactionId, setTransactionId] = useState('')
+
+  // ── ITINERARY THEME ──
+  const [themeBackgroundUrl, setThemeBackgroundUrl] = useState('')
+  const [themeColor, setThemeColor] = useState('#0878FF')
+  const [themePreset, setThemePreset] = useState<'sky' | 'dark'>('sky')
+
+  useEffect(() => {
+    if (!editorOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setEditorOpen(false)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [editorOpen])
 
   // ── POPULATE FROM EXISTING PACKAGE ──
   const handleSelectPackage = (pkg: Package) => {
@@ -187,8 +232,22 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
     setDuration(pkg.duration || '4 Days / 3 Nights')
     setNights(pkg.nights !== undefined ? pkg.nights : 3)
     setCategory(pkg.category || 'Family')
-    setPricePerPerson(pkg.price || '₹12,999')
+    setPricePerPerson(pkg.price || '')
     setPriceNote(pkg.priceNote || 'per person')
+    setTravelerName('')
+    setAdultsCount(2)
+    setChildrenCount(0)
+    setInfantsCount(0)
+    setTravelDatesText('')
+    setCustomerPhone('')
+    setCustomerEmail('')
+    setPickupPoint('')
+    setSpecialRequests('')
+    setPaymentStatus('pending')
+    setAdvanceAmount('')
+    setBalanceDue('')
+    setPaymentMode('')
+    setTransactionId('')
 
     // Day-wise itinerary
     if (pkg.itinerary && pkg.itinerary.length > 0) {
@@ -196,9 +255,12 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         const schedule: CustomScheduleItem[] = []
         if (d.activities && d.activities.length > 0) {
           d.activities.forEach((act, actIdx) => {
+            const hour24 = 9 + actIdx * 2
+            const isPM = hour24 >= 12
+            const hour12 = hour24 > 12 ? hour24 - 12 : (hour24 === 0 ? 12 : hour24)
             schedule.push({
               id: `sched-${i}-${actIdx}`,
-              time: `${9 + actIdx * 2}:00 AM`,
+              time: `${hour12}:00 ${isPM ? 'PM' : 'AM'}`,
               activity: act,
             })
           })
@@ -218,15 +280,28 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         }
       })
       setDays(convertedDays)
+    } else {
+      setDays([{ id: `day-${Date.now()}`, day: 1, dateStr: '', dayOfWeek: '', title: 'Day 1', description: '', imageUrl: '', schedule: [] }])
     }
 
     // Inclusions & Exclusions
-    if (pkg.inclusions && pkg.inclusions.length > 0) {
-      setInclusions(pkg.inclusions)
-    }
-    if (pkg.exclusions && pkg.exclusions.length > 0) {
-      setExclusions(pkg.exclusions)
-    }
+    setInclusions(pkg.inclusions || [])
+    setExclusions(pkg.exclusions || [])
+    setSelectedHotelId('')
+    setCustomStayName('')
+    setCustomStayLocation('')
+    setCustomStayRating('')
+    setCustomStayReviews('')
+    setCustomStayNights(pkg.nights !== undefined ? String(pkg.nights) : '')
+    setCustomStayRoomType('')
+    setStayImageUrl('')
+    setSelectedVehicleId('')
+    setCustomVehicleName('')
+    setCustomVehicleCapacity('')
+    setCustomVehicleAc(true)
+    setVehicleImageUrl('')
+    setStayNotMentioned(!pkg.hotelIds?.length)
+    setVehicleNotMentioned(!pkg.vehicleIds?.length)
 
     // Connected Stays
     if (pkg.hotelIds && pkg.hotelIds.length > 0) {
@@ -251,14 +326,15 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
       }
     }
 
-    toast.success(`Loaded package "${pkg.name}". You can now customize and export PDF.`)
+    setEditorOpen(true)
+    toast.success(`Loaded package "${pkg.name}" for editing.`)
   }
 
   // Calculate Numeric Total Cost
-  const numericPrice = parseInt(pricePerPerson.replace(/[^0-9]/g, ''), 10) || 0
+  const numericPrice = parsePerPersonPrice(pricePerPerson)
   const totalTravelers = adultsCount + childrenCount
-  const estimatedTotalCostVal = numericPrice * totalTravelers
-  const formattedTotalCost = estimatedTotalCostVal > 0 ? `₹${estimatedTotalCostVal.toLocaleString('en-IN')}` : '₹38,997'
+  const estimatedTotalCostVal = numericPrice === null ? null : numericPrice * totalTravelers
+  const formattedTotalCost = estimatedTotalCostVal !== null ? `₹${estimatedTotalCostVal.toLocaleString('en-IN')}` : '--'
 
   // Filter packages list
   const filteredPackages = packages.filter((p) => {
@@ -324,19 +400,29 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
 
   // Schedule slot handlers inside a day
   const handleAddScheduleSlot = (dayIndex: number) => {
-    const updated = [...days]
-    updated[dayIndex].schedule.push({
-      id: `sched-${Date.now()}`,
-      time: '02:00 PM',
-      activity: 'New Activity Spot',
-    })
-    setDays(updated)
+    setDays(days.map((d, i) => {
+      if (i !== dayIndex) return d
+      return {
+        ...d,
+        schedule: [...d.schedule, {
+          id: `sched-${Date.now()}`,
+          time: '02:00 PM',
+          activity: 'New Activity Spot',
+        }],
+      }
+    }))
   }
 
   const handleUpdateScheduleSlot = (dayIndex: number, slotIndex: number, field: 'time' | 'activity', val: string) => {
-    const updated = [...days]
-    updated[dayIndex].schedule[slotIndex][field] = val
-    setDays(updated)
+    setDays(days.map((d, i) => {
+      if (i !== dayIndex) return d
+      return {
+        ...d,
+        schedule: d.schedule.map((s, sIdx) =>
+          sIdx === slotIndex ? { ...s, [field]: val } : s
+        ),
+      }
+    }))
   }
 
   const handleRemoveScheduleSlot = (dayIndex: number, slotIndex: number) => {
@@ -364,13 +450,23 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
       toast.error('Itinerary title / package name is required.')
       return
     }
+    if (!destination.trim() || !days.length || days.some((day) => !day.title.trim() || !day.description.trim())) {
+      toast.error('Add a destination, day title and description before downloading.')
+      return
+    }
+    if (numericPrice === null) {
+      toast.error('Enter a valid price per person before downloading.')
+      return
+    }
 
     setIsGeneratingPdf(true)
     const toastId = toast.loading('Generating Travel Itinerary PDF...')
     try {
+      const childLabel = childrenCount === 1 ? 'Child' : 'Children'
+      const infantLabel = infantsCount > 0 ? `, ${infantsCount} Infant${infantsCount > 1 ? 's' : ''}` : ''
       const travelersText = travelerName.trim()
-        ? `${travelerName.trim()} (${adultsCount} Adults, ${childrenCount} Child)`
-        : `${adultsCount} Adults, ${childrenCount} Child`
+        ? `${travelerName.trim()} (${adultsCount} Adults, ${childrenCount} ${childLabel}${infantLabel})`
+        : `${adultsCount} Adults, ${childrenCount} ${childLabel}${infantLabel}`
 
       const pdfData: ItineraryPdfData = {
         packageName,
@@ -387,6 +483,13 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         adultsCount,
         childrenCount,
         estimatedTotalCost: formattedTotalCost,
+        customerPhone,
+        customerEmail,
+        pickupPoint,
+        specialRequests,
+        infantsCount,
+        payment: { status: paymentStatus, advanceAmount, balanceDue, mode: paymentMode, transactionId },
+        theme: { preset: themePreset, accentColor: themeColor, backgroundUrl: themeBackgroundUrl },
         days: days.map((d) => ({
           day: d.day,
           dateStr: d.dateStr,
@@ -396,7 +499,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
           schedule: d.schedule.map((s) => ({ time: s.time, activity: s.activity })),
           imageUrl: d.imageUrl,
         })),
-        stay: {
+        stay: stayNotMentioned ? undefined : {
           name: customStayName,
           location: customStayLocation,
           rating: customStayRating,
@@ -405,7 +508,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
           roomType: customStayRoomType,
           imageUrl: stayImageUrl,
         },
-        vehicle: {
+        vehicle: vehicleNotMentioned ? undefined : {
           name: customVehicleName,
           capacity: customVehicleCapacity,
           isAc: customVehicleAc,
@@ -456,8 +559,8 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         {/* Action Button */}
         <button
           type="button"
-          onClick={handleDownloadPdf}
-          disabled={isGeneratingPdf}
+          onClick={() => setEditorOpen(true)}
+          disabled={!selectedPackageId && mode === 'select'}
           className="btn-primary"
           style={{
             display: 'inline-flex',
@@ -476,7 +579,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
           }}
         >
           <FiDownload size={16} />
-          {isGeneratingPdf ? 'Generating PDF...' : 'Download Itinerary PDF'}
+          {selectedPackageId || mode === 'custom' ? 'Open Itinerary Editor' : 'Select a Package'}
         </button>
       </div>
 
@@ -511,6 +614,59 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
           onClick={() => {
             setMode('custom')
             setSelectedPackageId(null)
+            setPackageName('')
+            setTagline('')
+            setDestination('')
+            setDuration('')
+            setNights('')
+            setCategory('')
+            setPricePerPerson('')
+            setPriceNote('per person')
+            setTravelerName('')
+            setAdultsCount(2)
+            setChildrenCount(0)
+            setInfantsCount(0)
+            setTravelDatesText('')
+            setCustomerPhone('')
+            setCustomerEmail('')
+            setPickupPoint('')
+            setSpecialRequests('')
+            setPaymentStatus('pending')
+            setAdvanceAmount('')
+            setBalanceDue('')
+            setPaymentMode('')
+            setTransactionId('')
+            setDays([{
+              id: `day-${Date.now()}`,
+              day: 1,
+              dateStr: '',
+              dayOfWeek: '',
+              title: 'Day 1',
+              description: '',
+              imageUrl: '',
+              schedule: [{ id: `sched-${Date.now()}`, time: '09:00 AM', activity: '' }],
+            }])
+            setSelectedHotelId('')
+            setCustomStayName('')
+            setCustomStayLocation('')
+            setCustomStayRating('')
+            setCustomStayReviews('')
+            setCustomStayNights('')
+            setCustomStayRoomType('')
+            setStayImageUrl('')
+            setStayNotMentioned(true)
+            setSelectedVehicleId('')
+            setCustomVehicleName('')
+            setCustomVehicleCapacity('')
+            setCustomVehicleAc(true)
+            setVehicleImageUrl('')
+            setVehicleNotMentioned(true)
+            setInclusions([])
+            setExclusions([])
+            setThemeBackgroundUrl('')
+            setThemeColor('#0878FF')
+            setThemePreset('sky')
+            setEditorOpen(true)
             toast.info('Started clean custom itinerary builder.')
           }}
           style={{
@@ -681,7 +837,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
                         gap: '6px',
                       }}
                     >
-                      {isSelected ? <><FiCheck size={14} /> Selected Package</> : 'Select Package'}
+                      {isSelected ? <><FiCheck size={14} /> Edit Selected Package</> : 'Select & Edit Package'}
                     </button>
                   </div>
                 </div>
@@ -697,6 +853,17 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
       )}
 
       {/* ── CUSTOMIZATION & EDITING AREA ── */}
+      {editorOpen && createPortal(
+        <div role="presentation" style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(3, 13, 33, 0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'min(3vw, 24px)' }}>
+          <div role="dialog" aria-modal="true" aria-label="Edit travel itinerary" style={{ width: 'min(1100px, 100%)', maxHeight: 'calc(100vh - 32px)', background: 'var(--admin-bg, #08152b)', color: 'var(--admin-text, #fff)', border: '1px solid rgba(112, 185, 255, .4)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 90px rgba(0,0,0,.55)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '14px 20px', background: 'linear-gradient(120deg,#061a39,#0b4487)', borderBottom: '1px solid rgba(255,255,255,.15)' }}>
+              <div><strong style={{ display: 'block', fontSize: '1.1rem' }}>Edit Travel Itinerary</strong><span style={{ fontSize: '.8rem', color: '#c5dffc' }}>{packageName || 'New itinerary'} · Changes apply to this PDF</span></div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" onClick={handleDownloadPdf} disabled={isGeneratingPdf} className="btn-primary" style={{ padding: '9px 14px', borderRadius: 7, border: 0, background: '#38bdf8', color: '#042044', fontWeight: 700, cursor: 'pointer' }}>{isGeneratingPdf ? 'Generating...' : 'Download Edited PDF'}</button>
+                <button type="button" onClick={() => setEditorOpen(false)} aria-label="Close itinerary editor" style={{ padding: '9px 12px', borderRadius: 7, border: '1px solid rgba(255,255,255,.35)', background: 'transparent', color: '#fff', cursor: 'pointer' }}><FiX /></button>
+              </div>
+            </div>
+            <div style={{ overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* 1. BASIC INFORMATION & TRAVELER DETAILS */}
       <div
         style={{
@@ -817,7 +984,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
 
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>
-              Price per Person
+              Price per Person (edit for this itinerary)
             </label>
             <input
               type="text"
@@ -825,6 +992,87 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
               onChange={(e) => setPricePerPerson(e.target.value)}
               placeholder="e.g. ₹12,999"
               style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>
+              Infants Count
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={infantsCount}
+              onChange={(e) => setInfantsCount(parseInt(e.target.value, 10) || 0)}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)' }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 1B. CUSTOMER DETAILS */}
+      <div
+        style={{
+          background: 'var(--admin-card)',
+          padding: '1.25rem 1.5rem',
+          borderRadius: '12px',
+          border: '1px solid var(--admin-card-border)',
+        }}
+      >
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <FiUser style={{ color: 'var(--admin-brand, #0878FF)' }} /> Customer Details
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '1rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><FiPhone size={12} /> Phone Number</span>
+            </label>
+            <input
+              type="tel"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder="e.g. +91 98765 43210"
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><FiMail size={12} /> Email Address</span>
+            </label>
+            <input
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="e.g. john@example.com"
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><FiMapPin size={12} /> Pickup Point</span>
+            </label>
+            <input
+              type="text"
+              value={pickupPoint}
+              onChange={(e) => setPickupPoint(e.target.value)}
+              placeholder="e.g. Cochin Airport / Ernakulam Station"
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)' }}
+            />
+          </div>
+
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--admin-text-muted)', marginBottom: '4px' }}>
+              Special Requests / Notes
+            </label>
+            <textarea
+              rows={2}
+              value={specialRequests}
+              onChange={(e) => setSpecialRequests(e.target.value)}
+              placeholder="e.g. Vegetarian meals preferred, extra bed needed, early check-in..."
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.85rem' }}
             />
           </div>
         </div>
@@ -1046,10 +1294,39 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
             border: '1px solid var(--admin-card-border)',
           }}
         >
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <FiHome style={{ color: 'var(--admin-brand, #0878FF)' }} /> Stay & Hotel Details
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FiHome style={{ color: 'var(--admin-brand, #0878FF)' }} /> Stay & Hotel Details
+            </h3>
+            <button
+              type="button"
+              onClick={() => setStayNotMentioned(!stayNotMentioned)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                border: stayNotMentioned ? '1px solid rgba(251, 146, 60, 0.5)' : '1px solid rgba(34, 197, 94, 0.4)',
+                background: stayNotMentioned ? 'rgba(251, 146, 60, 0.12)' : 'rgba(34, 197, 94, 0.1)',
+                color: stayNotMentioned ? '#FB923C' : '#86EFAC',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {stayNotMentioned ? <><FiEyeOff size={13} /> Not Mentioned</> : <><FiEye size={13} /> Included</>}
+            </button>
+          </div>
 
+          {stayNotMentioned ? (
+            <div style={{ padding: '1.5rem', textAlign: 'center', borderRadius: '8px', background: 'rgba(251, 146, 60, 0.06)', border: '1px dashed rgba(251, 146, 60, 0.3)' }}>
+              <FiEyeOff size={24} style={{ color: '#FB923C', marginBottom: '8px' }} />
+              <p style={{ fontSize: '0.85rem', color: '#FB923C', fontWeight: 600, margin: '0 0 4px 0' }}>Stay Details — Not Mentioned</p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', margin: 0 }}>Stay/Hotel information will not appear in the itinerary PDF.</p>
+            </div>
+          ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {hotels.length > 0 && (
               <div>
@@ -1141,6 +1418,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
               />
             </div>
           </div>
+          )}
         </div>
 
         {/* VEHICLE DETAILS */}
@@ -1152,10 +1430,39 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
             border: '1px solid var(--admin-card-border)',
           }}
         >
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <FiTruck style={{ color: 'var(--admin-brand, #0878FF)' }} /> Vehicle & Transport Details
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FiTruck style={{ color: 'var(--admin-brand, #0878FF)' }} /> Vehicle & Transport Details
+            </h3>
+            <button
+              type="button"
+              onClick={() => setVehicleNotMentioned(!vehicleNotMentioned)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                border: vehicleNotMentioned ? '1px solid rgba(251, 146, 60, 0.5)' : '1px solid rgba(34, 197, 94, 0.4)',
+                background: vehicleNotMentioned ? 'rgba(251, 146, 60, 0.12)' : 'rgba(34, 197, 94, 0.1)',
+                color: vehicleNotMentioned ? '#FB923C' : '#86EFAC',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {vehicleNotMentioned ? <><FiEyeOff size={13} /> Not Mentioned</> : <><FiEye size={13} /> Included</>}
+            </button>
+          </div>
 
+          {vehicleNotMentioned ? (
+            <div style={{ padding: '1.5rem', textAlign: 'center', borderRadius: '8px', background: 'rgba(251, 146, 60, 0.06)', border: '1px dashed rgba(251, 146, 60, 0.3)' }}>
+              <FiEyeOff size={24} style={{ color: '#FB923C', marginBottom: '8px' }} />
+              <p style={{ fontSize: '0.85rem', color: '#FB923C', fontWeight: 600, margin: '0 0 4px 0' }}>Vehicle Details — Not Mentioned</p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', margin: 0 }}>Vehicle/Transport information will not appear in the itinerary PDF.</p>
+            </div>
+          ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {vehicles.length > 0 && (
               <div>
@@ -1238,6 +1545,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
               />
             </div>
           </div>
+          )}
         </div>
       </div>
 
@@ -1338,7 +1646,213 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         </div>
       </div>
 
-      {/* 5. ESTIMATED COST SUMMARY CARD */}
+      {/* 5. ITINERARY THEME & BRANDING */}
+      <div
+        style={{
+          background: 'var(--admin-card)',
+          padding: '1.25rem 1.5rem',
+          borderRadius: '12px',
+          border: '1px solid var(--admin-card-border)',
+        }}
+      >
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <FiImage style={{ color: 'var(--admin-brand, #0878FF)' }} /> Itinerary Theme & Branding
+        </h3>
+
+        <div role="group" aria-label="PDF theme" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 16 }}>
+          {([
+            { id: 'sky' as const, name: 'Sky Blue', background: 'linear-gradient(135deg,#dff3ff 0%,#80c9ff 58%,#0b4487 100%)', color: '#082653', accent: '#0878FF' },
+            { id: 'dark' as const, name: 'Midnight Mountain', background: 'linear-gradient(135deg,#041126 0%,#0a2b5f 60%,#1472b5 100%)', color: '#ffffff', accent: '#4BAEFF' },
+          ]).map((preset) => (
+            <button key={preset.id} type="button" aria-pressed={themePreset === preset.id} onClick={() => { setThemePreset(preset.id); setThemeColor(preset.accent) }} style={{ minHeight: 88, textAlign: 'left', padding: 14, borderRadius: 10, border: themePreset === preset.id ? '3px solid #38bdf8' : '1px solid rgba(255,255,255,.24)', background: preset.background, color: preset.color, cursor: 'pointer', boxShadow: themePreset === preset.id ? '0 0 0 2px rgba(56,189,248,.25)' : 'none' }}>
+              <strong style={{ display: 'block', fontSize: '.95rem' }}>{preset.name}</strong>
+              <span style={{ display: 'block', marginTop: 6, fontSize: '.75rem' }}>Logo inspired PDF cover</span>
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '3px' }}>Cover / Background Image</label>
+            <ImageUploadField
+              value={themeBackgroundUrl}
+              onChange={(url) => setThemeBackgroundUrl(url)}
+              folder="itinerary-themes"
+              placeholder="Upload or paste a scenic cover image URL"
+            />
+            <p style={{ fontSize: '0.7rem', color: 'var(--admin-text-muted)', marginTop: '4px' }}>Optional cover image; the selected color theme still appears in the PDF.</p>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '3px' }}>Theme Accent Color</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="color"
+                value={themeColor}
+                onChange={(e) => setThemeColor(e.target.value)}
+                style={{ width: '42px', height: '36px', padding: '2px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', cursor: 'pointer' }}
+              />
+              <input
+                type="text"
+                value={themeColor}
+                onChange={(e) => setThemeColor(e.target.value)}
+                placeholder="#0878FF"
+                style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.85rem', fontFamily: 'monospace' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+              {['#0878FF', '#059669', '#7C3AED', '#DC2626', '#EA580C', '#0891B2', '#4F46E5', '#BE185D'].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setThemeColor(c)}
+                  title={c}
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '6px',
+                    background: c,
+                    border: themeColor === c ? '2px solid #fff' : '1px solid rgba(255,255,255,0.15)',
+                    cursor: 'pointer',
+                    boxShadow: themeColor === c ? `0 0 0 2px ${c}` : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {themeBackgroundUrl && (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '6px' }}>Cover Preview</label>
+              <div
+                style={{
+                  width: '100%',
+                  height: '160px',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  border: '1px solid var(--admin-border)',
+                }}
+              >
+                <img
+                  src={themeBackgroundUrl}
+                  alt="Theme background preview"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    padding: '12px 16px',
+                    background: `linear-gradient(transparent, ${themeColor}CC)`,
+                    color: '#fff',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  {packageName || 'Itinerary Title Preview'}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 6. PAYMENT DETAILS */}
+      <div
+        style={{
+          background: 'var(--admin-card)',
+          padding: '1.25rem 1.5rem',
+          borderRadius: '12px',
+          border: '1px solid var(--admin-card-border)',
+        }}
+      >
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 700, margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <FiDollarSign style={{ color: 'var(--admin-brand, #0878FF)' }} /> Payment Details
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '3px' }}>Payment Status</label>
+            <select
+              value={paymentStatus}
+              onChange={(e) => setPaymentStatus(e.target.value as 'pending' | 'partial' | 'full')}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.85rem' }}
+            >
+              <option value="pending">⏳ Pending</option>
+              <option value="partial">💰 Partial Payment</option>
+              <option value="full">✅ Fully Paid</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '3px' }}>Advance Amount</label>
+            <input
+              type="text"
+              value={advanceAmount}
+              onChange={(e) => setAdvanceAmount(e.target.value)}
+              placeholder="e.g. ₹5,000"
+              style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.85rem' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '3px' }}>Balance Due</label>
+            <input
+              type="text"
+              value={balanceDue}
+              onChange={(e) => setBalanceDue(e.target.value)}
+              placeholder="e.g. ₹33,997"
+              style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.85rem' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '3px' }}>Payment Mode</label>
+            <select
+              value={paymentMode}
+              onChange={(e) => setPaymentMode(e.target.value)}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.85rem' }}
+            >
+              <option value="">-- Select Mode --</option>
+              <option value="upi">UPI / Google Pay / PhonePe</option>
+              <option value="bank_transfer">Bank Transfer (NEFT/IMPS)</option>
+              <option value="cash">Cash</option>
+              <option value="card">Credit / Debit Card</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '3px' }}>Transaction ID / Reference</label>
+            <input
+              type="text"
+              value={transactionId}
+              onChange={(e) => setTransactionId(e.target.value)}
+              placeholder="e.g. TXN123456789"
+              style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.85rem', fontFamily: 'monospace' }}
+            />
+          </div>
+        </div>
+
+        {/* Payment Summary Strip */}
+        {(advanceAmount || balanceDue) && (
+          <div style={{ marginTop: '1rem', padding: '10px 14px', borderRadius: '8px', background: paymentStatus === 'full' ? 'rgba(34, 197, 94, 0.08)' : paymentStatus === 'partial' ? 'rgba(251, 191, 36, 0.08)' : 'rgba(239, 68, 68, 0.06)', border: paymentStatus === 'full' ? '1px solid rgba(34, 197, 94, 0.25)' : paymentStatus === 'partial' ? '1px solid rgba(251, 191, 36, 0.25)' : '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.82rem' }}>
+            {advanceAmount && <span><strong style={{ color: '#22C55E' }}>Advance:</strong> {advanceAmount}</span>}
+            {balanceDue && <span><strong style={{ color: '#FB923C' }}>Balance:</strong> {balanceDue}</span>}
+            {paymentMode && <span><strong style={{ color: 'var(--admin-text-muted)' }}>Mode:</strong> {paymentMode.replace('_', ' ').toUpperCase()}</span>}
+            {transactionId && <span><strong style={{ color: 'var(--admin-text-muted)' }}>TXN:</strong> {transactionId}</span>}
+          </div>
+        )}
+      </div>
+
+      {/* 7. ESTIMATED COST SUMMARY CARD */}
       <div
         style={{
           background: 'var(--admin-card)',
@@ -1357,11 +1871,11 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem', background: 'var(--admin-bg, rgba(0,0,0,0.2))', padding: '1rem', borderRadius: '8px' }}>
           <div>
             <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>Package Cost (per person)</span>
-            <p style={{ fontSize: '1.1rem', fontWeight: 700, margin: '2px 0 0 0' }}>{pricePerPerson || '₹12,999'}</p>
+            <p style={{ fontSize: '1.1rem', fontWeight: 700, margin: '2px 0 0 0' }}>{pricePerPerson || 'Enter a price'}</p>
           </div>
           <div>
             <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>Total Travelers</span>
-            <p style={{ fontSize: '1.1rem', fontWeight: 700, margin: '2px 0 0 0' }}>{totalTravelers} ({adultsCount} Adults, {childrenCount} Child)</p>
+            <p style={{ fontSize: '1.1rem', fontWeight: 700, margin: '2px 0 0 0' }}>{totalTravelers} ({adultsCount} Adult{adultsCount !== 1 ? 's' : ''}, {childrenCount} {childrenCount === 1 ? 'Child' : 'Children'}{infantsCount > 0 ? `, ${infantsCount} Infant${infantsCount !== 1 ? 's' : ''}` : ''})</p>
           </div>
           <div style={{ background: 'rgba(8, 120, 255, 0.12)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(8, 120, 255, 0.3)' }}>
             <span style={{ fontSize: '0.72rem', color: 'var(--hill-blue-bright, #0878FF)', fontWeight: 700, textTransform: 'uppercase' }}>Estimated Total Cost</span>
@@ -1370,49 +1884,25 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         </div>
       </div>
 
-      {/* ── FOOTER ACTIONS BAR ── */}
+      {/* ── FOOTER INFO BAR ── */}
       <div
         style={{
-          padding: '1.25rem 1.5rem',
+          padding: '1rem 1.5rem',
           background: 'var(--admin-card)',
           borderRadius: '12px',
           border: '1px solid var(--admin-card-border)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem',
+          gap: '8px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--admin-text-muted)', fontSize: '0.8rem' }}>
-          <FiInfo size={16} />
-          <span>Downloading will generate a professional vector PDF with selectable text. The original package record in the database will NOT be modified.</span>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleDownloadPdf}
-          disabled={isGeneratingPdf}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 24px',
-            fontSize: '0.95rem',
-            borderRadius: '8px',
-            cursor: isGeneratingPdf ? 'not-allowed' : 'pointer',
-            opacity: isGeneratingPdf ? 0.7 : 1,
-            background: 'var(--hill-blue-bright, #0878FF)',
-            color: '#fff',
-            fontWeight: 700,
-            border: 'none',
-            boxShadow: '0 4px 14px rgba(8, 120, 255, 0.35)',
-          }}
-        >
-          <FiDownload size={18} />
-          {isGeneratingPdf ? 'Generating PDF...' : 'Download Itinerary PDF'}
-        </button>
+        <FiInfo size={16} style={{ color: 'var(--admin-text-muted)', flexShrink: 0 }} />
+        <span style={{ color: 'var(--admin-text-muted)', fontSize: '0.8rem' }}>Downloading will generate a professional vector PDF with selectable text. The original package record in the database will NOT be modified.</span>
       </div>
+            </div>
+          </div>
+        </div>, document.body
+      )}
     </div>
   )
 }
