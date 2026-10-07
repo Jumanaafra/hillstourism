@@ -41,7 +41,7 @@ export default async function PackagesPage() {
       <Navbar />
       <main style={{ paddingTop: '80px' }}>
         <TripCategoryCarousel id="journeys" />
-        <FeaturedTrips id="packages" initialPackages={packages} />
+        <FeaturedTrips id="packages" initialPackages={packages} layout="grid" hideHeader={true} />
         <TripFinder id="trip-finder" initialPackages={packages} />
       </main>
       <Footer id="footer" />

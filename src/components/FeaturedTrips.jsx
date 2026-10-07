@@ -10,7 +10,7 @@ import HorizontalCarousel from './HorizontalCarousel'
 
 const FILTERS = ['All', 'Couple', 'Family', 'Friends', 'Honeymoon']
 
-export default function FeaturedTrips({ id, initialPackages }) {
+export default function FeaturedTrips({ id, initialPackages, layout = 'carousel', hideHeader = false }) {
   const [activeFilter, setActiveFilter] = useState('All')
   const pkgList = Array.isArray(initialPackages) && initialPackages.length > 0 ? initialPackages : packages
   const [sectionRevealed, setSectionRevealed] = useState(false)
@@ -54,17 +54,19 @@ export default function FeaturedTrips({ id, initialPackages }) {
       <div style={{ maxWidth: 'var(--container-w)', margin: '0 auto' }}>
 
         {/* Header */}
-        <div className="reveal" style={{ marginBottom: 'clamp(2rem,4vw,3.5rem)' }}>
-          <p className="eyebrow" style={{ marginBottom: '0.85rem' }}>Curated Packages</p>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
-            <h2 className="heading-xl" style={{ color: 'var(--hill-navy)' }}>
-              Journeys built<br />around you.
-            </h2>
-            <p className="body-lg" style={{ color: 'var(--hill-muted)', maxWidth: '360px' }}>
-              Handcrafted itineraries that take you to the soul of the hills.
-            </p>
+        {!hideHeader && (
+          <div className="reveal" style={{ marginBottom: 'clamp(2rem,4vw,3.5rem)' }}>
+            <p className="eyebrow" style={{ marginBottom: '0.85rem' }}>Curated Packages</p>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
+              <h2 className="heading-xl" style={{ color: 'var(--hill-navy)' }}>
+                Journeys built<br />around you.
+              </h2>
+              <p className="body-lg" style={{ color: 'var(--hill-muted)', maxWidth: '360px' }}>
+                Handcrafted itineraries that take you to the soul of the hills.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Filter tabs */}
         <div
@@ -92,174 +94,354 @@ export default function FeaturedTrips({ id, initialPackages }) {
           ))}
         </div>
 
-        {/* Package carousel */}
-        <HorizontalCarousel
-          items={filtered}
-          ariaLabel="Curated travel packages carousel"
-          renderItem={(pkg, i) => (
-            <article
-              key={pkg.id}
-              className={`package-card ${sectionRevealed ? 'visible' : 'reveal'}`}
-              style={{ transitionDelay: `${i * 0.07}s`, height: '100%', display: 'flex', flexDirection: 'column' }}
-              aria-label={`${pkg.name || pkg.title} — ${pkg.destination}`}
-            >
-              {/* Image */}
-              <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ display: 'block', textDecoration: 'none' }} tabIndex={-1}>
-                <div className="package-card-img">
-                  <img
-                    src={getOptimizedImageUrl(pkg.image, { width: 640, crop: 'fill' })}
-                    srcSet={generateResponsiveSrcSet(pkg.image, [360, 480, 640, 768], { crop: 'fill' })}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
-                    alt={`${pkg.name || pkg.title} — ${pkg.destination}`}
-                    width={640}
-                    height={480}
-                    loading="lazy"
-                    decoding="async"
-                    onError={e => {
-                      e.currentTarget.onerror = null
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=640&q=75&auto=format'
-                    }}
-                  />
-                  {/* Destination & Tag badge */}
-                  <div style={{
-                    position:     'absolute',
-                    top:          '0.9rem',
-                    left:         '0.9rem',
-                    display:      'flex',
-                    gap:          '0.4rem',
-                    alignItems:   'center',
-                  }}>
-                    <span className="badge badge-navy">{pkg.tag || 'Popular'}</span>
-                  </div>
+        {/* Package count */}
+        {layout === 'grid' && (
+          <div className="reveal" style={{ marginBottom: '1.5rem', marginTop: '-1rem', color: 'var(--hill-muted)', fontSize: '1rem', fontFamily: 'var(--font-body)', fontWeight: 500 }}>
+            Showing {filtered.length} curated packages
+          </div>
+        )}
 
-                  {/* Rating badge */}
-                  <div style={{
-                    position:       'absolute',
-                    top:            '0.9rem',
-                    right:          '0.9rem',
-                    background:     'rgba(0,9,31,0.85)',
-                    backdropFilter: 'blur(8px)',
-                    borderRadius:   '6px',
-                    padding:        '4px 8px',
-                    fontSize:       '0.7rem',
-                    fontWeight:     700,
-                    color:          '#ffffff',
-                    display:        'inline-flex',
-                    alignItems:     'center',
-                    gap:            '3px',
-                  }}>
-                    <span style={{ color: '#F59E0B' }}>★</span>
-                    <span>{pkg.rating || '4.9'}</span>
-                  </div>
-
-                  {/* Duration */}
-                  <div style={{
-                    position:     'absolute',
-                    bottom:       '0.9rem',
-                    right:        '0.9rem',
-                    background:   'rgba(0,9,31,0.85)',
-                    backdropFilter: 'blur(8px)',
-                    borderRadius: '6px',
-                    padding:      '4px 10px',
-                    fontSize:     '0.65rem',
-                    fontWeight:   700,
-                    color:        '#ffffff',
-                    fontFamily:   'var(--font-body)',
-                    letterSpacing: '0.06em',
-                    display:      'inline-flex',
-                    alignItems:   'center',
-                    gap:          '4px',
-                  }}>
-                    <FiClock style={{ fontSize: '0.7rem' }} />
-                    {pkg.duration}
-                  </div>
-                </div>
-              </Link>
-
-              {/* Body */}
-              <div className="package-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div>
-                  <p style={{
-                    fontSize:      '0.65rem',
-                    color:         'var(--hill-blue-bright)',
-                    letterSpacing: '0.14em',
-                    fontFamily:    'var(--font-body)',
-                    fontWeight:    700,
-                    textTransform: 'uppercase',
-                    marginBottom:  '0.3rem',
-                    display:       'flex',
-                    alignItems:    'center',
-                    gap:           '4px',
-                  }}>
-                    <FiMapPin style={{ fontSize: '0.75rem', flexShrink: 0 }} />
-                    {pkg.destination}
-                  </p>
-                  <h3 className="heading-sm" style={{ color: 'var(--hill-navy)', marginBottom: '0.5rem' }}>
-                    <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                      {pkg.name || pkg.title}
-                    </Link>
-                  </h3>
-                  <p className="body-md" style={{ color: 'var(--hill-muted)', lineHeight: 1.6 }}>
-                    {pkg.description}
-                  </p>
-                </div>
-
-                {/* Highlights */}
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
-                  {pkg.highlights.map(h => (
-                    <span key={h} style={{
-                      fontSize:     '0.6rem',
-                      fontFamily:   'var(--font-body)',
-                      color:        'var(--hill-muted)',
-                      background:   'var(--hill-surface)',
-                      border:       '1px solid var(--hill-border)',
-                      borderRadius: '4px',
-                      padding:      '2px 8px',
-                      fontWeight:   500,
+        {/* Package layout */}
+        {layout === 'carousel' ? (
+          <HorizontalCarousel
+            items={filtered}
+            ariaLabel="Curated travel packages carousel"
+            renderItem={(pkg, i) => (
+              <article
+                key={pkg.id}
+                className={`package-card ${sectionRevealed ? 'visible' : 'reveal'}`}
+                style={{ transitionDelay: `${i * 0.07}s`, height: '100%', display: 'flex', flexDirection: 'column' }}
+                aria-label={`${pkg.name || pkg.title} — ${pkg.destination}`}
+              >
+                {/* Image */}
+                <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ display: 'block', textDecoration: 'none' }} tabIndex={-1}>
+                  <div className="package-card-img">
+                    <img
+                      src={getOptimizedImageUrl(pkg.image, { width: 640, crop: 'fill' })}
+                      srcSet={generateResponsiveSrcSet(pkg.image, [360, 480, 640, 768], { crop: 'fill' })}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
+                      alt={`${pkg.name || pkg.title} — ${pkg.destination}`}
+                      width={640}
+                      height={480}
+                      loading="lazy"
+                      decoding="async"
+                      onError={e => {
+                        e.currentTarget.onerror = null
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=640&q=75&auto=format'
+                      }}
+                    />
+                    {/* Destination & Tag badge */}
+                    <div style={{
+                      position:     'absolute',
+                      top:          '0.9rem',
+                      left:         '0.9rem',
+                      display:      'flex',
+                      gap:          '0.4rem',
+                      alignItems:   'center',
                     }}>
-                      {h}
-                    </span>
-                  ))}
-                </div>
+                      <span className="badge badge-navy">{pkg.tag || 'Popular'}</span>
+                    </div>
 
-                {/* Price + CTA */}
-                <div style={{
-                  display:        'flex',
-                  alignItems:     'center',
-                  justifyContent: 'space-between',
-                  flexWrap:       'wrap',
-                  gap:            '0.75rem',
-                  marginTop:      'auto',
-                  paddingTop:     '1rem',
-                  borderTop:      '1px solid var(--hill-border)',
-                }}>
-                  <div>
-                    <p style={{ fontSize: '0.62rem', color: 'var(--hill-muted)', fontFamily: 'var(--font-body)' }}>Starting from</p>
-                    <p style={{
-                      fontFamily:   'var(--font-display)',
-                      fontSize:     '1.4rem',
+                    {/* Rating badge */}
+                    <div style={{
+                      position:       'absolute',
+                      top:            '0.9rem',
+                      right:          '0.9rem',
+                      background:     'rgba(0,9,31,0.85)',
+                      backdropFilter: 'blur(8px)',
+                      borderRadius:   '6px',
+                      padding:        '4px 8px',
+                      fontSize:       '0.7rem',
+                      fontWeight:     700,
+                      color:          '#ffffff',
+                      display:        'inline-flex',
+                      alignItems:     'center',
+                      gap:            '3px',
+                    }}>
+                      <span style={{ color: '#F59E0B' }}>★</span>
+                      <span>{pkg.rating || '4.9'}</span>
+                    </div>
+
+                    {/* Duration */}
+                    <div style={{
+                      position:     'absolute',
+                      bottom:       '0.9rem',
+                      right:        '0.9rem',
+                      background:   'rgba(0,9,31,0.85)',
+                      backdropFilter: 'blur(8px)',
+                      borderRadius: '6px',
+                      padding:      '4px 10px',
+                      fontSize:     '0.65rem',
                       fontWeight:   700,
-                      color:        'var(--hill-navy)',
-                      letterSpacing: '-0.03em',
-                      lineHeight:   1,
+                      color:        '#ffffff',
+                      fontFamily:   'var(--font-body)',
+                      letterSpacing: '0.06em',
+                      display:      'inline-flex',
+                      alignItems:   'center',
+                      gap:          '4px',
                     }}>
-                      {pkg.price}
-                    </p>
-                    <p style={{ fontSize: '0.6rem', color: 'var(--hill-muted)' }}>{pkg.priceNote}</p>
+                      <FiClock style={{ fontSize: '0.7rem' }} />
+                      {pkg.duration}
+                    </div>
                   </div>
-                  <Link
-                    href={`/packages/${pkg.slug || pkg.id}`}
-                    className="btn-primary"
-                    style={{ padding: '0.6rem 1.2rem', fontSize: '0.7rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                    aria-label={`View journey details for ${pkg.name || pkg.title}`}
-                  >
-                    View Journey <FiArrowRight style={{ fontSize: '0.8rem' }} />
-                  </Link>
+                </Link>
+
+                {/* Body */}
+                <div className="package-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <div>
+                    <p style={{
+                      fontSize:      '0.65rem',
+                      color:         'var(--hill-blue-bright)',
+                      letterSpacing: '0.14em',
+                      fontFamily:    'var(--font-body)',
+                      fontWeight:    700,
+                      textTransform: 'uppercase',
+                      marginBottom:  '0.3rem',
+                      display:       'flex',
+                      alignItems:    'center',
+                      gap:           '4px',
+                    }}>
+                      <FiMapPin style={{ fontSize: '0.75rem', flexShrink: 0 }} />
+                      {pkg.destination}
+                    </p>
+                    <h3 className="heading-sm" style={{ color: 'var(--hill-navy)', marginBottom: '0.5rem' }}>
+                      <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                        {pkg.name || pkg.title}
+                      </Link>
+                    </h3>
+                    <p className="body-md" style={{ color: 'var(--hill-muted)', lineHeight: 1.6 }}>
+                      {pkg.description}
+                    </p>
+                  </div>
+
+                  {/* Highlights */}
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+                    {pkg.highlights.map(h => (
+                      <span key={h} style={{
+                        fontSize:     '0.6rem',
+                        fontFamily:   'var(--font-body)',
+                        color:        'var(--hill-muted)',
+                        background:   'var(--hill-surface)',
+                        border:       '1px solid var(--hill-border)',
+                        borderRadius: '4px',
+                        padding:      '2px 8px',
+                        fontWeight:   500,
+                      }}>
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Price + CTA */}
+                  <div style={{
+                    display:        'flex',
+                    alignItems:     'center',
+                    justifyContent: 'space-between',
+                    flexWrap:       'wrap',
+                    gap:            '0.75rem',
+                    marginTop:      'auto',
+                    paddingTop:     '1rem',
+                    borderTop:      '1px solid var(--hill-border)',
+                  }}>
+                    <div>
+                      <p style={{ fontSize: '0.62rem', color: 'var(--hill-muted)', fontFamily: 'var(--font-body)' }}>Starting from</p>
+                      <p style={{
+                        fontFamily:   'var(--font-display)',
+                        fontSize:     '1.4rem',
+                        fontWeight:   700,
+                        color:        'var(--hill-navy)',
+                        letterSpacing: '-0.03em',
+                        lineHeight:   1,
+                      }}>
+                        {pkg.price}
+                      </p>
+                      <p style={{ fontSize: '0.6rem', color: 'var(--hill-muted)' }}>{pkg.priceNote}</p>
+                    </div>
+                    <Link
+                      href={`/packages/${pkg.slug || pkg.id}`}
+                      className="btn-primary"
+                      style={{ padding: '0.6rem 1.2rem', fontSize: '0.7rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      aria-label={`View journey details for ${pkg.name || pkg.title}`}
+                    >
+                      View Journey <FiArrowRight style={{ fontSize: '0.8rem' }} />
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </article>
-          )}
-        />
+              </article>
+            )}
+          />
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: '2rem',
+            alignItems: 'stretch'
+          }}>
+            {filtered.map((pkg, i) => (
+              <article
+                key={pkg.id}
+                className={`package-card ${sectionRevealed ? 'visible' : 'reveal'}`}
+                style={{ transitionDelay: `${(i % 6) * 0.07}s`, height: '100%', display: 'flex', flexDirection: 'column' }}
+                aria-label={`${pkg.name || pkg.title} — ${pkg.destination}`}
+              >
+                {/* Image */}
+                <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ display: 'block', textDecoration: 'none' }} tabIndex={-1}>
+                  <div className="package-card-img">
+                    <img
+                      src={getOptimizedImageUrl(pkg.image, { width: 640, crop: 'fill' })}
+                      srcSet={generateResponsiveSrcSet(pkg.image, [360, 480, 640, 768], { crop: 'fill' })}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
+                      alt={`${pkg.name || pkg.title} — ${pkg.destination}`}
+                      width={640}
+                      height={480}
+                      loading="lazy"
+                      decoding="async"
+                      onError={e => {
+                        e.currentTarget.onerror = null
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=640&q=75&auto=format'
+                      }}
+                    />
+                    {/* Destination & Tag badge */}
+                    <div style={{
+                      position:     'absolute',
+                      top:          '0.9rem',
+                      left:         '0.9rem',
+                      display:      'flex',
+                      gap:          '0.4rem',
+                      alignItems:   'center',
+                    }}>
+                      <span className="badge badge-navy">{pkg.tag || 'Popular'}</span>
+                    </div>
+
+                    {/* Rating badge */}
+                    <div style={{
+                      position:       'absolute',
+                      top:            '0.9rem',
+                      right:          '0.9rem',
+                      background:     'rgba(0,9,31,0.85)',
+                      backdropFilter: 'blur(8px)',
+                      borderRadius:   '6px',
+                      padding:        '4px 8px',
+                      fontSize:       '0.7rem',
+                      fontWeight:     700,
+                      color:          '#ffffff',
+                      display:        'inline-flex',
+                      alignItems:     'center',
+                      gap:            '3px',
+                    }}>
+                      <span style={{ color: '#F59E0B' }}>★</span>
+                      <span>{pkg.rating || '4.9'}</span>
+                    </div>
+
+                    {/* Duration */}
+                    <div style={{
+                      position:     'absolute',
+                      bottom:       '0.9rem',
+                      right:        '0.9rem',
+                      background:   'rgba(0,9,31,0.85)',
+                      backdropFilter: 'blur(8px)',
+                      borderRadius: '6px',
+                      padding:      '4px 10px',
+                      fontSize:     '0.65rem',
+                      fontWeight:   700,
+                      color:        '#ffffff',
+                      fontFamily:   'var(--font-body)',
+                      letterSpacing: '0.06em',
+                      display:      'inline-flex',
+                      alignItems:   'center',
+                      gap:          '4px',
+                    }}>
+                      <FiClock style={{ fontSize: '0.7rem' }} />
+                      {pkg.duration}
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Body */}
+                <div className="package-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <div>
+                    <p style={{
+                      fontSize:      '0.65rem',
+                      color:         'var(--hill-blue-bright)',
+                      letterSpacing: '0.14em',
+                      fontFamily:    'var(--font-body)',
+                      fontWeight:    700,
+                      textTransform: 'uppercase',
+                      marginBottom:  '0.3rem',
+                      display:       'flex',
+                      alignItems:    'center',
+                      gap:           '4px',
+                    }}>
+                      <FiMapPin style={{ fontSize: '0.75rem', flexShrink: 0 }} />
+                      {pkg.destination}
+                    </p>
+                    <h3 className="heading-sm" style={{ color: 'var(--hill-navy)', marginBottom: '0.5rem' }}>
+                      <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                        {pkg.name || pkg.title}
+                      </Link>
+                    </h3>
+                    <p className="body-md" style={{ color: 'var(--hill-muted)', lineHeight: 1.6 }}>
+                      {pkg.description}
+                    </p>
+                  </div>
+
+                  {/* Highlights */}
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+                    {pkg.highlights.map(h => (
+                      <span key={h} style={{
+                        fontSize:     '0.6rem',
+                        fontFamily:   'var(--font-body)',
+                        color:        'var(--hill-muted)',
+                        background:   'var(--hill-surface)',
+                        border:       '1px solid var(--hill-border)',
+                        borderRadius: '4px',
+                        padding:      '2px 8px',
+                        fontWeight:   500,
+                      }}>
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Price + CTA */}
+                  <div style={{
+                    display:        'flex',
+                    alignItems:     'center',
+                    justifyContent: 'space-between',
+                    flexWrap:       'wrap',
+                    gap:            '0.75rem',
+                    marginTop:      'auto',
+                    paddingTop:     '1rem',
+                    borderTop:      '1px solid var(--hill-border)',
+                  }}>
+                    <div>
+                      <p style={{ fontSize: '0.62rem', color: 'var(--hill-muted)', fontFamily: 'var(--font-body)' }}>Starting from</p>
+                      <p style={{
+                        fontFamily:   'var(--font-display)',
+                        fontSize:     '1.4rem',
+                        fontWeight:   700,
+                        color:        'var(--hill-navy)',
+                        letterSpacing: '-0.03em',
+                        lineHeight:   1,
+                      }}>
+                        {pkg.price}
+                      </p>
+                      <p style={{ fontSize: '0.6rem', color: 'var(--hill-muted)' }}>{pkg.priceNote}</p>
+                    </div>
+                    <Link
+                      href={`/packages/${pkg.slug || pkg.id}`}
+                      className="btn-primary"
+                      style={{ padding: '0.6rem 1.2rem', fontSize: '0.7rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      aria-label={`View journey details for ${pkg.name || pkg.title}`}
+                    >
+                      View Journey <FiArrowRight style={{ fontSize: '0.8rem' }} />
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
 
         {/* View all */}
         <div className="reveal" style={{ textAlign: 'center', marginTop: '3rem', transitionDelay: '0.3s' }}>
