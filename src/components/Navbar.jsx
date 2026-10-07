@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { label: 'Stays',       href: '/stays' },
   { label: 'Vehicles',    href: '/vehicles' },
   { label: 'Gallery',     href: '/gallery' },
+  { label: 'Blog',        href: '/blog' },
   { label: 'About',       href: '/about' },
 ]
 

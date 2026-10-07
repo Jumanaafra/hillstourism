@@ -7,6 +7,7 @@ import NewsletterForm from './NewsletterForm'
 
 const COMPANY_LINKS = [
   { label: 'About Us', href: '/about' },
+  { label: 'Travel Blog', href: '/blog' },
   { label: 'Curated Stays', href: '/stays' },
   { label: 'Mountain Fleet', href: '/vehicles' },
   { label: 'Signature Experiences', href: '/experiences' },
