@@ -64,9 +64,9 @@ const defaultMeta: Metadata = {
     follow: true,
   },
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    icon: '/icons/icon-192x192.png',
+    shortcut: '/icons/icon-192x192.png',
+    apple: '/icons/icon-192x192.png',
   },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || process.env.GOOGLE_SITE_VERIFICATION || undefined,
