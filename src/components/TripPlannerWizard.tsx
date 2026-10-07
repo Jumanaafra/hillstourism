@@ -23,7 +23,7 @@ export default function TripPlannerWizard({ packages = [] }: { packages?: any[] 
   const [vibe, setVibe] = useState('')
   const [duration, setDuration] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [results, setResults] = useState([])
+  const [results, setResults] = useState<any[]>([])
 
   const handleNext = () => {
     if (step === 1 && vibe) setStep(2)
