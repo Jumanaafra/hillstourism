@@ -6,6 +6,8 @@ import { getPackages } from '@/lib/repositories/packages.repo'
 import { getCanonicalUrl } from '@/lib/seo/siteUrl'
 import { resolvePageMetadata } from '@/lib/seo/metadataHelper'
 
+import { getSiteSettings } from '@/lib/repositories/content.repo'
+
 export const revalidate = 3600
 
 const defaultMeta: Metadata = {
@@ -28,11 +30,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PlanMyTripPage() {
-  const packages = await getPackages(true).catch(() => [])
+  const [packages, settings] = await Promise.all([
+    getPackages(true).catch(() => []),
+    getSiteSettings().catch(() => null)
+  ])
 
   return (
     <>
-      <Navbar />
+      <Navbar whatsappUrl={settings?.whatsappNumber ? `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}` : undefined} />
       <main style={{ paddingTop: '80px', background: 'var(--hill-surface)' }}>
         <div style={{ textAlign: 'center', paddingTop: '4rem', paddingBottom: '1rem', paddingInline: '1rem' }}>
           <h1 className="heading-xl" style={{ color: 'var(--hill-navy)' }}>Plan Your Escape</h1>
@@ -42,7 +47,7 @@ export default async function PlanMyTripPage() {
         </div>
         <TripPlannerWizard packages={packages} />
       </main>
-      <Footer id="footer" />
+      <Footer id="footer" settings={settings} />
     </>
   )
 }

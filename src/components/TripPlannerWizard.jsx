@@ -171,10 +171,10 @@ export default function TripPlannerWizard({ packages = [] }) {
               {results.map(pkg => (
                 <article key={pkg.id} className="package-card" style={{ display: 'flex', flexDirection: 'column' }}>
                   <Link href={`/packages/${pkg.slug || pkg.id}`} style={{ display: 'block', textDecoration: 'none' }}>
-                    <div className="package-card-img" style={{ height: '200px' }}>
+                    <div className="package-card-img" style={{ height: '200px', position: 'relative' }}>
                       <img
-                        src={getOptimizedImageUrl(pkg.image, { width: 400, crop: 'fill' })}
-                        alt={pkg.name}
+                        src={getOptimizedImageUrl(Array.isArray(pkg.image) ? pkg.image[0] : pkg.image, { width: 400, crop: 'fill' })}
+                        alt={pkg.name || pkg.title}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                       <div style={{
