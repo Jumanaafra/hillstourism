@@ -21,10 +21,10 @@ export async function generateMetadata({ params }): Promise<Metadata> {
   if (!post) return {}
   
   return {
-    title: \`\${post.title} — Hills Tourism Blog\`,
+    title: `${post.title} — Hills Tourism Blog`,
     description: post.excerpt,
     alternates: {
-      canonical: getCanonicalUrl(\`/blog/\${post.slug}\`),
+      canonical: getCanonicalUrl(`/blog/${post.slug}`),
     },
     openGraph: {
       title: post.title,
@@ -72,7 +72,7 @@ export default async function BlogPostPage({ params }) {
 
   return (
     <>
-      <Navbar whatsappUrl={settings?.whatsappNumber ? \`https://wa.me/\${settings.whatsappNumber.replace(/[^0-9]/g, '')}\` : undefined} />
+      <Navbar whatsappUrl={settings?.whatsappNumber ? `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}` : undefined} />
       <main style={{ background: 'var(--hill-surface)', paddingBottom: '4rem' }}>
         <script
           type="application/ld+json"
@@ -117,36 +117,7 @@ export default async function BlogPostPage({ params }) {
           />
         </article>
 
-        <style jsx global>{\`
-          .blog-content h2, .blog-content h3 {
-            font-family: var(--font-display);
-            color: var(--hill-navy-deep);
-            margin-top: 2.5rem;
-            margin-bottom: 1rem;
-          }
-          .blog-content h3 {
-            font-size: 1.5rem;
-          }
-          .blog-content p {
-            margin-bottom: 1.5rem;
-            color: var(--hill-muted);
-          }
-          .blog-content ul {
-            margin-bottom: 1.5rem;
-            padding-left: 1.5rem;
-            color: var(--hill-muted);
-          }
-          .blog-content li {
-            margin-bottom: 0.5rem;
-          }
-          .blog-content strong {
-            color: var(--hill-navy);
-          }
-          .blog-content a {
-            color: var(--hill-blue-bright);
-            text-decoration: underline;
-          }
-        \`}</style>
+
       </main>
       <Footer id="footer" settings={settings} />
     </>
