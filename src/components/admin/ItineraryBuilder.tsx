@@ -854,21 +854,21 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
 
       {/* ── CUSTOMIZATION & EDITING AREA ── */}
       {editorOpen && createPortal(
-        <div role="presentation" style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(3, 13, 33, 0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'min(3vw, 24px)' }}>
-          <div role="dialog" aria-modal="true" aria-label="Edit travel itinerary" style={{ width: 'min(1100px, 100%)', maxHeight: 'calc(100vh - 32px)', background: 'var(--admin-bg, #08152b)', color: 'var(--admin-text, #fff)', border: '1px solid rgba(112, 185, 255, .4)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 90px rgba(0,0,0,.55)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '14px 20px', background: 'linear-gradient(120deg,#061a39,#0b4487)', borderBottom: '1px solid rgba(255,255,255,.15)' }}>
-              <div><strong style={{ display: 'block', fontSize: '1.1rem' }}>Edit Travel Itinerary</strong><span style={{ fontSize: '.8rem', color: '#c5dffc' }}>{packageName || 'New itinerary'} · Changes apply to this PDF</span></div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" onClick={handleDownloadPdf} disabled={isGeneratingPdf} className="btn-primary" style={{ padding: '9px 14px', borderRadius: 7, border: 0, background: '#38bdf8', color: '#042044', fontWeight: 700, cursor: 'pointer' }}>{isGeneratingPdf ? 'Generating...' : 'Download Edited PDF'}</button>
-                <button type="button" onClick={() => setEditorOpen(false)} aria-label="Close itinerary editor" style={{ padding: '9px 12px', borderRadius: 7, border: '1px solid rgba(255,255,255,.35)', background: 'transparent', color: '#fff', cursor: 'pointer' }}><FiX /></button>
+        <div role="presentation" style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(3, 13, 33, 0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'min(2vw, 24px)' }}>
+          <div role="dialog" aria-modal="true" aria-label="Edit travel itinerary" style={{ width: 'min(1100px, 100%)', maxHeight: 'calc(100dvh - 16px)', background: 'var(--admin-bg, #08152b)', color: 'var(--admin-text, #fff)', border: '1px solid rgba(112, 185, 255, .4)', borderRadius: 'min(16px, 3vw)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 90px rgba(0,0,0,.55)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap', padding: 'min(14px, 3vw) min(20px, 4vw)', background: 'linear-gradient(120deg,#061a39,#0b4487)', borderBottom: '1px solid rgba(255,255,255,.15)' }}>
+              <div style={{ minWidth: 0, flex: '1 1 180px' }}><strong style={{ display: 'block', fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)' }}>Edit Travel Itinerary</strong><span style={{ fontSize: 'clamp(0.7rem, 2vw, 0.8rem)', color: '#c5dffc', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{packageName || 'New itinerary'} · Changes apply to this PDF</span></div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button type="button" onClick={handleDownloadPdf} disabled={isGeneratingPdf} className="btn-primary" style={{ padding: '8px 12px', borderRadius: 7, border: 0, background: '#38bdf8', color: '#042044', fontWeight: 700, cursor: 'pointer', fontSize: 'clamp(0.72rem, 2vw, 0.85rem)', whiteSpace: 'nowrap' }}>{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</button>
+                <button type="button" onClick={() => setEditorOpen(false)} aria-label="Close itinerary editor" style={{ padding: '8px 10px', borderRadius: 7, border: '1px solid rgba(255,255,255,.35)', background: 'transparent', color: '#fff', cursor: 'pointer' }}><FiX /></button>
               </div>
             </div>
-            <div style={{ overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ overflowY: 'auto', padding: 'min(20px, 3.5vw)', display: 'flex', flexDirection: 'column', gap: '1.25rem', WebkitOverflowScrolling: 'touch' }}>
       {/* 1. BASIC INFORMATION & TRAVELER DETAILS */}
       <div
         style={{
           background: 'var(--admin-card)',
-          padding: '1.25rem 1.5rem',
+          padding: 'min(1.25rem, 3vw) min(1.5rem, 4vw)',
           borderRadius: '12px',
           border: '1px solid var(--admin-card-border)',
         }}
@@ -1014,7 +1014,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
       <div
         style={{
           background: 'var(--admin-card)',
-          padding: '1.25rem 1.5rem',
+          padding: 'min(1.25rem, 3vw) min(1.5rem, 4vw)',
           borderRadius: '12px',
           border: '1px solid var(--admin-card-border)',
         }}
@@ -1082,7 +1082,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
       <div
         style={{
           background: 'var(--admin-card)',
-          padding: '1.25rem 1.5rem',
+          padding: 'min(1.25rem, 3vw) min(1.5rem, 4vw)',
           borderRadius: '12px',
           border: '1px solid var(--admin-card-border)',
         }}
@@ -1118,7 +1118,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
               key={dayItem.id}
               style={{
                 background: 'var(--admin-bg, rgba(255, 255, 255, 0.03))',
-                padding: '1.25rem',
+                padding: 'min(1.25rem, 3vw)',
                 borderRadius: '10px',
                 border: '1px solid var(--admin-border)',
               }}
@@ -1249,20 +1249,20 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {dayItem.schedule.map((slot, sIdx) => (
-                    <div key={slot.id} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <div key={slot.id} style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                       <input
                         type="text"
                         value={slot.time}
                         onChange={(e) => handleUpdateScheduleSlot(dIdx, sIdx, 'time', e.target.value)}
                         placeholder="10:00 AM"
-                        style={{ width: '100px', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.8rem' }}
+                        style={{ width: 'min(100px, 30%)', minWidth: '70px', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.8rem' }}
                       />
                       <input
                         type="text"
                         value={slot.activity}
                         onChange={(e) => handleUpdateScheduleSlot(dIdx, sIdx, 'activity', e.target.value)}
                         placeholder="Arrival & Hotel Check-in"
-                        style={{ flex: 1, padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.8rem' }}
+                        style={{ flex: '1 1 120px', minWidth: 0, padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--admin-input-border)', background: 'var(--admin-input-bg)', color: 'var(--admin-input-text)', fontSize: '0.8rem' }}
                       />
                       <button
                         type="button"
@@ -1289,7 +1289,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         <div
           style={{
             background: 'var(--admin-card)',
-            padding: '1.25rem 1.5rem',
+            padding: 'min(1.25rem, 3vw) min(1.5rem, 4vw)',
             borderRadius: '12px',
             border: '1px solid var(--admin-card-border)',
           }}
@@ -1366,7 +1366,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.5rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '3px' }}>Location</label>
                 <input
@@ -1387,7 +1387,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.5rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '3px' }}>Duration (Nights)</label>
                 <input
@@ -1425,7 +1425,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         <div
           style={{
             background: 'var(--admin-card)',
-            padding: '1.25rem 1.5rem',
+            padding: 'min(1.25rem, 3vw) min(1.5rem, 4vw)',
             borderRadius: '12px',
             border: '1px solid var(--admin-card-border)',
           }}
@@ -1501,7 +1501,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.5rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--admin-text-muted)', marginBottom: '3px' }}>Capacity Info</label>
                 <input
@@ -1555,7 +1555,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         <div
           style={{
             background: 'var(--admin-card)',
-            padding: '1.25rem 1.5rem',
+            padding: 'min(1.25rem, 3vw) min(1.5rem, 4vw)',
             borderRadius: '12px',
             border: '1px solid var(--admin-card-border)',
           }}
@@ -1602,7 +1602,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
         <div
           style={{
             background: 'var(--admin-card)',
-            padding: '1.25rem 1.5rem',
+            padding: 'min(1.25rem, 3vw) min(1.5rem, 4vw)',
             borderRadius: '12px',
             border: '1px solid var(--admin-card-border)',
           }}
@@ -1650,7 +1650,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
       <div
         style={{
           background: 'var(--admin-card)',
-          padding: '1.25rem 1.5rem',
+          padding: 'min(1.25rem, 3vw) min(1.5rem, 4vw)',
           borderRadius: '12px',
           border: '1px solid var(--admin-card-border)',
         }}
@@ -1768,7 +1768,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
       <div
         style={{
           background: 'var(--admin-card)',
-          padding: '1.25rem 1.5rem',
+          padding: 'min(1.25rem, 3vw) min(1.5rem, 4vw)',
           borderRadius: '12px',
           border: '1px solid var(--admin-card-border)',
         }}
@@ -1856,7 +1856,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
       <div
         style={{
           background: 'var(--admin-card)',
-          padding: '1.25rem 1.5rem',
+          padding: 'min(1.25rem, 3vw) min(1.5rem, 4vw)',
           borderRadius: '12px',
           border: '1px solid var(--admin-card-border)',
           display: 'flex',
@@ -1887,7 +1887,7 @@ export default function ItineraryBuilder({ packages, hotels, vehicles }: Itinera
       {/* ── FOOTER INFO BAR ── */}
       <div
         style={{
-          padding: '1rem 1.5rem',
+          padding: 'min(1rem, 2.5vw) min(1.5rem, 4vw)',
           background: 'var(--admin-card)',
           borderRadius: '12px',
           border: '1px solid var(--admin-card-border)',

@@ -93,14 +93,13 @@ async function fetchImageAsBase64(url: string | undefined): Promise<string | nul
  * Generates and downloads a clean, professional, selectable-text PDF
  * following the reference design of Hillstourism Travel Itinerary.
  */
-
-export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void> {
+export async function generateItineraryPDF(data: ItineraryPdfData, options: { download?: boolean } = {}): Promise<jsPDF> {
   // Pre-load page templates and content images concurrently.
-  // Files in /public are referenced by browser-root paths, not Windows disk paths.
   const [
     frontTemplateBase64,
     secondTemplateBase64,
     logoBase64,
+    coverBase64,
     stayImgBase64,
     vehicleImgBase64,
     ...dayImagesBase64
@@ -123,13 +122,26 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   const margin = 12
   const contentWidth = pageWidth - margin * 2 // 186mm
   let y = margin
+
+  const darkTheme = data.theme?.preset === 'dark'
+  const accentHex = /^#[0-9a-fA-F]{6}$/.test(data.theme?.accentColor || '') ? data.theme!.accentColor! : (darkTheme ? '#4BAEFF' : '#0878FF')
+  const accent = [1, 3, 5].map((start) => parseInt(accentHex.slice(start, start + 2), 16)) as [number, number, number]
+
+  // Detect image format from base64 data URL
+  const getImageFormat = (base64: string): string => {
+    if (base64.startsWith('data:image/png')) return 'PNG'
+    return 'JPEG'
+  }
+
   const renderPageTemplate = (templateBase64: string | null) => {
     if (!templateBase64) return
     try {
-      doc.addImage(templateBase64, 'PNG', 0, 0, pageWidth, pageHeight)
+      const fmt = getImageFormat(templateBase64)
+      doc.addImage(templateBase64, fmt, 0, 0, pageWidth, pageHeight)
     } catch {}
   }
   const renderContinuationTemplate = () => renderPageTemplate(secondTemplateBase64)
+
   // Normalize currency values and render them with a plain Rs. prefix.
   const cleanMoneyAmount = (value: string | number | undefined | null, fallback: string) => {
     const raw = String(value ?? fallback).trim()
@@ -155,6 +167,8 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     doc.setTextColor(...color)
     doc.text(`${prefix}Rs.${amount}`, x, textY)
   }
+  const pdfMoney = (value: string | number | undefined) => String(value || 'To be confirmed').replace(/₹\s*/g, 'INR ')
+
   // Page break checker helper
   const checkAddPage = (neededHeight: number = 15) => {
     if (y + neededHeight > pageHeight - margin - 15) {
@@ -164,8 +178,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
       renderMiniHeader()
     }
   }
-  // Mini Header for Page 2+. The current second-page template already contains
-  // the blue mountain divider near the top, so keep all dynamic header content above it.
+  // Mini Header for Page 2+
   const renderMiniHeader = () => {
     const headerTop = 3
     if (logoBase64) {
@@ -176,11 +189,11 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
       } catch {}
     }
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7.5)
+    doc.setFontSize(9)
     doc.setTextColor(11, 37, 69)
     doc.text('TRAVEL ITINERARY', pageWidth / 2, 21.5, { align: 'center' })
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
+    doc.setFontSize(8.5)
     doc.setTextColor(100, 116, 139)
     doc.text(data.packageName || 'Package Itinerary', pageWidth / 2, 26.5, { align: 'center' })
     // Start content immediately below the template's top divider.
@@ -192,6 +205,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i)
       const footerY = pageHeight - 10
+
       // The PNG templates already contain the mountain footer ornament.
       // Draw the old ornament only if the related template could not be loaded.
       const hasPageTemplate = i === 1 ? !!frontTemplateBase64 : !!secondTemplateBase64
@@ -211,16 +225,16 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
       // Do not show the thank-you footer copy on the front page.
       if (i > 1) {
         doc.setFont('helvetica', 'bold')
-        doc.setFontSize(8)
+        doc.setFontSize(9)
         doc.setTextColor(11, 37, 69)
         doc.text('Thank you for choosing Hillstourism', pageWidth / 2, footerY + 0.5, { align: 'center' })
         doc.setFont('helvetica', 'normal')
-        doc.setFontSize(6.5)
+        doc.setFontSize(7.5)
         doc.setTextColor(100, 116, 139)
         doc.text('EXPLORE  •  DISCOVER  •  CREATE MEMORIES', pageWidth / 2, footerY + 4, { align: 'center' })
       }
       doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
+      doc.setFontSize(7.5)
       doc.setTextColor(100, 116, 139)
       doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, footerY + 4, { align: 'right' })
     }
@@ -229,7 +243,6 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   // PAGE 1: HEADER & LOGO
   // ==========================================
   // Full-page front visual template. Dynamic itinerary content is drawn over it.
-  // The current template contains the mountain artwork and centered mountain divider.
   renderPageTemplate(frontTemplateBase64)
   // Keep the logo/title block in the clear space above the template's mountain divider.
   y = 3.5
@@ -241,20 +254,21 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     } catch {}
   }
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8.5)
-  doc.setTextColor(8, 120, 255)
+  doc.setFontSize(10)
+  doc.setTextColor(...accent)
   doc.text('TRAVEL ITINERARY', pageWidth / 2, 25, { align: 'center' })
-  // Main Package Title
+  // Main Package Title — INCREASED from 18 to 22
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
+  doc.setFontSize(22)
   doc.setTextColor(11, 37, 69)
-  doc.text(data.packageName || 'Travel Itinerary', pageWidth / 2, 33.5, { align: 'center' })
-  // Tagline / Subtitle
+  const coverTitle = doc.splitTextToSize(data.packageName || 'Travel Itinerary', 176).slice(0, 2)
+  doc.text(coverTitle, pageWidth / 2, 34, { align: 'center' })
+  // Tagline / Subtitle — INCREASED from 7.2 to 9
   const taglineText = data.tagline?.trim() || 'TEA GARDENS  |  MISTY MOUNTAINS  |  SCENIC BEAUTY'
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7.2)
+  doc.setFontSize(9)
   doc.setTextColor(100, 116, 139)
-  doc.text(taglineText.toUpperCase(), pageWidth / 2, 39, { align: 'center' })
+  doc.text(taglineText.toUpperCase(), pageWidth / 2, 41, { align: 'center' })
   // The mountain illustration occupies the upper part of the page.
   // Start the dynamic summary cards below the artwork so nothing overlaps it.
   y = 73
@@ -263,7 +277,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   // ==========================================
   const badgeGap = 3
   const badgeW = (contentWidth - badgeGap * 3) / 4 // ~44mm each
-  const badgeH = 14
+  const badgeH = 16
   const badgeY = y
   const badges = [
     { label: 'DURATION', val: data.duration || 'N/A' },
@@ -278,27 +292,53 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     doc.setDrawColor(226, 232, 240) // #E2E8F0
     doc.setLineWidth(0.3)
     doc.roundedRect(bx, badgeY, badgeW, badgeH, 2, 2, 'FD')
-    // Label
+    // Label — INCREASED from 6 to 7
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(6)
+    doc.setFontSize(7)
     doc.setTextColor(100, 116, 139)
-    doc.text(b.label, bx + badgeW / 2, badgeY + 4.5, { align: 'center' })
-    // Value
+    doc.text(b.label, bx + badgeW / 2, badgeY + 5, { align: 'center' })
+    // Value — INCREASED from 7.5 to 8.5
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7.5)
+    doc.setFontSize(8.5)
     doc.setTextColor(11, 37, 69)
     const splitVal = doc.splitTextToSize(b.val, badgeW - 2)
-    doc.text(splitVal[0] || '', bx + badgeW / 2, badgeY + 9.5, { align: 'center' })
+    doc.text(splitVal[0] || '', bx + badgeW / 2, badgeY + 11, { align: 'center' })
   })
   y = badgeY + badgeH + 8
+
+  // Customer details on front page
+  const customerLines = [
+    data.customerPhone?.trim() ? `Phone: ${data.customerPhone.trim()}` : '',
+    data.customerEmail?.trim() ? `Email: ${data.customerEmail.trim()}` : '',
+    data.pickupPoint?.trim() ? `Pickup: ${data.pickupPoint.trim()}` : '',
+    data.specialRequests?.trim() ? `Special requests: ${data.specialRequests.trim()}` : '',
+  ].filter(Boolean)
+  if (customerLines.length) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(...accent)
+    doc.text('CUSTOMER & PICKUP DETAILS', margin, y)
+    y += 5.5
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(30, 41, 59)
+    customerLines.forEach((line) => {
+      const wrapped = doc.splitTextToSize(line, contentWidth)
+      checkAddPage(wrapped.length * 4.5 + 3)
+      doc.text(wrapped, margin, y)
+      y += wrapped.length * 4.5 + 2
+    })
+    y += 3
+  }
+
   // ==========================================
   // DAY WISE ITINERARY SECTION
   // ==========================================
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
+  doc.setFontSize(12)
   doc.setTextColor(11, 37, 69)
   doc.text('DAY WISE ITINERARY', margin, y)
-  y += 3.5
+  y += 4
   doc.setDrawColor(226, 232, 240)
   doc.setLineWidth(0.3)
   doc.line(margin, y, pageWidth - margin, y)
@@ -308,7 +348,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   const dayRightW = pageWidth - margin - dayRightX // ~122mm
   if (!data.days || data.days.length === 0) {
     doc.setFont('helvetica', 'italic')
-    doc.setFontSize(9)
+    doc.setFontSize(10)
     doc.setTextColor(148, 163, 184)
     doc.text('No itinerary days specified.', margin, y)
     y += 8
@@ -320,21 +360,21 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
       const descLines = dayItem.description ? doc.splitTextToSize(dayItem.description, dayRightW - 4) : []
       const schedCount = dayItem.schedule?.length || 0
       const dayImgBase64 = dayImagesBase64[dIdx]
-      const scheduleStep = isFrontPageDay ? 3.6 : 4.5
+      const scheduleStep = isFrontPageDay ? 4 : 5
       let schedBoxH = schedCount * scheduleStep + (dayImgBase64 ? 3 : 0)
-      if (dayImgBase64 && schedBoxH < (isFrontPageDay ? 18 : 22)) schedBoxH = isFrontPageDay ? 18 : 22
-      if (schedBoxH > 0) schedBoxH += isFrontPageDay ? 2.5 : 4
-      const neededH = 9 + descLines.length * (isFrontPageDay ? 3.2 : 4) + schedBoxH + 5
+      if (dayImgBase64 && schedBoxH < (isFrontPageDay ? 20 : 24)) schedBoxH = isFrontPageDay ? 20 : 24
+      if (schedBoxH > 0) schedBoxH += isFrontPageDay ? 3 : 4.5
+      const neededH = 10 + descLines.length * (isFrontPageDay ? 3.6 : 4.5) + schedBoxH + 5
       if (!isFrontPageDay) checkAddPage(neededH)
       const startY = y
       // Left Column: Day Pill & Date
       if (darkTheme) doc.setFillColor(5, 18, 43)
       else doc.setFillColor(11, 37, 69)
-      doc.roundedRect(margin, y, 22, 7, 2, 2, 'F')
+      doc.roundedRect(margin, y, 22, 7.5, 2, 2, 'F')
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(8)
+      doc.setFontSize(9)
       doc.setTextColor(255, 255, 255)
-      doc.text(`Day ${dayItem.day || dIdx + 1}`, margin + 11, y + 4.8, { align: 'center' })
+      doc.text(`Day ${dayItem.day || dIdx + 1}`, margin + 11, y + 5, { align: 'center' })
       const dayLabel = `Day ${dayItem.day || dIdx + 1}`
       const normalizedDayLabel = dayLabel.trim().toLowerCase()
       const safeDateStr = dayItem.dateStr?.trim().toLowerCase() === normalizedDayLabel
@@ -345,35 +385,35 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
         : dayItem.dayOfWeek
       if (safeDateStr || safeDayOfWeek) {
         doc.setFont('helvetica', 'bold')
-        doc.setFontSize(6.5)
+        doc.setFontSize(7.5)
         doc.setTextColor(71, 85, 105)
         if (safeDateStr) {
-          doc.text(safeDateStr, margin + 11, y + 10.5, { align: 'center' })
+          doc.text(safeDateStr, margin + 11, y + 11, { align: 'center' })
         }
         if (safeDayOfWeek) {
           doc.setFont('helvetica', 'normal')
           doc.setTextColor(148, 163, 184)
-          doc.text(safeDayOfWeek, margin + 11, y + 13.5, { align: 'center' })
+          doc.text(safeDayOfWeek, margin + 11, y + 14, { align: 'center' })
         }
       }
       // Vertical timeline node dot
       doc.setFillColor(...accent)
       doc.circle(timelineLineX, y + 3.5, 1.8, 'F')
-      // Right Column: Title & Description
+      // Right Column: Title & Description — INCREASED sizes
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(isFrontPageDay ? 9 : 10)
+      doc.setFontSize(isFrontPageDay ? 10.5 : 12)
       doc.setTextColor(11, 37, 69)
-      doc.text(dayItem.title || `Day ${dayItem.day || dIdx + 1}`, dayRightX, y + 4.5)
-      let currentRightY = y + (isFrontPageDay ? 7.5 : 8.5)
+      doc.text(dayItem.title || `Day ${dayItem.day || dIdx + 1}`, dayRightX, y + 5)
+      let currentRightY = y + (isFrontPageDay ? 8.5 : 9.5)
       if (descLines.length > 0) {
         doc.setFont('helvetica', 'normal')
-        doc.setFontSize(isFrontPageDay ? 7 : 8)
+        doc.setFontSize(isFrontPageDay ? 8 : 9)
         doc.setTextColor(71, 85, 105)
         descLines.forEach((line: string) => {
           doc.text(line, dayRightX, currentRightY)
-          currentRightY += isFrontPageDay ? 3.1 : 3.8
+          currentRightY += isFrontPageDay ? 3.5 : 4.2
         })
-        currentRightY += isFrontPageDay ? 0.8 : 1.5
+        currentRightY += isFrontPageDay ? 1 : 1.5
       }
       // Schedule Box (if items exist or image exists)
       if (schedCount > 0 || dayImgBase64) {
@@ -384,18 +424,20 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
         doc.setDrawColor(226, 232, 240) // #E2E8F0
         doc.setLineWidth(0.3)
         doc.roundedRect(dayRightX, boxY, dayRightW, schedBoxH, 2, 2, 'FD')
-        let itemY = boxY + (isFrontPageDay ? 3.8 : 4.5)
+        let itemY = boxY + (isFrontPageDay ? 4 : 5)
         if (dayItem.schedule) {
           dayItem.schedule.forEach((sch) => {
             if (!sch.activity && !sch.time) return
             doc.setFont('helvetica', 'bold')
-            doc.setFontSize(isFrontPageDay ? 6.5 : 7)
-            doc.setTextColor(8, 120, 255)
+            // Schedule time — INCREASED from 6.5/7 to 7.5/8
+            doc.setFontSize(isFrontPageDay ? 7.5 : 8)
+            doc.setTextColor(...accent)
             if (sch.time) {
               doc.text(sch.time, dayRightX + 4, itemY)
             }
             doc.setFont('helvetica', 'bold')
-            doc.setFontSize(isFrontPageDay ? 6.8 : 7.5)
+            // Schedule activity — INCREASED from 6.8/7.5 to 8/8.5
+            doc.setFontSize(isFrontPageDay ? 8 : 8.5)
             doc.setTextColor(30, 41, 59)
             const timeOffset = sch.time ? 22 : 4
             const actLines = doc.splitTextToSize(sch.activity, textW - timeOffset)
@@ -408,12 +450,13 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
           try {
             const imgX = dayRightX + dayRightW - imgW - 2
             const imgH = schedBoxH - 4
-            doc.addImage(dayImgBase64, 'JPEG', imgX, boxY + 2, imgW, imgH)
+            const fmt = getImageFormat(dayImgBase64)
+            doc.addImage(dayImgBase64, fmt, imgX, boxY + 2, imgW, imgH)
           } catch {}
         }
         currentRightY = boxY + schedBoxH + (isFrontPageDay ? 2.5 : 4)
       }
-      const dayEndHeight = Math.max(isFrontPageDay ? 13 : 16, currentRightY - startY)
+      const dayEndHeight = Math.max(isFrontPageDay ? 14 : 17, currentRightY - startY)
       // Draw timeline connector line downwards
       if (dIdx < data.days.length - 1) {
         doc.setDrawColor(203, 213, 225)
@@ -437,16 +480,16 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   // SUMMARY GRID (PACKAGE DETAILS)
   // ------------------------------------------
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
+  doc.setFontSize(12)
   doc.setTextColor(11, 37, 69)
   doc.text('PACKAGE DETAILS', margin, y)
-  y += 3.5
+  y += 4
   doc.setDrawColor(226, 232, 240)
   doc.setLineWidth(0.3)
   doc.line(margin, y, pageWidth - margin, y)
   y += 5
   const sumBoxY = y
-  const sumBoxH = 22
+  const sumBoxH = 24
   doc.setFillColor(248, 250, 252)
   doc.setDrawColor(226, 232, 240)
   doc.roundedRect(margin, sumBoxY, contentWidth, sumBoxH, 2, 2, 'FD')
@@ -456,48 +499,49 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   const col4X = margin + 145
   const renderSumRow = (rY: number, k1: string, v1: string, k2: string, v2: string) => {
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7)
+    doc.setFontSize(8)
     doc.setTextColor(100, 116, 139)
     doc.text(k1, col1X, rY)
     doc.text(k2, col3X, rY)
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7.5)
+    doc.setFontSize(8.5)
     doc.setTextColor(11, 37, 69)
     doc.text(v1 || 'N/A', col2X, rY)
     doc.text(v2 || 'N/A', col4X, rY)
   }
-  renderSumRow(sumBoxY + 5, 'Package Name :', data.packageName, 'Travelers :', data.travelersText)
-  renderSumRow(sumBoxY + 10, 'Destination :', data.destination, 'Category :', data.category || 'Family')
+  renderSumRow(sumBoxY + 5.5, 'Package Name :', data.packageName, 'Travelers :', data.travelersText)
+  renderSumRow(sumBoxY + 11, 'Destination :', data.destination, 'Category :', data.category || 'Family')
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
+  doc.setFontSize(8)
   doc.setTextColor(100, 116, 139)
-  doc.text('Duration :', col1X, sumBoxY + 15)
-  doc.text('Price :', col3X, sumBoxY + 15)
+  doc.text('Duration :', col1X, sumBoxY + 16.5)
+  doc.text('Price :', col3X, sumBoxY + 16.5)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7.5)
+  doc.setFontSize(8.5)
   doc.setTextColor(11, 37, 69)
-  doc.text(data.duration || 'N/A', col2X, sumBoxY + 15)
-  drawRsAmount(col4X, sumBoxY + 15, data.pricePerPerson, '12,999', 7.5, [11, 37, 69])
-  renderSumRow(sumBoxY + 19.5, 'Travel Dates :', data.travelDatesText, 'Price Note :', data.priceNote || 'per person')
+  doc.text(data.duration || 'N/A', col2X, sumBoxY + 16.5)
+  drawRsAmount(col4X, sumBoxY + 16.5, data.pricePerPerson, '12,999', 8.5, [11, 37, 69])
+  renderSumRow(sumBoxY + 21.5, 'Travel Dates :', data.travelDatesText, 'Price Note :', data.priceNote || 'per person')
   y = sumBoxY + sumBoxH + 7
   // ------------------------------------------
   // STAY DETAILS SECTION
   // ------------------------------------------
-  checkAddPage(30)
+  checkAddPage(32)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
+  doc.setFontSize(12)
   doc.setTextColor(11, 37, 69)
   doc.text('STAY DETAILS', margin, y)
-  y += 4
+  y += 4.5
   const stayBoxY = y
-  const stayBoxH = 22
+  const stayBoxH = 24
   doc.setFillColor(255, 255, 255)
   doc.setDrawColor(226, 232, 240)
   doc.roundedRect(margin, stayBoxY, contentWidth, stayBoxH, 2, 2, 'FD')
   let stayTextX = margin + 4
   if (stayImgBase64) {
     try {
-      doc.addImage(stayImgBase64, 'JPEG', margin + 3, stayBoxY + 3, 26, 16)
+      const fmt = getImageFormat(stayImgBase64)
+      doc.addImage(stayImgBase64, fmt, margin + 3, stayBoxY + 3, 26, 18)
       stayTextX = margin + 33
     } catch {}
   }
@@ -510,38 +554,39 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     roomType: 'Deluxe Room',
   }
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
+  doc.setFontSize(11)
   doc.setTextColor(11, 37, 69)
-  doc.text(stayData.name, stayTextX, stayBoxY + 6)
+  doc.text(stayData.name, stayTextX, stayBoxY + 6.5)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7.5)
+  doc.setFontSize(8.5)
   doc.setTextColor(245, 158, 11) // Amber star rating
   const ratingStr = stayData.rating ? `★ ${stayData.rating} (${stayData.reviewsCount || 128} reviews)` : '★ 4.6 (128 reviews)'
-  doc.text(ratingStr, stayTextX, stayBoxY + 10.5)
+  doc.text(ratingStr, stayTextX, stayBoxY + 11.5)
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7.5)
+  doc.setFontSize(8.5)
   doc.setTextColor(100, 116, 139)
-  doc.text(`Location: ${stayData.location || data.destination}`, stayTextX, stayBoxY + 14.5)
-  doc.text(`${stayData.nights || 3} Nights  •  ${stayData.roomType || 'Standard Room'}`, stayTextX, stayBoxY + 18.5)
-  y = stayBoxY + stayBoxH + 6
+  doc.text(`Location: ${stayData.location || data.destination}`, stayTextX, stayBoxY + 16)
+  doc.text(`${stayData.nights || 3} Nights  •  ${stayData.roomType || 'Standard Room'}`, stayTextX, stayBoxY + 20.5)
+  y = stayBoxY + stayBoxH + 7
   // ------------------------------------------
   // VEHICLE DETAILS SECTION
   // ------------------------------------------
-  checkAddPage(28)
+  checkAddPage(30)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
+  doc.setFontSize(12)
   doc.setTextColor(11, 37, 69)
   doc.text('VEHICLE DETAILS', margin, y)
-  y += 4
+  y += 4.5
   const vehBoxY = y
-  const vehBoxH = 20
+  const vehBoxH = 22
   doc.setFillColor(255, 255, 255)
   doc.setDrawColor(226, 232, 240)
   doc.roundedRect(margin, vehBoxY, contentWidth, vehBoxH, 2, 2, 'FD')
   let vehTextX = margin + 4
   if (vehicleImgBase64) {
     try {
-      doc.addImage(vehicleImgBase64, 'JPEG', margin + 3, vehBoxY + 3, 26, 14)
+      const fmt = getImageFormat(vehicleImgBase64)
+      doc.addImage(vehicleImgBase64, fmt, margin + 3, vehBoxY + 3, 26, 16)
       vehTextX = margin + 33
     } catch {}
   }
@@ -551,19 +596,19 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     isAc: true,
   }
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
+  doc.setFontSize(11)
   doc.setTextColor(11, 37, 69)
-  doc.text(vehData.name, vehTextX, vehBoxY + 7)
+  doc.text(vehData.name, vehTextX, vehBoxY + 7.5)
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
+  doc.setFontSize(9)
   doc.setTextColor(71, 85, 105)
   const acText = vehData.isAc !== false ? '• AC' : '• Non-AC'
-  doc.text(`Capacity: ${vehData.capacity || '6+1 Seats'}  ${acText}`, vehTextX, vehBoxY + 13)
+  doc.text(`Capacity: ${vehData.capacity || '6+1 Seats'}  ${acText}`, vehTextX, vehBoxY + 14)
   y = vehBoxY + vehBoxH + 7
   // ------------------------------------------
   // INCLUSIONS & EXCLUSIONS (SIDE BY SIDE CARDS)
   // ------------------------------------------
-  checkAddPage(35)
+  checkAddPage(38)
   const incWidth = (contentWidth - 6) / 2 // ~90mm each
   const incX = margin
   const excX = margin + incWidth + 6
@@ -583,85 +628,107 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
   ]
   const incList = data.inclusions && data.inclusions.length > 0 ? data.inclusions : defaultInclusions
   const excList = data.exclusions && data.exclusions.length > 0 ? data.exclusions : defaultExclusions
-  const boxHeight = Math.max(incList.length, excList.length) * 4.5 + 10
+  const boxHeight = Math.max(incList.length, excList.length) * 5 + 12
   // Inclusions Box (Green tint)
   doc.setFillColor(236, 253, 245) // #ECFDF5
   doc.setDrawColor(167, 243, 208) // #A7F3D0
   doc.roundedRect(incX, y, incWidth, boxHeight, 2, 2, 'FD')
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8.5)
+  doc.setFontSize(9.5)
   doc.setTextColor(5, 150, 105) // Green
-  doc.text('INCLUSIONS', incX + 4, y + 6)
-  let incY = y + 11
+  doc.text('INCLUSIONS', incX + 4, y + 6.5)
+  let incY = y + 12
   incList.forEach((inc) => {
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7.5)
+    doc.setFontSize(8.5)
     doc.setTextColor(30, 41, 59)
     doc.circle(incX + 4.5, incY - 0.8, 0.65, 'F')
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
+    doc.setFontSize(8.5)
     doc.setTextColor(30, 41, 59)
     const lines = doc.splitTextToSize(inc, incWidth - 12)
     doc.text(lines[0] || '', incX + 9, incY)
-    incY += 4.5
+    incY += 5
   })
   // Exclusions Box (Red tint)
   doc.setFillColor(254, 242, 242) // #FEF2F2
   doc.setDrawColor(254, 202, 202) // #FECACA
   doc.roundedRect(excX, y, incWidth, boxHeight, 2, 2, 'FD')
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8.5)
+  doc.setFontSize(9.5)
   doc.setTextColor(220, 38, 38) // Red
-  doc.text('EXCLUSIONS', excX + 4, y + 6)
-  let excY = y + 11
+  doc.text('EXCLUSIONS', excX + 4, y + 6.5)
+  let excY = y + 12
   excList.forEach((exc) => {
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7.5)
+    doc.setFontSize(8.5)
     doc.setTextColor(30, 41, 59)
     doc.circle(excX + 4.5, excY - 0.8, 0.65, 'F')
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
+    doc.setFontSize(8.5)
     doc.setTextColor(30, 41, 59)
     const lines = doc.splitTextToSize(exc, incWidth - 12)
     doc.text(lines[0] || '', excX + 9, excY)
-    excY += 4.5
+    excY += 5
   })
   y += boxHeight + 7
   // ------------------------------------------
   // ESTIMATED COST SECTION
   // ------------------------------------------
-  checkAddPage(28)
+  checkAddPage(30)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
+  doc.setFontSize(12)
   doc.setTextColor(11, 37, 69)
   doc.text('ESTIMATED COST', margin, y)
-  y += 4
+  y += 4.5
   const costBoxY = y
-  const costBoxH = 22
+  const costBoxH = 24
   doc.setFillColor(248, 250, 252)
   doc.setDrawColor(226, 232, 240)
   doc.roundedRect(margin, costBoxY, contentWidth, costBoxH, 2, 2, 'FD')
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
+  doc.setFontSize(9)
   doc.setTextColor(71, 85, 105)
-  doc.text('Package Cost (per person)', margin + 4, costBoxY + 5.5)
-  doc.text('Total Travelers', margin + 4, costBoxY + 10.5)
+  doc.text('Package Cost (per person)', margin + 4, costBoxY + 6)
+  doc.text('Total Travelers', margin + 4, costBoxY + 11.5)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8)
+  doc.setFontSize(9)
   doc.setTextColor(11, 37, 69)
-  drawRsAmount(margin + 55, costBoxY + 5.5, data.pricePerPerson, '12,999', 8, [11, 37, 69], ': ')
+  drawRsAmount(margin + 55, costBoxY + 6, data.pricePerPerson, '12,999', 9, [11, 37, 69], ': ')
   const totalTravelersCount = (data.adultsCount || 0) + (data.childrenCount || 0) || 1
-  doc.text(`:  ${totalTravelersCount} (${data.travelersText || '2 Adults, 1 Child'})`, margin + 55, costBoxY + 10.5)
+  doc.text(`:  ${totalTravelersCount} (${data.travelersText || '2 Adults, 1 Child'})`, margin + 55, costBoxY + 11.5)
   // Highlighted Total Cost Row
   doc.setFillColor(239, 246, 255) // #EFF6FF
   doc.setDrawColor(191, 219, 254) // #BFDBFE
-  doc.roundedRect(margin + 2, costBoxY + 13.5, contentWidth - 4, 7, 1.5, 1.5, 'FD')
+  doc.roundedRect(margin + 2, costBoxY + 14.5, contentWidth - 4, 8, 1.5, 1.5, 'FD')
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
+  doc.setFontSize(10)
   doc.setTextColor(29, 78, 216) // Blue
-  doc.text('Estimated Total Cost', margin + 6, costBoxY + 18)
-  drawRsAmount(margin + 55, costBoxY + 18, data.estimatedTotalCost, '38,997', 9, [29, 78, 216], ': ')
+  doc.text('Estimated Total Cost', margin + 6, costBoxY + 19.5)
+  drawRsAmount(margin + 55, costBoxY + 19.5, data.estimatedTotalCost, '38,997', 10, [29, 78, 216], ': ')
   y = costBoxY + costBoxH + 6
+
+  // Payment details section
+  if (data.payment && (data.payment.status !== 'pending' || data.payment.advanceAmount || data.payment.balanceDue || data.payment.mode || data.payment.transactionId)) {
+    checkAddPage(35)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.setTextColor(...accent)
+    doc.text('PAYMENT DETAILS', margin, y)
+    y += 6
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(30, 41, 59)
+    const paymentLines = [
+      `Status: ${data.payment.status}`,
+      data.payment.advanceAmount ? `Advance: ${pdfMoney(data.payment.advanceAmount)}` : '',
+      data.payment.balanceDue ? `Balance: ${pdfMoney(data.payment.balanceDue)}` : '',
+      data.payment.mode ? `Mode: ${data.payment.mode}` : '',
+      data.payment.transactionId ? `Transaction ID: ${data.payment.transactionId}` : '',
+    ].filter(Boolean)
+    paymentLines.forEach((line) => { doc.text(line, margin, y); y += 5 })
+  }
+
   // Render footers across all pages
   renderFooters()
   // Generate clean filename
@@ -670,5 +737,7 @@ export async function generateItineraryPDF(data: ItineraryPdfData): Promise<void
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'travel-itinerary'
-  doc.save(`${safeFilename}-travel-itinerary.pdf`)
+
+  if (options.download !== false) doc.save(`${safeFilename}-travel-itinerary.pdf`)
+  return doc
 }
