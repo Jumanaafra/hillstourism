@@ -27,6 +27,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = staticPaths.map(path => ({
     url: `${baseUrl}${path}`,
     lastModified: new Date(),
+    changeFrequency: path === '' ? 'daily' : 'weekly',
+    priority: path === '' ? 1.0 : (path === '/packages' || path === '/stays') ? 0.9 : 0.7,
   }))
 
   // Active public package detail pages
@@ -35,6 +37,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .map(pkg => ({
       url: `${baseUrl}/packages/${pkg.slug || pkg.id}`,
       lastModified: pkg.updatedAt ? new Date(pkg.updatedAt) : new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
     }))
 
   // Active public hotel detail pages
@@ -43,6 +47,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .map(hotel => ({
       url: `${baseUrl}/hotels/${hotel.slug || hotel.id}`,
       lastModified: hotel.updatedAt ? new Date(hotel.updatedAt) : new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
     }))
 
   return [...staticRoutes, ...packageRoutes, ...hotelRoutes]
