@@ -155,9 +155,9 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
           <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
             {/* Desktop CTA */}
             <a
-              href="/#contact"
+              href="/plan-my-trip"
               className="btn-primary desktop-cta"
-              onClick={(e) => { e.preventDefault(); handleNavClick('/#contact') }}
+              onClick={(e) => { e.preventDefault(); handleNavClick('/plan-my-trip') }}
               style={{ padding: '0.55rem 1.25rem', fontSize: '0.72rem', borderRadius: '9999px' }}
             >
               Plan My Trip
@@ -287,9 +287,9 @@ export default function Navbar({ whatsappUrl: customWhatsappUrl = '' } = {}) {
           {/* Quick CTA Actions at bottom of drawer */}
           <div className="mobile-nav-actions">
             <a
-              href="/#contact"
+              href="/plan-my-trip"
               className="btn-primary mobile-cta-btn"
-              onClick={(e) => { e.preventDefault(); handleNavClick('/#contact') }}
+              onClick={(e) => { e.preventDefault(); handleNavClick('/plan-my-trip') }}
             >
               Plan My Trip
             </a>
