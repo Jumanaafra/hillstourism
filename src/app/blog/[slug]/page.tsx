@@ -1,4 +1,4 @@
-import { notFound } from 'next'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -16,7 +16,7 @@ export async function generateStaticParams() {
   }))
 }
 
-export async function generateMetadata({ params }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const post = blogs.find(p => p.slug === params.slug)
   if (!post) return {}
   
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }): Promise<Metadata> {
   }
 }
 
-export default async function BlogPostPage({ params }) {
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
   const post = blogs.find(p => p.slug === params.slug)
   if (!post) notFound()
 

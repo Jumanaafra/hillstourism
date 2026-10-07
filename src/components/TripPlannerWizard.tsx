@@ -18,7 +18,7 @@ const DURATIONS = [
   { id: 'long', label: '5+ Days', desc: 'Complete exploration' },
 ]
 
-export default function TripPlannerWizard({ packages = [] }) {
+export default function TripPlannerWizard({ packages = [] }: { packages?: any[] }) {
   const [step, setStep] = useState(1)
   const [vibe, setVibe] = useState('')
   const [duration, setDuration] = useState('')
@@ -81,7 +81,7 @@ export default function TripPlannerWizard({ packages = [] }) {
 
   return (
     <div className="planner-container">
-      <div className="planner-card">
+      <div className="planner-card" style={{ maxWidth: step === 4 ? '1100px' : '700px' }}>
         {step < 3 && (
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${(step / 3) * 100}%` }}></div>
@@ -208,115 +208,6 @@ export default function TripPlannerWizard({ packages = [] }) {
         )}
       </div>
 
-      <style jsx>{`
-        .planner-container {
-          padding: 4rem 1rem;
-          min-height: 70vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--hill-surface);
-        }
-        .planner-card {
-          background: white;
-          border-radius: 16px;
-          padding: 3rem;
-          width: 100%;
-          max-width: ${step === 4 ? '1100px' : '700px'};
-          box-shadow: 0 10px 40px rgba(0,0,0,0.05);
-          position: relative;
-          overflow: hidden;
-          transition: max-width 0.4s ease;
-        }
-        .progress-bar {
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          height: 4px;
-          background: var(--hill-border);
-        }
-        .progress-fill {
-          height: 100%;
-          background: var(--hill-blue);
-          transition: width 0.4s ease;
-        }
-        .fade-in {
-          animation: fadeIn 0.4s ease forwards;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .grid-options {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-        }
-        .grid-options.stack {
-          grid-template-columns: 1fr;
-        }
-        .option-btn {
-          background: var(--hill-surface);
-          border: 2px solid transparent;
-          padding: 1.5rem;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          cursor: pointer;
-          transition: all 0.2s;
-          text-align: left;
-        }
-        .option-btn:hover {
-          background: var(--hill-white);
-          border-color: rgba(67, 107, 194, 0.2);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        .option-btn.selected {
-          border-color: var(--hill-blue);
-          background: rgba(67, 107, 194, 0.05);
-        }
-        .option-btn .icon {
-          font-size: 2rem;
-        }
-        .option-btn .label {
-          font-family: var(--font-display);
-          font-weight: 600;
-          color: var(--hill-navy);
-        }
-        .action-row {
-          margin-top: 2.5rem;
-          display: flex;
-          justify-content: flex-end;
-        }
-        .back-btn {
-          background: none;
-          border: none;
-          color: var(--hill-muted);
-          cursor: pointer;
-          font-weight: 500;
-          margin-bottom: 1rem;
-          padding: 0;
-        }
-        .back-btn:hover {
-          color: var(--hill-navy);
-        }
-        .spinner {
-          width: 40px;
-          height: 40px;
-          border: 3px solid rgba(67, 107, 194, 0.2);
-          border-top-color: var(--hill-blue);
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-          margin: 0 auto;
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        @media (max-width: 768px) {
-          .planner-card { padding: 2rem 1.5rem; }
-          .grid-options { grid-template-columns: 1fr; }
-        }
-      `}</style>
     </div>
   )
 }
